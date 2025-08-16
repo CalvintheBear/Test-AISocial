@@ -20,6 +20,11 @@ jobs:
   deploy-workers:
     needs: build-web
     runs-on: ubuntu-latest
+    env:
+      HAS_REDIS_URL: ${{ secrets.UPSTASH_REDIS_REST_URL != '' }}
+      HAS_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN != '' }}
+      REDIS_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
     permissions:
       contents: read
     steps:
@@ -30,14 +35,14 @@ jobs:
       - name: Install wrangler
         run: npm --workspace apps/worker-api i
       - name: Set Redis URL var (if provided)
-        if: ${{ secrets.UPSTASH_REDIS_REST_URL != '' }}
+        if: env.HAS_REDIS_URL == 'true'
         run: |
-          sed -i "s|UPSTASH_REDIS_REST_URL = \".*\"|UPSTASH_REDIS_REST_URL = \"${{ secrets.UPSTASH_REDIS_REST_URL }}\"|" apps/worker-api/wrangler.toml
+          sed -i "s|UPSTASH_REDIS_REST_URL = \".*\"|UPSTASH_REDIS_REST_URL = \"${REDIS_URL}\"|" apps/worker-api/wrangler.toml
       - name: Put UPSTASH_REDIS_REST_TOKEN
-        if: ${{ secrets.UPSTASH_REDIS_REST_TOKEN != '' }}
+        if: env.HAS_REDIS_TOKEN == 'true'
         working-directory: apps/worker-api
         run: |
-          echo "${{ secrets.UPSTASH_REDIS_REST_TOKEN }}" | npx wrangler secret put UPSTASH_REDIS_REST_TOKEN --yes
+          echo "${REDIS_TOKEN}" | npx wrangler secret put UPSTASH_REDIS_REST_TOKEN --yes
       - name: Deploy Workers
         uses: cloudflare/wrangler-action@v3
         with:
