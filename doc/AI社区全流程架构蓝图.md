@@ -7,13 +7,13 @@ AI社区全流程架构蓝图
 > 当前实现进度（基于本仓库现状）
 > - 前端页面/组件：已完成初版。`/`、`/features`、`/feed`、`/user/:username`、`/artwork/:id/:slug` 均已实现并具备 SEO 元信息；样式系统（设计 Token + Tailwind 扩展）与 UI 组件（Button/Card/Badge/Tabs/Header/Sidebar/Toast/Skeleton）已落地。
 > - 数据与交互：`NEXT_PUBLIC_USE_MOCK=0` 时，`/feed`、`/user/:username`、`/artwork/:id/:slug` 已改为走 `/api/*` 实时数据；客户端 `useLike / useFavorite / usePublish / useFeed / useFavorites` 已联通；`authFetch` 支持相对 `/api/*` 自动重写与 DEV JWT 回退。前端 mocks 仅作为开发演示/离线开关，不影响后端。
-> - 后端与基础设施：Workers API 最小实现已落地，提供 `/api/artworks/*`（含 like/favorite/publish/detail/upload 占位）、`/api/users/*`、`/api/feed`、`/api/health`、`/api/redis/ping`；`wrangler.toml` 已绑定 D1/R2/Redis/Cron。当前状态（已更新）：
->   - D1：已真实绑定并可查询（本地已写入测试数据）；`like/favorite` 路由已同步写入 D1，增强与 Redis 的一致性。
->   - Redis：已接入 Upstash REST（命令采用数组体 POST）；DEV 统一仅当 `DEV_MODE==='1'` 才走内存回退。
->   - R2：服务封装支持 `R2_PUBLIC_UPLOAD_BASE`/`R2_PUBLIC_AFTER_BASE` 公网 URL 配置；缩略图与私有读签名 URL 后续完善。
->   - 中间件：新增 `errorMiddleware` 统一错误体与 404 处理；路径参数引入 `zod` 校验；用户作品对非本人仅返回 `published`。
->   - 鉴权：DEV 模式免鉴权便于联调；生产需接入 Clerk 并关闭 DEV 模式（已从 `wrangler.toml` 移除 DEV 变量，改用 `.dev.vars` 本地注入）。
-> - API 设计同步：列表与详情已直返数据结构（对齐前端）；操作类接口（like/favorite/publish）目前使用 `{ success, data }` 包装返回。短期允许混合，后续统一响应格式与错误码。
+> - 后端与基础设施：Workers API 最小实现已落地，提供 `/api/artworks/*`（含 like/favorite/publish/detail/upload）、`/api/users/*`、`/api/feed`、`/api/health`、`/api/redis/ping`；`wrangler.toml` 已绑定 D1/R2/Redis/Cron。当前状态（更新至最新实现）：
+>   - D1：已真实绑定并可查询（本地已写入测试数据）；`artworks` 表已新增 `thumb_url`、`slug` 字段（迁移已提供）；`like/favorite` 路由同步写入 D1，增强与 Redis 的一致性。
+>   - Redis：已接入 Upstash REST（命令采用数组体 POST）；DEV 仅当 `DEV_MODE==='1'` 且未配置 Upstash 时使用内存回退；Feed/用户列表缓存已实现 TTL（默认 10 分钟）与按需失效。
+>   - R2：`R2Service` 支持 `R2_PUBLIC_UPLOAD_BASE`/`R2_PUBLIC_AFTER_BASE` 公网 URL；`/api/artworks/upload` 已打通上传→D1 写入闭环，当前 `thumbUrl` 与 `originalUrl` 一致，后续由 Cron 生成缩略图再更新。
+>   - 中间件：`errorMiddleware` 统一错误体与 404；`loggerMiddleware` 记录请求耗时；路径参数采用 `zod` 校验；用户作品对非本人仅返回 `published`。
+>   - 鉴权：DEV 模式免鉴权用于本地联调；生产需接入 Clerk 并关闭 DEV 模式（`wrangler.toml` 不含 DEV 变量，使用 `.dev.vars` 本地注入）。
+> - API 设计同步：当前 GET 列表/详情直返数据结构；操作类接口（like/favorite/publish）返回精简对象（非 `{ success, data }` 包装）；后续计划统一响应 envelope 与错误码。
 
 ### 1. 系统架构图
 
@@ -65,12 +65,12 @@ AI社区全流程架构蓝图
 | ----------------------------- | ------ | ------------ | ------------------------------- | ----------------------------------- |
 | /api/auth/login               | POST   | Google 登录   | OAuth token                      | JWT, user info                      |
 | /api/artworks/generate        | POST   | 生成 AI 作品   | prompt, file(optional), JWT     | artwork_id, url, status:draft       |
-| /api/artworks/upload          | POST   | 上传图片/视频  | file, JWT                       | artwork_id, url                     |
+| /api/artworks/upload          | POST   | 上传图片/视频  | file, title, JWT                | id, originalUrl, thumbUrl, status   |
 | /api/artworks/:id/publish     | POST   | 发布作品       | artwork_id, JWT                 | status:published                     |
-| /api/artworks/:id/like       | POST   | 点赞作品       | artwork_id, JWT                 | like_count, isLiked                  |
-| /api/artworks/:id/like       | DELETE | 取消点赞       | artwork_id, JWT                 | like_count, isLiked                  |
-| /api/artworks/:id/favorite   | POST   | 收藏作品       | artwork_id, JWT                 | is_favorite                          |
-| /api/artworks/:id/favorite   | DELETE | 取消收藏       | artwork_id, JWT                 | is_favorite                          |
+| /api/artworks/:id/like       | POST   | 点赞作品       | artwork_id, JWT                 | likeCount, isLiked                  |
+| /api/artworks/:id/like       | DELETE | 取消点赞       | artwork_id, JWT                 | likeCount, isLiked                  |
+| /api/artworks/:id/favorite   | POST   | 收藏作品       | artwork_id, JWT                 | isFavorite                          |
+| /api/artworks/:id/favorite   | DELETE | 取消收藏       | artwork_id, JWT                 | isFavorite                          |
 | /api/users/:id/artworks      | GET    | 获取用户作品   | user_id, JWT                    | artwork list                         |
 | /api/feed                     | GET    | 推荐页 / Feed | JWT                              | artwork list                         |
 | /api/artworks/:id            | GET    | 单个作品详情   | id(path), JWT                   | artwork info (+ author)             |
@@ -85,7 +85,7 @@ AI社区全流程架构蓝图
 | 表名                 | 字段                                            | 说明                           |
 | ------------------ | --------------------------------------------- | ---------------------------- |
 | users              | id, name, email, profile_pic                 | 用户信息                         |
-| artworks           | id, user_id, title, url, status, created_at | 作品信息，status:draft/published |
+| artworks           | id, user_id, title, url, thumb_url, slug, status, created_at | 作品信息，status:draft/published |
 | artworks_like     | user_id, artwork_id, created_at            | 点赞记录                         |
 | artworks_favorite | user_id, artwork_id, created_at            | 收藏记录                         |
 
@@ -207,7 +207,7 @@ sequenceDiagram
 
 实现状态注解：
 - 现阶段默认可通过设置 `NEXT_PUBLIC_USE_MOCK=0` + `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8787` 直连 Workers；DEV 模式无需 JWT。
-- 生成/上传/发布：`publish` 已就绪；`generate/upload` 仍占位（前端 `CreateArtworkModal` 演示），R2 写入与缩略图后续接入。
+- 生成/上传/发布：`publish`、`upload` 已就绪（`upload` 返回 `{ id, originalUrl, thumbUrl, status, title }`）；`generate` 仍占位；缩略图后续由 Cron 生成并在数据库 `thumb_url` 字段与返回体中更新。
 
 ---
 

@@ -36,11 +36,14 @@ export class D1Service {
     
     if (!row) return null
     
+    // 使用数据库中的持久化slug，如果没有则生成一个
+    const slug = row.slug || this.generateSlug(String(row.title) || 'untitled')
+    
     return {
       id: String(row.id),
-      slug: this.generateSlug(String(row.title) || 'untitled'),
+      slug: slug,
       title: String(row.title || 'Untitled'),
-      url: String(row.url),
+      url: String(row.thumb_url || row.url),
       status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
       author: {
         id: String(row.user_id),
@@ -63,20 +66,25 @@ export class D1Service {
     `)
     const rows = await stmt.bind(limit).all() as any
     
-    return (rows.results || []).map((row: any) => ({
-      id: String(row.id),
-      slug: this.generateSlug(String(row.title) || 'untitled'),
-      title: String(row.title || 'Untitled'),
-      url: String(row.url),
-      status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
-      author: {
-        id: String(row.user_id),
-        name: String(row.user_name),
-        profilePic: row.profile_pic ? String(row.profile_pic) : undefined
-      },
-      likeCount: 0,
-      createdAt: Number(row.created_at)
-    }))
+    return (rows.results || []).map((row: any) => {
+      // 使用数据库中的持久化slug，如果没有则生成一个
+      const slug = row.slug || this.generateSlug(String(row.title) || 'untitled')
+      
+      return {
+        id: String(row.id),
+        slug: slug,
+        title: String(row.title || 'Untitled'),
+        url: String(row.thumb_url || row.url),
+        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        author: {
+          id: String(row.user_id),
+          name: String(row.user_name),
+          profilePic: row.profile_pic ? String(row.profile_pic) : undefined
+        },
+        likeCount: 0,
+        createdAt: Number(row.created_at)
+      }
+    })
   }
 
   async listUserArtworks(userId: string): Promise<Artwork[]> {
@@ -89,20 +97,25 @@ export class D1Service {
     `)
     const rows = await stmt.bind(userId).all() as any
     
-    return (rows.results || []).map((row: any) => ({
-      id: String(row.id),
-      slug: this.generateSlug(String(row.title) || 'untitled'),
-      title: String(row.title || 'Untitled'),
-      url: String(row.url),
-      status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
-      author: {
-        id: String(row.user_id),
-        name: String(row.user_name),
-        profilePic: row.profile_pic ? String(row.profile_pic) : undefined
-      },
-      likeCount: 0,
-      createdAt: Number(row.created_at)
-    }))
+    return (rows.results || []).map((row: any) => {
+      // 使用数据库中的持久化slug，如果没有则生成一个
+      const slug = row.slug || this.generateSlug(String(row.title) || 'untitled')
+      
+      return {
+        id: String(row.id),
+        slug: slug,
+        title: String(row.title || 'Untitled'),
+        url: String(row.thumb_url || row.url),
+        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        author: {
+          id: String(row.user_id),
+          name: String(row.user_name),
+          profilePic: row.profile_pic ? String(row.profile_pic) : undefined
+        },
+        likeCount: 0,
+        createdAt: Number(row.created_at)
+      }
+    })
   }
 
   async publishArtwork(id: string): Promise<Artwork | null> {
@@ -114,13 +127,15 @@ export class D1Service {
     return this.getArtwork(id)
   }
 
-  async createArtwork(userId: string, title: string, url: string): Promise<string> {
+  async createArtwork(userId: string, title: string, url: string, thumbUrl?: string): Promise<string> {
     const id = crypto.randomUUID()
+    const slug = this.generateSlug(title || 'untitled')
+    
     const stmt = this.db.prepare(`
-      INSERT INTO artworks (id, user_id, title, url, status, created_at)
-      VALUES (?, ?, ?, ?, 'draft', ?)
+      INSERT INTO artworks (id, user_id, title, url, thumb_url, slug, status, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)
     `)
-    await stmt.bind(id, userId, title, url, Date.now()).run()
+    await stmt.bind(id, userId, title, url, thumbUrl || url, slug, Date.now()).run()
     return id
   }
 
@@ -185,6 +200,31 @@ export class D1Service {
       .replace(/[^\w\s-]/g, '')
       .replace(/[\s_-]+/g, '-')
       .trim()
+  }
+
+  // 一致性检查相关方法
+  async listAllArtworks(): Promise<Array<{id: string}>> {
+    const stmt = this.db.prepare(`SELECT id FROM artworks`)
+    const rows = await stmt.all() as any
+    return (rows.results || []).map((row: any) => ({ id: String(row.id) }))
+  }
+
+  async listAllUsers(): Promise<Array<{id: string}>> {
+    const stmt = this.db.prepare(`SELECT id FROM users`)
+    const rows = await stmt.all() as any
+    return (rows.results || []).map((row: any) => ({ id: String(row.id) }))
+  }
+
+  async getLikesCount(artworkId: string): Promise<number> {
+    const stmt = this.db.prepare(`
+      SELECT COUNT(*) as count FROM artworks_like WHERE artwork_id = ?
+    `)
+    const rows = await stmt.bind(artworkId).all() as any
+    return Number((rows.results || [])[0]?.count || 0)
+  }
+
+  async getUserFavorites(userId: string): Promise<string[]> {
+    return this.listUserFavorites(userId) // 复用现有方法
   }
 }
 

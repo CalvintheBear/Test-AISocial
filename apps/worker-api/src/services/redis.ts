@@ -23,7 +23,7 @@ export class RedisService {
     return !this.url || !this.token
   }
 
-  private async execute(command: string, ...args: any[]): Promise<any> {
+  async execute(command: string, ...args: any[]): Promise<any> {
     if (this.isDevMode) {
       // DEV模式下直接返回，由调用方处理内存回退
       throw new Error('Redis not configured in DEV mode')
@@ -104,6 +104,85 @@ export class RedisService {
     }
     const result = await this.execute('SISMEMBER', `user:${userId}:favorites`, artworkId)
     return result === 1
+  }
+
+  // Cache methods for feed and user lists with TTL
+  async getFeed(limit: number): Promise<string | null> {
+    if (this.isDevMode) return null
+    return await this.execute('GET', `feed:list:${limit}`)
+  }
+
+  async setFeed(limit: number, data: string, ttlSeconds: number = 600): Promise<void> {
+    if (this.isDevMode) return
+    await this.execute('SETEX', `feed:list:${limit}`, ttlSeconds, data)
+  }
+
+  async invalidateFeed(): Promise<void> {
+    if (this.isDevMode) return
+    const keys = await this.execute('KEYS', 'feed:list:*')
+    if (keys && Array.isArray(keys)) {
+      for (const key of keys) {
+        await this.execute('DEL', key)
+      }
+    }
+  }
+
+  async getUserArtworks(userId: string): Promise<string | null> {
+    if (this.isDevMode) return null
+    return await this.execute('GET', `user:${userId}:artworks`)
+  }
+
+  async setUserArtworks(userId: string, data: string, ttlSeconds: number = 600): Promise<void> {
+    if (this.isDevMode) return
+    await this.execute('SETEX', `user:${userId}:artworks`, ttlSeconds, data)
+  }
+
+  async invalidateUserArtworks(userId: string): Promise<void> {
+    if (this.isDevMode) return
+    await this.execute('DEL', `user:${userId}:artworks`)
+  }
+
+  async getUserFavorites(userId: string): Promise<string | null> {
+    if (this.isDevMode) return null
+    return await this.execute('GET', `user:${userId}:favorites:list`)
+  }
+
+  async setUserFavorites(userId: string, data: string, ttlSeconds: number = 600): Promise<void> {
+    if (this.isDevMode) return
+    await this.execute('SETEX', `user:${userId}:favorites:list`, ttlSeconds, data)
+  }
+
+  async invalidateUserFavorites(userId: string): Promise<void> {
+    if (this.isDevMode) return
+    await this.execute('DEL', `user:${userId}:favorites:list`)
+  }
+
+  // Cache invalidation helpers
+  async invalidateArtworkCache(artworkId: string, userId?: string): Promise<void> {
+    if (this.isDevMode) return
+    
+    // Invalidate feed cache
+    await this.invalidateFeed()
+    
+    // Invalidate user cache if provided
+    if (userId) {
+      await this.invalidateUserArtworks(userId)
+    }
+    
+    // Invalidate artwork owner cache (for publish operations)
+    const artworkOwner = await this.execute('GET', `artwork:${artworkId}:owner`)
+    if (artworkOwner) {
+      await this.invalidateUserArtworks(artworkOwner as string)
+    }
+  }
+
+  async invalidateAllUserCaches(userId: string): Promise<void> {
+    if (this.isDevMode) return
+    await Promise.all([
+      this.invalidateUserArtworks(userId),
+      this.invalidateUserFavorites(userId),
+      this.invalidateFeed()
+    ])
   }
 }
 

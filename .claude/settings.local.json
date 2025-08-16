@@ -10,7 +10,12 @@
       "Bash(curl:*)",
       "WebFetch(domain:localhost)",
       "Bash(touch:*)",
-      "Bash(wrangler d1:*)"
+      "Bash(wrangler d1:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(mv:*)",
+      "Bash(powershell:*)",
+      "Bash(cd:*)"
     ],
     "deny": []
   }

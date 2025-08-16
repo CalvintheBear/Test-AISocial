@@ -1,5 +1,13 @@
 # AI Social - 开发运行说明（生产化验证版）
 
+## 下一步落地短清单（Roadmap - Next）
+- [ ] 接入 Clerk（前后端联通）：前端获取 JWT 注入 `authFetch`；后端使用 `@clerk/backend` 校验并关闭生产 DEV_MODE
+- [ ] 缩略图生成链路：Cron 任务 + Image Resizing，生成写入 R2_AFTER，并回填 D1 `thumb_url`，刷新缓存
+- [ ] 统一响应格式与错误码：采用 `{ success, data, code }`，并在中间件中统一错误体、结构化日志
+- [ ] 缓存策略调优：Feed 与用户列表 TTL 策略细化、按 Key 失效与批量清理，完善一致性检查脚本
+- [ ] 监控与告警：请求耗时、错误率、R2/Redis/D1 可用性与配额；关键操作审计日志
+- [ ] 前端体验优化：骨架屏/占位图、错误边界、移动端适配、i18n（可选）
+
 ## 目录
 - 前端：`apps/web`（Next.js 14 + Clerk）
 - 后端：`apps/worker-api`（Cloudflare Workers + Hono + D1 + Upstash Redis + R2）
@@ -105,6 +113,10 @@ CLERK_JWKS_URL=https://your-clerk-instance.clerk.accounts.dev/.well-known/jwks.j
 UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
 UPSTASH_REDIS_REST_TOKEN=your-upstash-token
 
+# R2 公网访问（可选）
+R2_PUBLIC_UPLOAD_BASE=https://...
+R2_PUBLIC_AFTER_BASE=https://...
+
 # 开发模式
 DEV_MODE=1
 ```
@@ -119,12 +131,14 @@ CREATE TABLE users (
   profile_pic TEXT
 );
 
--- 作品表
+-- 作品表（建议参照迁移包含 thumb_url/slug）
 CREATE TABLE artworks (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   title TEXT,
   url TEXT NOT NULL,
+  thumb_url TEXT,
+  slug TEXT,
   status TEXT NOT NULL CHECK (status IN ('draft','published')),
   created_at INTEGER NOT NULL
 );

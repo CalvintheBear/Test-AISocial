@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "wrangler dev --local",
     "deploy": "wrangler deploy",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "consistency-check": "node src/scripts/consistency-check.js",
+    "consistency-check:fix": "node src/scripts/consistency-check.js --fix"
   },
   "dependencies": {
     "@clerk/backend": "^1.30.0",
@@ -19,6 +21,6 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250816.0",
     "typescript": "^5.9.2",
-    "wrangler": "^3.63.1"
+    "wrangler": "^4.30.0"
   }
 }

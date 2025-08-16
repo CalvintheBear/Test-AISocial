@@ -11,6 +11,9 @@ export type Env = {
   CLERK_ISSUER?: string
   CLERK_JWKS_URL?: string
   CLERK_SECRET_KEY?: string
+  // R2 Public URLs
+  R2_PUBLIC_UPLOAD_BASE?: string
+  R2_PUBLIC_AFTER_BASE?: string
   // Dev
   DEV_MODE?: string
 }

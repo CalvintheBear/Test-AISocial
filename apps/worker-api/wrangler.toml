@@ -5,6 +5,8 @@ account_id = "9a5ff316a26b8abb696af519e515d2de"
 
 [vars]
 # 提示：生产环境请通过 wrangler secrets 注入敏感变量；本地 DEV 配置使用 .dev.vars
+R2_PUBLIC_UPLOAD_BASE = "https://pub-59ae9a96b6614a9db89af40b2970d3ab.r2.dev"
+R2_PUBLIC_AFTER_BASE = "https://pub-c6cdf19c1dc84237813b1f66cf8afeff.r2.dev"
 
 [[d1_databases]]
 binding = "DB"
