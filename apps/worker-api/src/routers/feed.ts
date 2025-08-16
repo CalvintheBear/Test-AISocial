@@ -1,17 +1,17 @@
 import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
+import { PaginationQuerySchema, validateParam } from '../schemas/validation'
 
 const router = new Hono()
 
 router.get('/', async (c) => {
-  const limitParam = c.req.query('limit')
-  const limit = limitParam ? Math.max(1, Math.min(100, Number(limitParam))) : 20
+  const { limit } = validateParam(PaginationQuerySchema, { limit: c.req.query('limit') || '20' }) as { limit: number }
   const userId = (c as any).get('userId') as string
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
   
-  const list = await d1.listFeed(limit)
+  const list = await d1.listFeed(Number(limit))
   
   // Get likes and favorites for the current user
   const artworkIds = list.map(a => a.id)

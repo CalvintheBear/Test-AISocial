@@ -3,8 +3,8 @@ main = "src/index.ts"
 compatibility_date = "2024-06-01"
 account_id = "9a5ff316a26b8abb696af519e515d2de"
 
-#[vars]
-# 所有敏感与服务端变量统一通过 `wrangler secret` 注入（见任务文档）
+[vars]
+# 提示：生产环境请通过 wrangler secrets 注入敏感变量；本地 DEV 配置使用 .dev.vars
 
 [[d1_databases]]
 binding = "DB"

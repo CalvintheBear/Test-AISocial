@@ -6,9 +6,14 @@ AI社区全流程架构蓝图
 
 > 当前实现进度（基于本仓库现状）
 > - 前端页面/组件：已完成初版。`/`、`/features`、`/feed`、`/user/:username`、`/artwork/:id/:slug` 均已实现并具备 SEO 元信息；样式系统（设计 Token + Tailwind 扩展）与 UI 组件（Button/Card/Badge/Tabs/Header/Sidebar/Toast/Skeleton）已落地。
-> - 数据与交互：`NEXT_PUBLIC_USE_MOCK=0` 时，`/feed`、`/user/:username`、`/artwork/:id/:slug` 已改为走 `/api/*` 实时数据；客户端 `useLike / useFavorite / usePublish / useFeed / useFavorites` 已联通；`authFetch` 支持相对 `/api/*` 自动重写与 DEV JWT 回退。
-> - 后端与基础设施：Workers API 最小实现已落地，提供 `/api/artworks/*`（含 like/favorite/publish/detail/upload 占位）、`/api/users/*`、`/api/feed`、`/api/health`、`/api/redis/ping`；`wrangler.toml` 已绑定 D1/R2/Redis/Cron；Clerk/Redis Secrets 已注入；鉴权 DEV 模式通行；D1/Upstash/R2 在本地以内存/占位实现回退。
-> - API 设计同步：返回体与前端契约对齐——`/api/feed` 与用户列表返回 `ArtworkListItem[]`，详情返回 `ArtworkDetail` 直返对象，收藏响应为 `isFavorite`；已完成。
+> - 数据与交互：`NEXT_PUBLIC_USE_MOCK=0` 时，`/feed`、`/user/:username`、`/artwork/:id/:slug` 已改为走 `/api/*` 实时数据；客户端 `useLike / useFavorite / usePublish / useFeed / useFavorites` 已联通；`authFetch` 支持相对 `/api/*` 自动重写与 DEV JWT 回退。前端 mocks 仅作为开发演示/离线开关，不影响后端。
+> - 后端与基础设施：Workers API 最小实现已落地，提供 `/api/artworks/*`（含 like/favorite/publish/detail/upload 占位）、`/api/users/*`、`/api/feed`、`/api/health`、`/api/redis/ping`；`wrangler.toml` 已绑定 D1/R2/Redis/Cron。当前状态（已更新）：
+>   - D1：已真实绑定并可查询（本地已写入测试数据）；`like/favorite` 路由已同步写入 D1，增强与 Redis 的一致性。
+>   - Redis：已接入 Upstash REST（命令采用数组体 POST）；DEV 统一仅当 `DEV_MODE==='1'` 才走内存回退。
+>   - R2：服务封装支持 `R2_PUBLIC_UPLOAD_BASE`/`R2_PUBLIC_AFTER_BASE` 公网 URL 配置；缩略图与私有读签名 URL 后续完善。
+>   - 中间件：新增 `errorMiddleware` 统一错误体与 404 处理；路径参数引入 `zod` 校验；用户作品对非本人仅返回 `published`。
+>   - 鉴权：DEV 模式免鉴权便于联调；生产需接入 Clerk 并关闭 DEV 模式（已从 `wrangler.toml` 移除 DEV 变量，改用 `.dev.vars` 本地注入）。
+> - API 设计同步：列表与详情已直返数据结构（对齐前端）；操作类接口（like/favorite/publish）目前使用 `{ success, data }` 包装返回。短期允许混合，后续统一响应格式与错误码。
 
 ### 1. 系统架构图
 
@@ -71,7 +76,7 @@ AI社区全流程架构蓝图
 | /api/artworks/:id            | GET    | 单个作品详情   | id(path), JWT                   | artwork info (+ author)             |
 | /api/users/:id/favorites     | GET    | 获取收藏列表   | user_id, JWT                    | artwork list                         |
 
-注：当前前端实现预期“直返数据结构”（如 `ArtworkListItem[]` / `ArtworkDetail`），未统一使用 `{ success, data }` 包装；后端可先直返，后续再统一响应格式。
+注：当前前端实现预期“直返数据结构”（如 `ArtworkListItem[]` / `ArtworkDetail`），操作类接口暂保留 `{ success, data }` 包装；短期混合可用，后续统一响应与错误码。
 
 ---
 

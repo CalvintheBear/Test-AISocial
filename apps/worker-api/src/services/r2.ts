@@ -1,11 +1,18 @@
 export class R2Service {
   constructor(
     private uploadBucket?: R2Bucket,
-    private afterBucket?: R2Bucket
+    private afterBucket?: R2Bucket,
+    private publicUploadBase?: string,
+    private publicAfterBase?: string,
   ) {}
 
   static fromEnv(env: any) {
-    return new R2Service(env.R2_UPLOAD, env.R2_AFTER)
+    return new R2Service(
+      env.R2_UPLOAD,
+      env.R2_AFTER,
+      env.R2_PUBLIC_UPLOAD_BASE,
+      env.R2_PUBLIC_AFTER_BASE,
+    )
   }
 
   private get isConfigured(): boolean {
@@ -33,9 +40,8 @@ export class R2Service {
       },
     })
 
-    // In Cloudflare Workers, we need to construct the public URL
-    // The actual URL will depend on your R2 domain configuration
-    const url = `https://r2.example.com/${objectKey}`
+    // Build public URL using configured base if provided
+    const url = await this.getPublicUrl(bucket, objectKey)
     
     return { key: objectKey, url }
   }
@@ -51,13 +57,10 @@ export class R2Service {
   }
 
   async getPublicUrl(bucket: 'upload' | 'after', key: string): Promise<string> {
-    // This is a placeholder URL pattern
-    // In production, you would use your actual R2 custom domain
-    const baseUrl = bucket === 'upload' 
-      ? 'https://upload.your-domain.com'
-      : 'https://after.your-domain.com'
-    
-    return `${baseUrl}/${key}`
+    const baseUrl = bucket === 'upload'
+      ? (this.publicUploadBase || 'https://upload.example.com')
+      : (this.publicAfterBase || 'https://after.example.com')
+    return `${baseUrl.replace(/\/$/, '')}/${key}`
   }
 
   async deleteObject(bucket: 'upload' | 'after', key: string): Promise<void> {

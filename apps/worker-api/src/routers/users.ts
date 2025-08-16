@@ -1,28 +1,34 @@
 import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
+import { UserIdParamSchema, PaginationQuerySchema, validateParam } from '../schemas/validation'
 import { ok } from '../utils/response'
 
 const router = new Hono()
 
 router.get('/:id/artworks', async (c) => {
-  const id = c.req.param('id')
-  const userId = (c as any).get('userId') as string
+  const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
+  const currentUserId = (c as any).get('userId') as string
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
   
   const list = await d1.listUserArtworks(id)
   
+  // 过滤可见性：非owner只能看到published作品
+  const visibleList = currentUserId === id 
+    ? list 
+    : list.filter(a => a.status === 'published')
+  
   // Get likes and favorites for the current user
-  const artworkIds = list.map(a => a.id)
+  const artworkIds = visibleList.map(a => a.id)
   const [likesMap, favorites] = await Promise.all([
     Promise.all(artworkIds.map(id => redis.getLikes(id))).then(likes => 
       Object.fromEntries(artworkIds.map((id, i) => [id, likes[i]]))
     ),
-    redis.listFavorites(userId)
+    redis.listFavorites(currentUserId)
   ])
   
-  const items = list.map((a) => ({
+  const items = visibleList.map((a) => ({
     id: a.id,
     slug: a.slug,
     title: a.title,
@@ -36,7 +42,7 @@ router.get('/:id/artworks', async (c) => {
 })
 
 router.get('/:id/favorites', async (c) => {
-  const id = c.req.param('id')
+  const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
   const redis = RedisService.fromEnv(c.env)
   const d1 = D1Service.fromEnv(c.env)
   const favIds = await redis.listFavorites(id)

@@ -1,3 +1,4 @@
+apps/worker-api/.dev.vars
 # Node
 node_modules/
 **/node_modules/

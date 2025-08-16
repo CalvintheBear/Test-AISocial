@@ -2,23 +2,30 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { ok, fail } from '../utils/response'
+import { IdParamSchema, validateParam } from '../schemas/validation'
 
 const router = new Hono()
 
 router.get('/:id', async (c) => {
   try {
-    const id = c.req.param('id')
+    const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
     const userId = (c as any).get('userId') as string
     const d1 = D1Service.fromEnv(c.env)
-    const redis = RedisService.fromEnv(c.env)
     
     const art = await d1.getArtwork(id)
     if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
     
-    const [likeCount, isFavorite] = await Promise.all([
-      redis.getLikes(id),
-      redis.isFavorite(userId, id)
-    ])
+    let likeCount = 0
+    let isFavorite = false
+    try {
+      const redis = RedisService.fromEnv(c.env)
+      ;[likeCount, isFavorite] = await Promise.all([
+        redis.getLikes(id),
+        redis.isFavorite(userId, id)
+      ])
+    } catch (e) {
+      console.warn('Redis unavailable, using defaults for likes/favorites')
+    }
     
     const detail = {
       id: art.id,
@@ -40,37 +47,45 @@ router.get('/:id', async (c) => {
 })
 
 router.post('/:id/like', async (c) => {
-  const id = c.req.param('id')
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const redis = RedisService.fromEnv(c.env)
+  const d1 = D1Service.fromEnv(c.env)
+  try { await d1.addLike((c as any).get('userId'), id) } catch {}
   const likeCount = await redis.incrLikes(id, 1)
   return c.json(ok({ likeCount, isLiked: true }))
 })
 
 router.delete('/:id/like', async (c) => {
-  const id = c.req.param('id')
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const redis = RedisService.fromEnv(c.env)
+  const d1 = D1Service.fromEnv(c.env)
+  try { await d1.removeLike((c as any).get('userId'), id) } catch {}
   const likeCount = await redis.incrLikes(id, -1)
   return c.json(ok({ likeCount, isLiked: false }))
 })
 
 router.post('/:id/favorite', async (c) => {
   const userId = (c as any).get('userId') as string
-  const id = c.req.param('id')
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const redis = RedisService.fromEnv(c.env)
+  const d1 = D1Service.fromEnv(c.env)
   await redis.addFavorite(userId, id)
+  try { await d1.addFavorite(userId, id) } catch {}
   return c.json(ok({ isFavorite: true }))
 })
 
 router.delete('/:id/favorite', async (c) => {
   const userId = (c as any).get('userId') as string
-  const id = c.req.param('id')
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const redis = RedisService.fromEnv(c.env)
+  const d1 = D1Service.fromEnv(c.env)
   await redis.removeFavorite(userId, id)
+  try { await d1.removeFavorite(userId, id) } catch {}
   return c.json(ok({ isFavorite: false }))
 })
 
 router.post('/:id/publish', async (c) => {
-  const id = c.req.param('id')
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const d1 = D1Service.fromEnv(c.env)
   const art = await d1.publishArtwork(id)
   if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)

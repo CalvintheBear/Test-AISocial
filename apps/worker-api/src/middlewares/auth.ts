@@ -2,8 +2,8 @@ import type { Context, Next } from 'hono'
 import { verifyToken } from '@clerk/backend'
 
 export async function authMiddleware(c: Context, next: Next) {
-  // DEV mode bypass
-  if (c.env?.DEV_MODE && c.env.DEV_MODE !== '0' && c.env.DEV_MODE !== 0) {
+  // DEV mode bypass - only when explicitly set to "1"
+  if (c.env?.DEV_MODE === '1') {
     (c as any).set('userId', 'dev-user')
     return next()
   }
