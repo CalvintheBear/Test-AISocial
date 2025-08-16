@@ -12,6 +12,7 @@ dist/
 .env
 .env.*
 apps/web/.env.local
+Test-AISocial/
 
 # OS / editor
 .DS_Store
