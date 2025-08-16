@@ -2,11 +2,9 @@ name = "ai-social-api"
 main = "src/index.ts"
 compatibility_date = "2024-06-01"
 account_id = "9a5ff316a26b8abb696af519e515d2de"
-account_id = "9a5ff316a26b8abb696af519e515d2de"
 
-[vars]
-# Upstash REST (set via wrangler secret for TOKEN)
-UPSTASH_REDIS_REST_URL = "https://giving-antelope-48894.upstash.io"
+#[vars]
+# 所有敏感与服务端变量统一通过 `wrangler secret` 注入（见任务文档）
 
 [[d1_databases]]
 binding = "DB"

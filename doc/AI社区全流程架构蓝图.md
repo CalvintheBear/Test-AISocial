@@ -7,8 +7,8 @@ AI社区全流程架构蓝图
 > 当前实现进度（基于本仓库现状）
 > - 前端页面/组件：已完成初版。`/`、`/features`、`/feed`、`/user/:username`、`/artwork/:id/:slug` 均已实现并具备 SEO 元信息；样式系统（设计 Token + Tailwind 扩展）与 UI 组件（Button/Card/Badge/Tabs/Header/Sidebar/Toast/Skeleton）已落地。
 > - 数据与交互：目前通过 `public/mocks/*.json` 驱动 SSR/RSC 页面。`useLike / useFavorite / usePublish` 等 hooks 已就绪，但尚未接入后端；`authFetch` 已封装（JWT 注入待接入 Clerk）。
-> - 后端与基础设施：Cloudflare Workers API、D1、R2、Redis、Cron、Clerk 鉴权均未开始对接。
-> - API 设计同步：前端已实现点赞/收藏撤销（DELETE），本蓝图已补充相应接口；返回体当前以前端直返数据为主，后端落地时可先直返，后续再统一包装。
+> - 后端与基础设施：Workers API 基础骨架已创建（`apps/worker-api`），提供 `/api/health` 与 `/api/redis/ping`；`wrangler.toml` 已配置 D1/R2/Redis/Cron 绑定；业务路由（artworks/users/feed）、Clerk 鉴权与 D1/R2 实际读写均【未接入】。
+> - API 设计同步：前端 `API` 路由常量已定义（`apps/web/lib/api/endpoints.ts`）；已实现点赞/收藏撤销（DELETE）等 hooks，对应后端路由【待实现】；返回体当前以前端直返数据为主，后端可先直返，后续再统一包装。
 
 ### 1. 系统架构图
 
