@@ -18,6 +18,7 @@ app.get('/api/redis/ping', async (c) => {
   return c.json({ ok: true, result: text })
 })
 
+// 将 auth 放在业务路由前，并为健康检查保留匿名访问
 app.use('/api/*', authMiddleware)
 app.route('/api/artworks', artworks)
 app.route('/api/users', users)

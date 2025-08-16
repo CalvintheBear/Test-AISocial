@@ -1,17 +1,30 @@
 import type { Context, Next } from 'hono'
+import { verifyToken } from '@clerk/backend'
 
 export async function authMiddleware(c: Context, next: Next) {
-  const devMode = c.env?.DEV_MODE === '1' || !c.env?.CLERK_ISSUER
-  if (devMode) {
-    // 注入开发态 userId（Hono Context 允许自定义变量）
-    ;(c as any).set('userId', 'dev-user')
+  // DEV mode bypass
+  if (c.env?.DEV_MODE && c.env.DEV_MODE !== '0' && c.env.DEV_MODE !== 0) {
+    (c as any).set('userId', 'dev-user')
     return next()
   }
-  const auth = c.req.header('authorization') || c.req.header('Authorization')
-  if (!auth?.startsWith('Bearer ')) return c.json({ code: 'AUTH_REQUIRED' }, 401)
-  // TODO: 使用 @clerk/backend 验证 token（后续接入）
-  ;(c as any).set('userId', 'todo-from-clerk')
-  return next()
+
+  const auth = c.req.header('authorization')
+  if (!auth?.startsWith('Bearer ')) {
+    return c.json({ code: 'AUTH_REQUIRED', message: 'Authorization header required' }, 401)
+  }
+
+  const token = auth.slice('Bearer '.length)
+  
+  try {
+    // 使用 Clerk 后端 SDK 校验；不同版本的 verifyToken 选项不同，仅保留兼容的 secretKey
+    const payload = await verifyToken(token, {
+      secretKey: c.env.CLERK_SECRET_KEY,
+    } as any)
+    ;(c as any).set('userId', payload.sub)
+    return next()
+  } catch (error) {
+    return c.json({ code: 'INVALID_TOKEN', message: 'Invalid or expired token' }, 401)
+  }
 }
 
 

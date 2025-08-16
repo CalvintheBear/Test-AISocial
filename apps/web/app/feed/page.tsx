@@ -5,7 +5,13 @@ import { ArtworkListItem } from '@/lib/types'
 
 async function getFeedData(): Promise<ArtworkListItem[]> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  return authFetch(new URL('/mocks/feed.json', base).toString())
+  const apiBase = process.env.NEXT_PUBLIC_USE_MOCK === '1' ? base : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787')
+  
+  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
+    return authFetch(new URL('/mocks/feed.json', base).toString())
+  }
+  
+  return authFetch(new URL(API.feed, apiBase).toString())
 }
 
 export const metadata = {

@@ -28,12 +28,24 @@ const mockUser: UserProfile = {
 
 async function getUserArtworks(userId: string): Promise<ArtworkListItem[]> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  return authFetch(new URL('/mocks/user-artworks.json', base).toString())
+  const apiBase = process.env.NEXT_PUBLIC_USE_MOCK === '1' ? base : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787')
+  
+  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
+    return authFetch(new URL('/mocks/user-artworks.json', base).toString())
+  }
+  
+  return authFetch(new URL(API.userArtworks(userId), apiBase).toString())
 }
 
 async function getUserFavorites(userId: string): Promise<ArtworkListItem[]> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  return authFetch(new URL('/mocks/favorites.json', base).toString())
+  const apiBase = process.env.NEXT_PUBLIC_USE_MOCK === '1' ? base : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787')
+  
+  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
+    return authFetch(new URL('/mocks/favorites.json', base).toString())
+  }
+  
+  return authFetch(new URL(API.userFavorites(userId), apiBase).toString())
 }
 
 export const metadata = {

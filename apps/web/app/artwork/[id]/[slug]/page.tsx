@@ -6,7 +6,13 @@ import { Button, Card } from '@/components/ui'
 
 async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
   const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  return authFetch(new URL('/mocks/artwork-detail.json', base).toString())
+  const apiBase = process.env.NEXT_PUBLIC_USE_MOCK === '1' ? base : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787')
+  
+  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
+    return authFetch(new URL('/mocks/artwork-detail.json', base).toString())
+  }
+  
+  return authFetch(new URL(API.artwork(artworkId), apiBase).toString())
 }
 
 export const metadata = {
@@ -24,7 +30,7 @@ export default async function ArtworkPage({
 }: { 
   params: { id: string; slug: string } 
 }) {
-  const { id, slug } = params
+  const { id } = params
   const artwork = await getArtworkDetail(id)
 
   return (
