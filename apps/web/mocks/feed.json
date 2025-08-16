@@ -1,0 +1,86 @@
+[
+  {
+    "id": "artwork-1",
+    "slug": "ethereal-landscape",
+    "title": "赛博朋克猫咪",
+    "thumbUrl": "https://via.placeholder.com/300x300/3b74ff/ffffff?text=猫咪",
+    "author": {
+      "id": "user-1",
+      "name": "小明",
+      "profilePic": "https://via.placeholder.com/32x32/10b981/ffffff?text=明"
+    },
+    "likeCount": 1234,
+    "isFavorite": false,
+    "status": "published"
+  },
+  {
+    "id": "artwork-2",
+    "slug": "digital-dreamscape",
+    "title": "水墨山水画",
+    "thumbUrl": "https://via.placeholder.com/300x300/8b5cf6/ffffff?text=山水",
+    "author": {
+      "id": "user-2",
+      "name": "小红",
+      "profilePic": "https://via.placeholder.com/32x32/f59e0b/ffffff?text=红"
+    },
+    "likeCount": 892,
+    "isFavorite": true,
+    "status": "published"
+  },
+  {
+    "id": "artwork-3",
+    "slug": "neon-cityscape",
+    "title": "未来城市",
+    "thumbUrl": "https://via.placeholder.com/300x300/ef4444/ffffff?text=城市",
+    "author": {
+      "id": "user-3",
+      "name": "小李",
+      "profilePic": "https://via.placeholder.com/32x32/06b6d4/ffffff?text=李"
+    },
+    "likeCount": 2456,
+    "isFavorite": false,
+    "status": "published"
+  },
+  {
+    "id": "artwork-4",
+    "slug": "abstract-portrait",
+    "title": "萌宠拟人",
+    "thumbUrl": "https://via.placeholder.com/300x300/84cc16/ffffff?text=萌宠",
+    "author": {
+      "id": "user-4",
+      "name": "小张",
+      "profilePic": "https://via.placeholder.com/32x32/ec4899/ffffff?text=张"
+    },
+    "likeCount": 678,
+    "isFavorite": true,
+    "status": "published"
+  },
+  {
+    "id": "artwork-5",
+    "slug": "fantasy-castle",
+    "title": "国风建筑",
+    "thumbUrl": "https://via.placeholder.com/300x300/f97316/ffffff?text=建筑",
+    "author": {
+      "id": "user-5",
+      "name": "小王",
+      "profilePic": "https://via.placeholder.com/32x32/a855f7/ffffff?text=王"
+    },
+    "likeCount": 1567,
+    "isFavorite": false,
+    "status": "draft"
+  },
+  {
+    "id": "artwork-6",
+    "slug": "sci-fi-scene",
+    "title": "科幻场景",
+    "thumbUrl": "https://via.placeholder.com/300x300/14b8a6/ffffff?text=科幻",
+    "author": {
+      "id": "user-6",
+      "name": "小陈",
+      "profilePic": "https://via.placeholder.com/32x32/f43f5e/ffffff?text=陈"
+    },
+    "likeCount": 3456,
+    "isFavorite": true,
+    "status": "published"
+  }
+]

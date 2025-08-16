@@ -1,0 +1,70 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm --workspace apps/web run build
+
+  deploy-workers:
+    needs: build-web
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install wrangler
+        run: npm --workspace apps/worker-api i
+      - name: Set Redis URL var (if provided)
+        if: ${{ secrets.UPSTASH_REDIS_REST_URL != '' }}
+        run: |
+          sed -i "s|UPSTASH_REDIS_REST_URL = \".*\"|UPSTASH_REDIS_REST_URL = \"${{ secrets.UPSTASH_REDIS_REST_URL }}\"|" apps/worker-api/wrangler.toml
+      - name: Put UPSTASH_REDIS_REST_TOKEN
+        if: ${{ secrets.UPSTASH_REDIS_REST_TOKEN != '' }}
+        working-directory: apps/worker-api
+        run: |
+          echo "${{ secrets.UPSTASH_REDIS_REST_TOKEN }}" | npx wrangler secret put UPSTASH_REDIS_REST_TOKEN --yes
+      - name: Deploy Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: apps/worker-api
+          command: deploy
+
+# Optional: Pages (Next.js on Cloudflare Pages) — enable after integrating @cloudflare/next-on-pages
+#  deploy-pages:
+#    needs: build-web
+#    runs-on: ubuntu-latest
+#    steps:
+#      - uses: actions/checkout@v4
+#      - uses: actions/setup-node@v4
+#        with:
+#          node-version: '20'
+#      - run: npm ci
+#      - run: npx @cloudflare/next-on-pages --version || npm i -D @cloudflare/next-on-pages
+#      - run: npx @cloudflare/next-on-pages --outdir .vercel/output --experimental-minify
+#      - name: Deploy to Cloudflare Pages
+#        uses: cloudflare/pages-action@v1
+#        with:
+#          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+#          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+#          projectName: test-aisocial-web
+#          directory: .vercel/output
+#          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+

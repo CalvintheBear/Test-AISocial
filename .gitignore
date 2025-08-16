@@ -1,0 +1,24 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Next.js / build outputs
+.next/
+.vercel/
+out/
+dist/
+
+# Env
+.env
+.env.*
+apps/web/.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Wrangler / CF local
+.wrangler/
+
+

@@ -1,0 +1,12 @@
+{
+  "id": "artwork-1",
+  "slug": "ethereal-landscape",
+  "title": "赛博朋克猫咪",
+  "originalUrl": "https://via.placeholder.com/1200x1200/3b74ff/ffffff?text=猫咪",
+  "createdAt": 1713200000000,
+  "status": "published",
+  "author": {"id": "user-1", "name": "小明", "profilePic": "https://via.placeholder.com/40x40/10b981/ffffff?text=明"},
+  "likeCount": 1234,
+  "isFavorite": true
+}
+

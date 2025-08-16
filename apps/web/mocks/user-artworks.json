@@ -1,0 +1,44 @@
+[
+  {
+    "id": "artwork-1",
+    "slug": "ethereal-landscape",
+    "title": "赛博朋克猫咪",
+    "thumbUrl": "https://via.placeholder.com/300x300/3b74ff/ffffff?text=猫咪",
+    "author": {
+      "id": "user-demo",
+      "name": "演示用户",
+      "profilePic": "https://via.placeholder.com/32x32/3b74ff/ffffff?text=演"
+    },
+    "likeCount": 1234,
+    "isFavorite": false,
+    "status": "published"
+  },
+  {
+    "id": "artwork-5",
+    "slug": "fantasy-castle",
+    "title": "国风建筑",
+    "thumbUrl": "https://via.placeholder.com/300x300/f97316/ffffff?text=建筑",
+    "author": {
+      "id": "user-demo",
+      "name": "演示用户",
+      "profilePic": "https://via.placeholder.com/32x32/3b74ff/ffffff?text=演"
+    },
+    "likeCount": 1567,
+    "isFavorite": false,
+    "status": "draft"
+  },
+  {
+    "id": "artwork-7",
+    "slug": "dragon-art",
+    "title": "中国龙",
+    "thumbUrl": "https://via.placeholder.com/300x300/ef4444/ffffff?text=龙",
+    "author": {
+      "id": "user-demo",
+      "name": "演示用户",
+      "profilePic": "https://via.placeholder.com/32x32/3b74ff/ffffff?text=演"
+    },
+    "likeCount": 892,
+    "isFavorite": false,
+    "status": "published"
+  }
+]
