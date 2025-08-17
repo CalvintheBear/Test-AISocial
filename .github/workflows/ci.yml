@@ -16,21 +16,25 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - name: Build Next.js (apps/web)
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          NEXT_PUBLIC_USE_MOCK: '0'
+          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
+        run: npm --workspace apps/web run build
+      - name: Prebuild for Cloudflare Pages (next-on-pages)
         working-directory: apps/web
         env:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_USE_MOCK: '0'
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-          NODE_VERSION: '20'
-        run: |
-          npm ci
-          npm run build
+        run: npx --yes @cloudflare/next-on-pages@1
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: web-output
-          path: apps/web/.next
+          path: apps/web/.vercel/output
 
   deploy-workers:
     needs: build-web
@@ -55,11 +59,7 @@ jobs:
         run: |
           sed -i "s|R2_PUBLIC_UPLOAD_BASE = \".*\"|R2_PUBLIC_UPLOAD_BASE = \"${R2_PUBLIC_UPLOAD_BASE}\"|" apps/worker-api/wrangler.toml || true
           sed -i "s|R2_PUBLIC_AFTER_BASE = \".*\"|R2_PUBLIC_AFTER_BASE = \"${R2_PUBLIC_AFTER_BASE}\"|" apps/worker-api/wrangler.toml || true
-      - name: Put Secrets (Workers)
-        working-directory: apps/worker-api
-        run: |
-          echo "${{ secrets.UPSTASH_REDIS_REST_TOKEN }}" | npx wrangler secret put UPSTASH_REDIS_REST_TOKEN --yes
-          echo "${{ secrets.CLERK_SECRET_KEY }}" | npx wrangler secret put CLERK_SECRET_KEY --yes
+      # Secrets 已在 Cloudflare 控制台配置，CI 不再写入
       - name: Deploy Workers
         uses: cloudflare/wrangler-action@v3
         with:
@@ -77,14 +77,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-output
-          path: apps/web/.next
+          path: apps/web/.vercel/output
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ secrets.CF_PAGES_PROJECT_NAME }}
-          directory: apps/web/.next
+          directory: apps/web/.vercel/output
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
 
