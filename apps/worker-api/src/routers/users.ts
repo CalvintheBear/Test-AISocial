@@ -78,6 +78,13 @@ router.get('/:id/artworks', async (c) => {
     favoriteCount: (a as any).favoriteCount || 0,
     isLiked: likedSet.has(a.id),
     status: a.status,
+    hotScore: (() => {
+      const base = a as any
+      const publishedAt = (base.publishedAt || base.createdAt || 0) as number
+      const ageDays = Math.max(0, Math.floor((Date.now() - publishedAt) / 86400000))
+      const engagement = Number(base.engagementWeight || base.engagement_weight || 0)
+      return engagement * Math.pow(0.5, ageDays)
+    })(),
   }))
   return c.json(ok(items))
 })

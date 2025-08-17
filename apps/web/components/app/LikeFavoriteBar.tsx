@@ -53,18 +53,19 @@ export default function LikeFavoriteBar({
   const onToggleFavorite = useCallback(async () => {
     try {
       if (isFavorite) {
+        const res = await removeFavorite(artworkId)
         setIsFavorite(false)
-        setFavoriteCount((c) => Math.max(0, c - 1))
-        await removeFavorite(artworkId)
+        if (typeof res?.favoriteCount === 'number') setFavoriteCount(res.favoriteCount)
+        else setFavoriteCount((c) => Math.max(0, c - 1))
       } else {
+        const res = await addFavorite(artworkId)
         setIsFavorite(true)
-        setFavoriteCount((c) => c + 1)
-        await addFavorite(artworkId)
+        if (typeof res?.favoriteCount === 'number') setFavoriteCount(res.favoriteCount)
+        else setFavoriteCount((c) => c + 1)
       }
     } catch (e) {
       // revert on error
       setIsFavorite((v) => !v)
-      setFavoriteCount((c) => (isFavorite ? c + 1 : Math.max(0, c - 1)))
     }
   }, [artworkId, isFavorite, addFavorite, removeFavorite])
 

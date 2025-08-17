@@ -3,6 +3,7 @@ import { API } from '@/lib/api/endpoints'
 
 interface FavoriteResponse {
   isFavorite: boolean
+  favoriteCount?: number
 }
 
 export function useFavorite() {

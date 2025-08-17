@@ -26,7 +26,9 @@ router.get('/:id', async (c) => {
     } catch (e) {
       console.warn('Redis unavailable, using defaults for likes/favorites')
     }
-    
+    // compute hotScore from DB values
+    const ageDays = Math.max(0, Math.floor((Date.now() - (art.publishedAt || art.createdAt || 0)) / 86400000))
+    const hotScore = (art as any).engagementWeight ? (art as any).engagementWeight * Math.pow(0.5, ageDays) : 0
     const isLiked = userId ? await (async () => { try { return await RedisService.fromEnv(c.env).isLiked(userId, id) } catch { return false } })() : false
     const detail = {
       id: art.id,
@@ -38,8 +40,10 @@ router.get('/:id', async (c) => {
       status: art.status,
       author: art.author,
       likeCount,
+      favoriteCount: art.favoriteCount,
       isFavorite,
-      isLiked
+      isLiked,
+      hotScore
     }
     return c.json(ok(detail))
   } catch (error) {

@@ -12,6 +12,7 @@ export type Artwork = {
   favoriteCount: number
   createdAt: number
   publishedAt?: number
+  engagementWeight?: number
 }
 
 export class D1Service {
@@ -126,7 +127,8 @@ export class D1Service {
         likeCount: Number(row.like_count || 0),
         favoriteCount: Number(row.favorite_count || 0),
         createdAt: Number(row.created_at),
-        publishedAt: row.published_at ? Number(row.published_at) : undefined
+        publishedAt: row.published_at ? Number(row.published_at) : undefined,
+        engagementWeight: Number(row.engagement_weight || 0)
       }
     })
   }
@@ -178,7 +180,8 @@ export class D1Service {
         likeCount: Number(row.like_count || 0),
         favoriteCount: Number(row.favorite_count || 0),
         createdAt: Number(row.created_at),
-        publishedAt: row.published_at ? Number(row.published_at) : undefined
+        publishedAt: row.published_at ? Number(row.published_at) : undefined,
+        engagementWeight: Number(row.engagement_weight || 0)
       }
     })
   }
