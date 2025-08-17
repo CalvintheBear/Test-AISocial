@@ -1,6 +1,7 @@
 name = "ai-social-api"
 main = "src/index.ts"
 compatibility_date = "2024-06-01"
+compatibility_flags = ["nodejs_compat"]
 account_id = "9a5ff316a26b8abb696af519e515d2de"
 
 [vars]
