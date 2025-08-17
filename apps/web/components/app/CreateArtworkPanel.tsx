@@ -49,14 +49,11 @@ export function CreateArtworkPanel() {
       form.append('file', file)
       form.append('title', title || 'untitled')
 
-      const resp = await fetch(API.base('/api/artworks/upload'), {
+      form.append('prompt', prompt || '')
+      const payload = await authFetch('/api/artworks/upload', {
         method: 'POST',
         body: form,
-        credentials: 'include',
       })
-      if (!resp.ok) throw new Error('上传失败')
-      const data = await resp.json()
-      const payload = data?.success ? data.data : data
 
       // 本地预插草稿卡片
       if (currentUserId && payload?.id) {
