@@ -162,6 +162,32 @@ export class D1Service {
     })
   }
 
+  async listUserLikes(userId: string): Promise<Artwork[]> {
+    const stmt = this.db.prepare(`
+      SELECT a.*, u.name as user_name, u.profile_pic
+      FROM artworks_like l
+      JOIN artworks a ON a.id = l.artwork_id
+      JOIN users u ON a.user_id = u.id
+      WHERE l.user_id = ?
+      ORDER BY COALESCE(a.published_at, a.created_at) DESC
+    `)
+    const rows = await stmt.bind(userId).all() as any
+    return (rows.results || []).map((row: any) => ({
+      id: String(row.id),
+      slug: row.slug || this.generateSlug(String(row.title) || 'untitled'),
+      title: String(row.title || 'Untitled'),
+      url: String(row.thumb_url || row.url),
+      status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+      author: {
+        id: String(row.user_id),
+        name: String(row.user_name),
+        profilePic: row.profile_pic ? String(row.profile_pic) : undefined
+      },
+      likeCount: 0,
+      createdAt: Number(row.created_at)
+    }))
+  }
+
   async publishArtwork(id: string): Promise<Artwork | null> {
     const now = Date.now()
     const stmt = this.db.prepare(`
@@ -170,6 +196,21 @@ export class D1Service {
     await stmt.bind(now, now, id).run()
     
     return this.getArtwork(id)
+  }
+
+  async unpublishArtwork(id: string): Promise<void> {
+    const now = Date.now()
+    const stmt = this.db.prepare(`
+      UPDATE artworks SET status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?
+    `)
+    await stmt.bind(now, id).run()
+  }
+
+  async deleteArtwork(id: string): Promise<void> {
+    // 删除关联点赞与收藏，再删作品
+    await this.db.prepare(`DELETE FROM artworks_like WHERE artwork_id = ?`).bind(id).run()
+    await this.db.prepare(`DELETE FROM artworks_favorite WHERE artwork_id = ?`).bind(id).run()
+    await this.db.prepare(`DELETE FROM artworks WHERE id = ?`).bind(id).run()
   }
 
   async createArtwork(

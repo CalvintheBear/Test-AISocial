@@ -1,5 +1,5 @@
 import type { Context, Next } from 'hono'
-import { verifyToken, type ClerkJWTClaims } from '@clerk/backend'
+import { verifyToken } from '@clerk/backend'
 import { D1Service } from '../services/d1'
 
 export async function authMiddleware(c: Context, next: Next) {
@@ -38,10 +38,10 @@ export async function authMiddleware(c: Context, next: Next) {
     // 同步用户到 D1（Best-effort，不阻断请求）
     try {
       const d1 = D1Service.fromEnv(c.env)
-      const claims = payload as unknown as Partial<ClerkJWTClaims> & Record<string, any>
-      const name = (claims as any)?.name || (claims as any)?.full_name || (claims as any)?.username || null
-      const email = Array.isArray((claims as any)?.email) ? (claims as any)?.email?.[0] : ((claims as any)?.email || (claims as any)?.email_address)
-      const profilePic = (claims as any)?.picture || (claims as any)?.avatar || null
+      const claims = payload as unknown as Record<string, any>
+      const name = claims?.name || claims?.full_name || claims?.username || null
+      const email = Array.isArray(claims?.email) ? claims?.email?.[0] : (claims?.email || claims?.email_address)
+      const profilePic = claims?.picture || claims?.avatar || null
       await d1.upsertUser({ id: userId, name, email, profilePic })
     } catch (_) {}
 

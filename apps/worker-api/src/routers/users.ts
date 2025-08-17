@@ -2,9 +2,17 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { UserIdParamSchema, PaginationQuerySchema, validateParam } from '../schemas/validation'
-import { ok, fail } from '../utils/response'
+import { ok } from '../utils/response'
 
 const router = new Hono()
+
+router.get('/me', async (c) => {
+	const userId = (c as any).get('userId') as string
+	if (!userId) return c.json({ success: false, code: 'AUTH_REQUIRED', message: 'signin' }, 401)
+	const d1 = D1Service.fromEnv(c.env)
+	const me = await d1.getUser(userId)
+	return c.json(ok(me || { id: userId }))
+})
 
 router.get('/:id/artworks', async (c) => {
   const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
@@ -12,24 +20,20 @@ router.get('/:id/artworks', async (c) => {
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
   
-  // Try to get from cache first
   const cached = await redis.getUserArtworks(id)
   
   let list
   if (cached) {
     list = JSON.parse(cached)
   } else {
-    // Cache miss - get from D1 and cache it
     list = await d1.listUserArtworks(id)
-    await redis.setUserArtworks(id, JSON.stringify(list), 600) // 10 minutes TTL
+    await redis.setUserArtworks(id, JSON.stringify(list), 600)
   }
   
-  // 过滤可见性：非owner只能看到published作品
   const visibleList = currentUserId === id 
     ? list 
     : list.filter((a: any) => a.status === 'published')
   
-  // Get likes and favorites for the current user
   const artworkIds = visibleList.map((a: any) => a.id)
   const [likesMap, favorites] = await Promise.all([
     Promise.all(artworkIds.map((id: string) => redis.getLikes(id))).then(likes => 
@@ -56,19 +60,16 @@ router.get('/:id/favorites', async (c) => {
   const redis = RedisService.fromEnv(c.env)
   const d1 = D1Service.fromEnv(c.env)
   
-  // Try to get from cache first
   const cached = await redis.getUserFavorites(id)
   
   let favIds
   if (cached) {
     favIds = JSON.parse(cached)
   } else {
-    // Cache miss - get from Redis and cache it
     favIds = await redis.listFavorites(id)
-    await redis.setUserFavorites(id, JSON.stringify(favIds), 600) // 10 minutes TTL
+    await redis.setUserFavorites(id, JSON.stringify(favIds), 600)
   }
   
-  // 将收藏 id 列表映射为 ArtworkListItem[]
   const items = await Promise.all(
     favIds.map(async (artId: string) => {
       const a = await d1.getArtwork(artId)
@@ -89,23 +90,27 @@ router.get('/:id/favorites', async (c) => {
   return c.json(ok(items.filter(Boolean)))
 })
 
-router.get('/me', async (c) => {
-  const userId = (c as any).get('userId') as string
-  if (!userId) return c.json(fail('AUTH_REQUIRED', 'signin'), 401)
-  
+router.get('/:id/likes', async (c) => {
+  const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
   const d1 = D1Service.fromEnv(c.env)
-  const user = await d1.getUser(userId)
-  
-  if (!user) return c.json(fail('NOT_FOUND', 'User not found'), 404)
-  
-  return c.json(ok({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    profilePic: user.profilePic,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt
+  const redis = RedisService.fromEnv(c.env)
+
+  const list = await d1.listUserLikes(id)
+  const artworkIds = list.map((a: any) => a.id)
+  const likesMap = await Promise.all(artworkIds.map((aid: string) => redis.getLikes(aid)))
+    .then(likes => Object.fromEntries(artworkIds.map((aid: string, i: number) => [aid, likes[i]])))
+
+  const items = list.map((a: any) => ({
+    id: a.id,
+    slug: a.slug,
+    title: a.title,
+    thumbUrl: a.url,
+    author: a.author,
+    likeCount: likesMap[a.id] || 0,
+    isFavorite: false,
+    status: a.status,
   }))
+  return c.json(ok(items))
 })
 
 export default router

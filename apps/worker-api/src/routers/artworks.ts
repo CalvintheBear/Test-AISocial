@@ -123,6 +123,32 @@ router.post('/:id/publish', async (c) => {
   return c.json(ok({ status: 'published', id }))
 })
 
+router.post('/:id/unpublish', async (c) => {
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
+  const d1 = D1Service.fromEnv(c.env)
+  const redis = RedisService.fromEnv(c.env)
+  await d1.unpublishArtwork(id)
+  const userId = (c as any).get('userId') as string
+  await Promise.all([
+    redis.invalidateUserArtworks(userId),
+    redis.invalidateFeed()
+  ])
+  return c.json(ok({ status: 'draft', id }))
+})
+
+router.delete('/:id', async (c) => {
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
+  const d1 = D1Service.fromEnv(c.env)
+  const redis = RedisService.fromEnv(c.env)
+  await d1.deleteArtwork(id)
+  const userId = (c as any).get('userId') as string
+  await Promise.all([
+    redis.invalidateUserArtworks(userId),
+    redis.invalidateFeed()
+  ])
+  return c.json(ok({ deleted: true, id }))
+})
+
 router.post('/upload', async (c) => {
   const userId = (c as any).get('userId') as string
   const body = await c.req.parseBody()
@@ -152,8 +178,9 @@ router.post('/upload', async (c) => {
     const d1 = D1Service.fromEnv(c.env)
     const artworkId = await d1.createArtwork(userId, title, url, url, {
       mimeType: contentType,
-      width: null, // Could be extracted from image if needed
-      height: null // Could be extracted from image if needed
+      // 若可获取尺寸再填；此处不传递以满足类型
+      width: undefined,
+      height: undefined
     })
     
     const response = {
