@@ -4,6 +4,7 @@ import { API } from '@/lib/api/endpoints'
 import { ArtworkListItem } from '@/lib/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Image from 'next/image'
+import { SignedIn, SignedOut } from '@clerk/nextjs'
 
 interface UserProfile {
   id: string
@@ -90,6 +91,12 @@ export default async function UserPage({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 提示：登录后可展示更多私有数据 */}
+      <div className="mb-6 text-sm text-gray-600">
+        <SignedOut>您当前以游客身份浏览。登录后可查看草稿与个性化数据。</SignedOut>
+        <SignedIn>您已登录，可查看私有数据与交互能力。</SignedIn>
       </div>
 
       {/* Tabs */}

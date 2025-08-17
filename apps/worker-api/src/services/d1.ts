@@ -34,6 +34,21 @@ export class D1Service {
     return new D1Service(env.DB)
   }
 
+  async upsertUser(user: { id: string; name?: string | null; email?: string | null; profilePic?: string | null }): Promise<void> {
+    const name = user.name ?? null
+    const email = user.email ?? null
+    const profilePic = user.profilePic ?? null
+    const stmt = this.db.prepare(`
+      INSERT INTO users (id, name, email, profile_pic)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        name=excluded.name,
+        email=excluded.email,
+        profile_pic=excluded.profile_pic
+    `)
+    await stmt.bind(user.id, name, email, profilePic).run()
+  }
+
   async getArtwork(id: string): Promise<Artwork | null> {
     const stmt = this.db.prepare(`
       SELECT a.*, u.name as user_name, u.profile_pic
