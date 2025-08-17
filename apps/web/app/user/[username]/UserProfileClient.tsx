@@ -78,7 +78,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 					/>
 					<div className="text-white">
 						<h1 className="text-3xl font-bold">{me?.name || '未登录用户'}</h1>
-						<p className="text-lg opacity-90">@{username}</p>
+						<p className="text-lg opacity-90">{me?.email || '未绑定邮箱'}</p>
 					</div>
 				</div>
 			</div>

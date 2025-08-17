@@ -15,7 +15,12 @@ function getCookie(name: string, cookieHeader?: string | null): string | undefin
 function decodeJwtPayload(token: string): Record<string, any> | null {
   try {
     const [, payload] = token.split('.')
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    // atob 始终返回 Latin1 字符串，这里逐字符取 charCode 恢复字节，再用 UTF-8 解码
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i) & 0xff
+    const json = new TextDecoder('utf-8').decode(bytes)
     return JSON.parse(json)
   } catch {
     return null
