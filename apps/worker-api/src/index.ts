@@ -8,6 +8,7 @@ import artworks from './routers/artworks'
 import users from './routers/users'
 import feed from './routers/feed'
 import works from './routers/works'
+import admin from './routers/admin'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -33,6 +34,7 @@ app.route('/api/artworks', artworks)
 app.route('/api/works', works)
 app.route('/api/users', users)
 app.route('/api/feed', feed)
+app.route('/api/admin', admin)
 
 export default app
 

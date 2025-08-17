@@ -1,6 +1,7 @@
 import { D1Service } from './services/d1'
 import { R2Service } from './services/r2'
 import { RedisService } from './services/redis'
+import { syncArtworkCounts, checkDataConsistency } from './utils/sync-counts'
 
 export interface Env extends Record<string, unknown> {
   DB: D1Database
@@ -87,6 +88,15 @@ export default {
       console.log('Thumbnail generation cron job completed')
     } catch (error) {
       console.error('Error in thumbnail generation cron job:', error)
+    }
+
+    try {
+      // 每15分钟同步一次点赞和收藏数量
+      console.log('开始同步点赞和收藏数量...')
+      const syncResult = await syncArtworkCounts(env)
+      console.log(`数量同步完成: 更新 ${syncResult.updatedCount} 个作品`)
+    } catch (error) {
+      console.error('数量同步失败:', error)
     }
   }
 }
