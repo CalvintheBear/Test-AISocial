@@ -14,8 +14,20 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
     token = process.env.NEXT_PUBLIC_DEV_JWT
   } else {
-    await initClerkTokenProvider()
-    token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
+    // 前端（浏览器）优先使用 Clerk 注入的 token（仅客户端可用）
+    if (typeof window !== 'undefined' && (window as any)?.Clerk) {
+      try {
+        const clerk = (window as any).Clerk
+        token = await clerk?.session?.getToken?.()
+      } catch {
+        token = undefined
+      }
+    }
+    // 回退到 DEV_JWT
+    if (!token) {
+      await initClerkTokenProvider()
+      token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
+    }
   }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'

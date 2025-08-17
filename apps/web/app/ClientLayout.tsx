@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar'
 import { Header } from '@/components/ui/header'
 import { Button } from '@/components/ui/button'
+import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 import { CreateArtworkModal } from '@/components/app/CreateArtworkModal'
 
 const inter = Inter({ 
@@ -45,9 +46,16 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             </SidebarContent>
             <SidebarFooter>
               {!isSidebarCollapsed && (
-                <Link href="/login" className="w-full">
-                  <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
-                </Link>
+                <div className="w-full flex justify-between items-center px-3 py-2">
+                  <SignedOut>
+                    <SignInButton mode="modal">
+                      <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
+                    </SignInButton>
+                  </SignedOut>
+                  <SignedIn>
+                    <UserButton afterSignOutUrl="/" />
+                  </SignedIn>
+                </div>
               )}
             </SidebarFooter>
           </Sidebar>
@@ -66,9 +74,18 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             </nav>
           </SidebarContent>
           <SidebarFooter>
-            <Link href="/login" className="w-full">
-              <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
-            </Link>
+            <div className="w-full px-3 py-2">
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <div className="flex justify-end">
+                  <UserButton afterSignOutUrl="/" />
+                </div>
+              </SignedIn>
+            </div>
           </SidebarFooter>
         </Sidebar>
         

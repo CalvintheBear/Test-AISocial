@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { Button } from './button'
 import Link from 'next/link'
+import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 
 interface HeaderProps {
   className?: string
@@ -16,18 +17,16 @@ const Header: React.FC<HeaderProps> = ({ className, onOpenCreateModal }) => {
         {/* Center placeholder removed per request */}
         <div />
 
-        {/* Desktop CTA */}
+        {/* Desktop Auth */}
         <div className="hidden md:flex items-center space-x-2">
-          <Link href="/login">
-            <Button variant="outline" size="sm">
-              Sign In
-            </Button>
-          </Link>
-          <Link href="/login">
-            <Button variant="primary" size="sm">
-              Get Started
-            </Button>
-          </Link>
+          <SignedOut>
+            <SignInButton mode="modal">
+              <Button variant="primary" size="sm">登录 / 注册</Button>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
         </div>
 
         {/* Generate/Upload -> route to /artwork */}
