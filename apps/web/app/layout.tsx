@@ -2,6 +2,7 @@ import '../styles/globals.css'
 import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import { ClerkProvider } from '@clerk/nextjs'
 import { ClientLayout } from './ClientLayout'
 
 const inter = Inter({ 
@@ -28,13 +29,15 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh-CN" className={`${inter.variable}`}>
-      <body className="font-sans antialiased bg-bg">
-        <ClientLayout>
-          {children}
-        </ClientLayout>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="zh-CN" className={`${inter.variable}`}>
+        <body className="font-sans antialiased bg-bg">
+          <ClientLayout>
+            {children}
+          </ClientLayout>
+        </body>
+      </html>
+    </ClerkProvider>
   )
 }
 

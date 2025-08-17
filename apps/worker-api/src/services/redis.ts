@@ -1,3 +1,10 @@
+// Cache TTL constants (in seconds)
+export const CACHE_TTL = {
+  FEED: 600,           // 10 minutes
+  USER_ARTWORKS: 600,  // 10 minutes
+  USER_FAVORITES: 600, // 10 minutes
+} as const
+
 type StringSet = Set<string>
 
 const memory = {
@@ -112,7 +119,7 @@ export class RedisService {
     return await this.execute('GET', `feed:list:${limit}`)
   }
 
-  async setFeed(limit: number, data: string, ttlSeconds: number = 600): Promise<void> {
+  async setFeed(limit: number, data: string, ttlSeconds: number = CACHE_TTL.FEED): Promise<void> {
     if (this.isDevMode) return
     await this.execute('SETEX', `feed:list:${limit}`, ttlSeconds, data)
   }
@@ -132,7 +139,7 @@ export class RedisService {
     return await this.execute('GET', `user:${userId}:artworks`)
   }
 
-  async setUserArtworks(userId: string, data: string, ttlSeconds: number = 600): Promise<void> {
+  async setUserArtworks(userId: string, data: string, ttlSeconds: number = CACHE_TTL.USER_ARTWORKS): Promise<void> {
     if (this.isDevMode) return
     await this.execute('SETEX', `user:${userId}:artworks`, ttlSeconds, data)
   }
@@ -147,7 +154,7 @@ export class RedisService {
     return await this.execute('GET', `user:${userId}:favorites:list`)
   }
 
-  async setUserFavorites(userId: string, data: string, ttlSeconds: number = 600): Promise<void> {
+  async setUserFavorites(userId: string, data: string, ttlSeconds: number = CACHE_TTL.USER_FAVORITES): Promise<void> {
     if (this.isDevMode) return
     await this.execute('SETEX', `user:${userId}:favorites:list`, ttlSeconds, data)
   }

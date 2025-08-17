@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { PaginationQuerySchema, validateParam } from '../schemas/validation'
+import { ok } from '../utils/response'
 
 const router = new Hono()
 
@@ -43,7 +44,7 @@ router.get('/', async (c) => {
     isFavorite: favorites.includes(a.id),
     status: a.status,
   }))
-  return c.json(items)
+  return c.json(ok(items))
 })
 
 export default router

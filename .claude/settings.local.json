@@ -15,7 +15,9 @@
       "Bash(true)",
       "Bash(mv:*)",
       "Bash(powershell:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(find:*)",
+      "Bash(wrangler secret put:*)"
     ],
     "deny": []
   }

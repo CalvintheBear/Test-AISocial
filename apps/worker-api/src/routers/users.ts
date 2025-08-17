@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { UserIdParamSchema, PaginationQuerySchema, validateParam } from '../schemas/validation'
+import { ok } from '../utils/response'
 
 const router = new Hono()
 
@@ -47,7 +48,7 @@ router.get('/:id/artworks', async (c) => {
     isFavorite: favorites.includes(a.id),
     status: a.status,
   }))
-  return c.json(items)
+  return c.json(ok(items))
 })
 
 router.get('/:id/favorites', async (c) => {
@@ -85,7 +86,7 @@ router.get('/:id/favorites', async (c) => {
       }
     })
   )
-  return c.json(items.filter(Boolean))
+  return c.json(ok(items.filter(Boolean)))
 })
 
 export default router

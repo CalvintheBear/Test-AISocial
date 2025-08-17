@@ -30,6 +30,26 @@ npm run api:dev    # Backend on http://localhost:8787
 npm run dev        # Frontend on http://localhost:3000
 ```
 
+### Available Scripts
+```bash
+# Frontend (Next.js)
+cd apps/web
+npm run dev        # Start Next.js dev server
+npm run build      # Build for production
+npm run start      # Start production server
+
+# Backend (Cloudflare Workers)
+cd apps/worker-api
+npm run dev        # Start worker dev server
+npm run deploy     # Deploy to Cloudflare Workers
+npm run typecheck  # Type checking with TypeScript
+
+# Consistency checks
+cd apps/worker-api
+npm run consistency-check      # Check data consistency
+npm run consistency-check:fix  # Fix data consistency issues
+```
+
 ### Production Deployment
 ```bash
 # Backend deployment
@@ -107,6 +127,26 @@ UPSTASH_REDIS_REST_TOKEN=your-token
 
 # Development
 DEV_MODE=1
+```
+
+#### Backend (wrangler.toml)
+```toml
+[vars]
+R2_PUBLIC_UPLOAD_BASE = "https://your-r2-domain.r2.dev"
+R2_PUBLIC_AFTER_BASE = "https://your-r2-domain.r2.dev"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "your-d1-database"
+database_id = "your-database-id"
+
+[[r2_buckets]]
+binding = "R2_UPLOAD"
+bucket_name = "your-upload-bucket"
+
+[[r2_buckets]]
+binding = "R2_AFTER"
+bucket_name = "your-after-bucket"
 ```
 
 ## Development Workflow

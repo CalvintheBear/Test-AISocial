@@ -39,7 +39,9 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     try { err = await res.json() } catch { err = { message: res.statusText } }
     throw err
   }
-  return res.json() as Promise<T>
+  const data = await res.json()
+  // Handle unified response format (envelope pattern)
+  return data?.success ? data.data : data // Compatibility for transition period
 }
 
 // Server-safe mock flag

@@ -10,10 +10,11 @@ AI社区全流程架构蓝图
 > - 后端与基础设施：Workers API 最小实现已落地，提供 `/api/artworks/*`（含 like/favorite/publish/detail/upload）、`/api/users/*`、`/api/feed`、`/api/health`、`/api/redis/ping`；`wrangler.toml` 已绑定 D1/R2/Redis/Cron。当前状态（更新至最新实现）：
 >   - D1：已真实绑定并可查询（本地已写入测试数据）；`artworks` 表已新增 `thumb_url`、`slug` 字段（迁移已提供）；`like/favorite` 路由同步写入 D1，增强与 Redis 的一致性。
 >   - Redis：已接入 Upstash REST（命令采用数组体 POST）；DEV 仅当 `DEV_MODE==='1'` 且未配置 Upstash 时使用内存回退；Feed/用户列表缓存已实现 TTL（默认 10 分钟）与按需失效。
->   - R2：`R2Service` 支持 `R2_PUBLIC_UPLOAD_BASE`/`R2_PUBLIC_AFTER_BASE` 公网 URL；`/api/artworks/upload` 已打通上传→D1 写入闭环，当前 `thumbUrl` 与 `originalUrl` 一致，后续由 Cron 生成缩略图再更新。
+>   - R2：`R2Service` 支持 `R2_PUBLIC_UPLOAD_BASE`/`R2_PUBLIC_AFTER_BASE` 公网 URL；`/api/artworks/upload` 已打通上传→D1 写入闭环，当前 `thumbUrl` 与 `originalUrl` 一致，已接入 Cron 任务生成缩略图并回填。
+>   - 定时任务：已接入 `scheduled` 任务（Cron），实现“读取原图 → 生成缩略图 → 写入 R2_AFTER → 更新 D1 `thumb_url` → 失效缓存”的基础流程（Image Resizing 使用示例实现，生产需替换为稳定方案）。
 >   - 中间件：`errorMiddleware` 统一错误体与 404；`loggerMiddleware` 记录请求耗时；路径参数采用 `zod` 校验；用户作品对非本人仅返回 `published`。
 >   - 鉴权：DEV 模式免鉴权用于本地联调；生产需接入 Clerk 并关闭 DEV 模式（`wrangler.toml` 不含 DEV 变量，使用 `.dev.vars` 本地注入）。
-> - API 设计同步：当前 GET 列表/详情直返数据结构；操作类接口（like/favorite/publish）返回精简对象（非 `{ success, data }` 包装）；后续计划统一响应 envelope 与错误码。
+> - API 设计同步：所有接口统一采用 `{ success, data }` 包装；错误统一由中间件输出 `{ success:false, code, message }`；前端 `authFetch` 已自动解包兼容。
 
 ### 1. 系统架构图
 
@@ -76,7 +77,7 @@ AI社区全流程架构蓝图
 | /api/artworks/:id            | GET    | 单个作品详情   | id(path), JWT                   | artwork info (+ author)             |
 | /api/users/:id/favorites     | GET    | 获取收藏列表   | user_id, JWT                    | artwork list                         |
 
-注：当前前端实现预期“直返数据结构”（如 `ArtworkListItem[]` / `ArtworkDetail`），操作类接口暂保留 `{ success, data }` 包装；短期混合可用，后续统一响应与错误码。
+注：所有接口统一 `{ success, data }` 包装；本表格展示的是 `data` 字段结构。
 
 ---
 

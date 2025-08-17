@@ -32,4 +32,8 @@ app.route('/api/feed', feed)
 
 export default app
 
+// Export scheduled handler for cron jobs
+import scheduler from './scheduled'
+export const scheduled = scheduler.scheduled
+
 

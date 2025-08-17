@@ -15,34 +15,44 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm --workspace apps/web run build
+      - name: Build Next.js (apps/web)
+        run: npm --workspace apps/web run build
+      - name: Prebuild for Cloudflare Pages (next-on-pages)
+        run: npx --yes @cloudflare/next-on-pages@1 --project-dir=apps/web
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-output
+          path: apps/web/.vercel/output
 
   deploy-workers:
     needs: build-web
     runs-on: ubuntu-latest
     env:
-      HAS_REDIS_URL: ${{ secrets.UPSTASH_REDIS_REST_URL != '' }}
-      HAS_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN != '' }}
       REDIS_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-      REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
-    permissions:
-      contents: read
+      R2_PUBLIC_UPLOAD_BASE: ${{ secrets.R2_PUBLIC_UPLOAD_BASE }}
+      R2_PUBLIC_AFTER_BASE: ${{ secrets.R2_PUBLIC_AFTER_BASE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install wrangler
+      - name: Install wrangler and deps
         run: npm --workspace apps/worker-api i
       - name: Set Redis URL var (if provided)
-        if: env.HAS_REDIS_URL == 'true'
+        if: env.REDIS_URL != ''
         run: |
-          sed -i "s|UPSTASH_REDIS_REST_URL = \".*\"|UPSTASH_REDIS_REST_URL = \"${REDIS_URL}\"|" apps/worker-api/wrangler.toml
-      - name: Put UPSTASH_REDIS_REST_TOKEN
-        if: env.HAS_REDIS_TOKEN == 'true'
+          sed -i "s|UPSTASH_REDIS_REST_URL = \".*\"|UPSTASH_REDIS_REST_URL = \"${REDIS_URL}\"|" apps/worker-api/wrangler.toml || true
+      - name: Set R2 public bases (if provided)
+        if: env.R2_PUBLIC_UPLOAD_BASE != '' && env.R2_PUBLIC_AFTER_BASE != ''
+        run: |
+          sed -i "s|R2_PUBLIC_UPLOAD_BASE = \".*\"|R2_PUBLIC_UPLOAD_BASE = \"${R2_PUBLIC_UPLOAD_BASE}\"|" apps/worker-api/wrangler.toml || true
+          sed -i "s|R2_PUBLIC_AFTER_BASE = \".*\"|R2_PUBLIC_AFTER_BASE = \"${R2_PUBLIC_AFTER_BASE}\"|" apps/worker-api/wrangler.toml || true
+      - name: Put Secrets (Workers)
         working-directory: apps/worker-api
         run: |
-          echo "${REDIS_TOKEN}" | npx wrangler secret put UPSTASH_REDIS_REST_TOKEN --yes
+          echo "${{ secrets.UPSTASH_REDIS_REST_TOKEN }}" | npx wrangler secret put UPSTASH_REDIS_REST_TOKEN --yes
+          echo "${{ secrets.CLERK_SECRET_KEY }}" | npx wrangler secret put CLERK_SECRET_KEY --yes
       - name: Deploy Workers
         uses: cloudflare/wrangler-action@v3
         with:
@@ -51,25 +61,23 @@ jobs:
           workingDirectory: apps/worker-api
           command: deploy
 
-# Optional: Pages (Next.js on Cloudflare Pages) — enable after integrating @cloudflare/next-on-pages
-#  deploy-pages:
-#    needs: build-web
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v4
-#      - uses: actions/setup-node@v4
-#        with:
-#          node-version: '20'
-#      - run: npm ci
-#      - run: npx @cloudflare/next-on-pages --version || npm i -D @cloudflare/next-on-pages
-#      - run: npx @cloudflare/next-on-pages --outdir .vercel/output --experimental-minify
-#      - name: Deploy to Cloudflare Pages
-#        uses: cloudflare/pages-action@v1
-#        with:
-#          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-#          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-#          projectName: test-aisocial-web
-#          directory: .vercel/output
-#          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+  deploy-pages:
+    needs: build-web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: web-output
+          path: apps/web/.vercel/output
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CF_PAGES_PROJECT_NAME }}
+          directory: apps/web/.vercel/output
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
 

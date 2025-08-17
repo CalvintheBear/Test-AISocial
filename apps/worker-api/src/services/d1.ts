@@ -87,6 +87,25 @@ export class D1Service {
     })
   }
 
+  /**
+   * 返回最近发布作品的原图与缩略图 URL，用于离线生成缩略图任务
+   */
+  async listRecentPublishedWithUrls(limit = 50): Promise<Array<{ id: string; originalUrl: string; thumbUrl: string | null }>> {
+    const stmt = this.db.prepare(`
+      SELECT id, url as original_url, thumb_url
+      FROM artworks
+      WHERE status = 'published'
+      ORDER BY created_at DESC
+      LIMIT ?
+    `)
+    const rows = await stmt.bind(limit).all() as any
+    return (rows.results || []).map((row: any) => ({
+      id: String(row.id),
+      originalUrl: String(row.original_url),
+      thumbUrl: row.thumb_url ? String(row.thumb_url) : null,
+    }))
+  }
+
   async listUserArtworks(userId: string): Promise<Artwork[]> {
     const stmt = this.db.prepare(`
       SELECT a.*, u.name as user_name, u.profile_pic
@@ -193,6 +212,11 @@ export class D1Service {
     `)
     const rows = await stmt.bind(userId).all() as any
     return (rows.results || []).map((row: any) => String(row.artwork_id))
+  }
+
+  async updateThumbUrl(artworkId: string, thumbUrl: string): Promise<void> {
+    const stmt = this.db.prepare(`UPDATE artworks SET thumb_url = ? WHERE id = ?`)
+    await stmt.bind(thumbUrl, artworkId).run()
   }
 
   private generateSlug(title: string): string {
