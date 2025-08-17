@@ -85,6 +85,25 @@ vercel --prod
 wrangler pages deploy apps/web/.next/static --project-name=ai-social-web
 ```
 
+### CI/CD（GitHub Actions）
+
+已新增工作流：`.github/workflows/deploy.yml`，自动构建并部署。
+
+- 必需仓库 Secrets：
+  - `CLOUDFLARE_API_TOKEN`（含 Workers Scripts:Edit 与 Pages:Edit 权限）
+  - `CLOUDFLARE_ACCOUNT_ID`
+  - `GITHUB_TOKEN`（默认内置）。若出现 403 `Resource not accessible by integration`，需在 workflow 顶部声明：
+
+```
+permissions:
+  contents: read
+  deployments: write
+```
+
+- 流程：
+  - 构建 `apps/web` → 运行 `@cloudflare/next-on-pages` 预构建 → 使用 `cloudflare/pages-action@v1` 部署到 Pages
+  - 使用 `cloudflare/wrangler-action@v3` 在 `apps/worker-api` 中执行 `wrangler deploy`
+
 ### Cloudflare Pages（前端）与 Workers（后端）联动部署指南
 
 > 已将以下页面改为动态渲染并使用 Node.js 运行时，适配 Cloudflare 平台：`/feed`、`/artwork/[id]/[slug]`、`/user/[username]`。
