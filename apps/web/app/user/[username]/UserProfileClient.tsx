@@ -18,7 +18,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 	const [favorites, setFavorites] = useState<ArtworkListItem[]>([])
 	const [likes, setLikes] = useState<ArtworkListItem[]>([])
 	const [loading, setLoading] = useState(true)
-	const [needSignin, setNeedSignin] = useState(false)
+
 
 	const reloadAll = useCallback(async (userId: string) => {
 		const [lks] = await Promise.all([
@@ -33,9 +33,8 @@ export default function UserProfileClient({ username }: { username: string }) {
 			const profile = await authFetch(API.me)
 			setMe(profile)
 			if (profile?.id) await reloadAll(profile.id)
-			setNeedSignin(false)
 		} catch {
-			setNeedSignin(true)
+			// 忽略错误，不把它当作未登录；保持 UI 为已登录状态并允许稍后重试
 		} finally {
 			setLoading(false)
 		}
@@ -45,7 +44,6 @@ export default function UserProfileClient({ username }: { username: string }) {
 	useEffect(() => {
 		if (!isLoaded) return
 		if (!isSignedIn) {
-			setNeedSignin(true)
 			setMe(null)
 			setArtworks([]); setFavorites([]); setLikes([])
 			setLoading(false)
@@ -61,7 +59,8 @@ export default function UserProfileClient({ username }: { username: string }) {
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
 
-	if (needSignin) {
+	// 当 Clerk 已加载且未登录时，显示登录提示
+	if (isLoaded && !isSignedIn) {
 		return (
 			<div className="py-16 text-center">
 				<p className="mb-4 text-gray-600">您尚未登录，请先登录以查看个人主页。</p>
