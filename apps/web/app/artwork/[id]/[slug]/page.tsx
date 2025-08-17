@@ -13,7 +13,7 @@ async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 export const metadata = {
   title: '赛博朋克猫咪 - AI 艺术作品',

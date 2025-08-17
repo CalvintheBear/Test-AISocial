@@ -209,6 +209,7 @@ sequenceDiagram
 实现状态注解：
 - 现阶段默认可通过设置 `NEXT_PUBLIC_USE_MOCK=0` + `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8787` 直连 Workers；DEV 模式无需 JWT。
 - 生成/上传/发布：`publish`、`upload` 已就绪（`upload` 返回 `{ id, originalUrl, thumbUrl, status, title }`）；`generate` 仍占位；缩略图后续由 Cron 生成并在数据库 `thumb_url` 字段与返回体中更新。
+ - 运行时策略更新：为避免 `@clerk/nextjs` 在 Edge 构建阶段引入 Node 模块（`fs`/`path`）导致编译失败，已将 `/feed`、`/artwork/[id]/[slug]`、`/user/[username]` 三个页面设置为 `runtime = 'nodejs'`，并保持 `dynamic = 'force-dynamic'`、`revalidate = 0`。
 
 ---
 

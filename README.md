@@ -142,6 +142,8 @@ R2_PUBLIC_AFTER_BASE=...
   - `apps/web/app/user/[username]/page.tsx`: 同上
 - 目的：避免在构建阶段预取 API，改为在运行时（Node.js）服务端拉取，兼容 Clerk 在 Node 环境对 `fs/path` 的依赖。
 
+注意：如果后续切回 Edge 运行时，需要移除对 `@clerk/nextjs` 的直接依赖或使用专为 Edge 环境的 Clerk 变体，并确保任何 Node 内置模块（如 `fs`/`path`）不被引入到 Edge 构建。
+
 #### 5) 常见问题排查（Cloudflare）
 
 - 构建时报 `Invalid URL`：请确认未在构建期使用 `new URL('/api/...')`，并确保上述页面为动态渲染；前端通过 `authFetch(API.xxx)` 发起请求。
