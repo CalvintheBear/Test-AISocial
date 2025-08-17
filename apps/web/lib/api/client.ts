@@ -18,7 +18,9 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     if (typeof window !== 'undefined' && (window as any)?.Clerk) {
       try {
         const clerk = (window as any).Clerk
-        token = await clerk?.session?.getToken?.()
+        // 更可靠的获取方式：跳过缓存，必要时多次尝试
+        token = await clerk?.session?.getToken?.({ skipCache: true })
+        if (!token) token = await clerk?.session?.getToken?.()
       } catch {
         token = undefined
       }

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { UserIdParamSchema, PaginationQuerySchema, validateParam } from '../schemas/validation'
-import { ok } from '../utils/response'
+import { ok, fail } from '../utils/response'
 
 const router = new Hono()
 
@@ -10,7 +10,14 @@ router.get('/me', async (c) => {
 	const userId = (c as any).get('userId') as string
 	if (!userId) return c.json({ success: false, code: 'AUTH_REQUIRED', message: 'signin' }, 401)
 	const d1 = D1Service.fromEnv(c.env)
+	try { 
+		await d1.upsertUser({ id: userId, name: null, email: null, profilePic: null }) 
+		console.log(JSON.stringify({ level: 'info', event: 'upsert_user', userId }))
+	} catch (e: any) {
+		console.error(JSON.stringify({ level: 'error', event: 'upsert_user_failed', userId, message: e?.message }))
+	}
 	const me = await d1.getUser(userId)
+	console.log(JSON.stringify({ level: 'info', event: 'get_user', userId, found: !!me }))
 	return c.json(ok(me || { id: userId }))
 })
 
