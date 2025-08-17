@@ -43,7 +43,11 @@ router.get('/:id/artworks', async (c) => {
     : list.filter((a: any) => a.status === 'published')
   
   const artworkIds = visibleList.map((a: any) => a.id)
-  const favorites = await redis.listFavorites(currentUserId)
+  const [favorites, likedIds] = await Promise.all([
+    redis.listFavorites(currentUserId),
+    redis.listUserLikes(currentUserId)
+  ])
+  const likedSet = new Set(likedIds)
   
   const items = visibleList.map((a: any) => ({
     id: a.id,
@@ -54,6 +58,7 @@ router.get('/:id/artworks', async (c) => {
     likeCount: (a as any).likeCount || 0,
     isFavorite: favorites.includes(a.id),
     favoriteCount: (a as any).favoriteCount || 0,
+    isLiked: likedSet.has(a.id),
     status: a.status,
   }))
   return c.json(ok(items))
@@ -78,6 +83,7 @@ router.get('/:id/favorites', async (c) => {
       const a = await d1.getArtwork(artId)
       if (!a) return null
       const likeCount = await redis.getLikes(artId)
+      const currentUserId = (c as any).get('userId') as string
       return {
         id: a.id,
         slug: a.slug,
@@ -86,6 +92,7 @@ router.get('/:id/favorites', async (c) => {
         author: a.author,
         likeCount,
         isFavorite: true,
+        isLiked: await redis.isLiked(currentUserId, a.id),
         favoriteCount: (a as any).favoriteCount || 0,
         status: a.status,
       }
@@ -108,6 +115,7 @@ router.get('/:id/likes', async (c) => {
       likeIds = (rows?.results || []).map((r: any) => String(r.artwork_id))
     } catch {}
   }
+  const currentUserId = (c as any).get('userId') as string
   const items = await Promise.all(
     likeIds.map(async (artId: string) => {
       const a = await d1.getArtwork(artId)
@@ -120,8 +128,9 @@ router.get('/:id/likes', async (c) => {
         thumbUrl: a.url,
         author: a.author,
         likeCount,
-        isFavorite: await redis.isFavorite(id, a.id),
+        isFavorite: await redis.isFavorite(currentUserId, a.id),
         favoriteCount: (a as any).favoriteCount || 0,
+        isLiked: await redis.isLiked(currentUserId, a.id),
         status: a.status,
       }
     })

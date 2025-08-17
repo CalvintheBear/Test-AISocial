@@ -14,23 +14,14 @@ interface ArtworkCardProps {
 
 export function ArtworkCard({ artwork, onLike, onFavorite }: ArtworkCardProps) {
   const handleLike = async () => {
-    if (onLike) {
-      try {
-        await onLike(artwork.id)
-      } catch (error) {
-        console.error('Failed to like artwork:', error)
-      }
-    }
+    if (!onLike) return
+    if (artwork.isLiked) return
+    try { await onLike(artwork.id) } catch (error) { console.error('Failed to like artwork:', error) }
   }
 
   const handleFavorite = async () => {
-    if (onFavorite) {
-      try {
-        await onFavorite(artwork.id)
-      } catch (error) {
-        console.error('Failed to favorite artwork:', error)
-      }
-    }
+    if (!onFavorite) return
+    try { await onFavorite(artwork.id) } catch (error) { console.error('Failed to favorite artwork:', error) }
   }
 
   return (
@@ -77,7 +68,8 @@ export function ArtworkCard({ artwork, onLike, onFavorite }: ArtworkCardProps) {
             variant="ghost"
             size="sm"
             onClick={handleLike}
-            className="flex items-center space-x-1"
+            className={`flex items-center space-x-1 ${artwork.isLiked ? 'text-red-600' : ''}`}
+            disabled={artwork.isLiked}
           >
             <span>♥</span>
             <span>{artwork.likeCount}</span>
@@ -87,13 +79,15 @@ export function ArtworkCard({ artwork, onLike, onFavorite }: ArtworkCardProps) {
             variant="ghost"
             size="sm"
             onClick={handleFavorite}
-            className="flex items-center space-x-1"
+            className={`flex items-center space-x-1 ${artwork.isFavorite ? 'text-yellow-500' : ''}`}
           >
-            <span className={artwork.isFavorite ? 'text-yellow-500' : ''}>
-              {artwork.isFavorite ? '★' : '☆'}
-            </span>
+            <span>{artwork.isFavorite ? '★' : '☆'}</span>
+            <span>{artwork.favoriteCount ?? 0}</span>
           </Button>
         </div>
+        {typeof artwork.hotScore === 'number' && (
+          <div className="text-xs text-gray-500">热度 {artwork.hotScore.toFixed(2)}</div>
+        )}
       </CardFooter>
     </Card>
   )

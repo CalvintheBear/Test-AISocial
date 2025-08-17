@@ -88,6 +88,15 @@ export default async function ArtworkPage({
             isAuthor={false}
             authorId={artwork.author.id}
           />
+          {/* 热度与收藏计数 */}
+          <Card className="p-4">
+            <div className="flex items-center space-x-6 text-sm text-gray-600">
+              <div>收藏数：{artwork.favoriteCount ?? 0}</div>
+              {typeof artwork.hotScore === 'number' && (
+                <div>热度：{artwork.hotScore.toFixed(2)}</div>
+              )}
+            </div>
+          </Card>
 
           {/* Stats */}
           <Card className="p-4">

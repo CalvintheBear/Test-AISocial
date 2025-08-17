@@ -27,6 +27,7 @@ router.get('/:id', async (c) => {
       console.warn('Redis unavailable, using defaults for likes/favorites')
     }
     
+    const isLiked = userId ? await (async () => { try { return await RedisService.fromEnv(c.env).isLiked(userId, id) } catch { return false } })() : false
     const detail = {
       id: art.id,
       slug: art.slug,
@@ -37,7 +38,8 @@ router.get('/:id', async (c) => {
       status: art.status,
       author: art.author,
       likeCount,
-      isFavorite
+      isFavorite,
+      isLiked
     }
     return c.json(ok(detail))
   } catch (error) {

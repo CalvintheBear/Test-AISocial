@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS artworks (
   created_at INTEGER NOT NULL,
   updated_at INTEGER,
   published_at INTEGER,
+  hot_base INTEGER DEFAULT 0,
   prompt TEXT,
   model TEXT,
   seed INTEGER,
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS artworks (
   mime_type TEXT,
   like_count INTEGER DEFAULT 0,
   favorite_count INTEGER DEFAULT 0,
+  engagement_weight INTEGER DEFAULT 0,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

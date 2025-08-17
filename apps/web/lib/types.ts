@@ -9,6 +9,8 @@ export type ArtworkListItem = {
   likeCount: number
   isFavorite: boolean
   favoriteCount?: number
+  isLiked?: boolean
+  hotScore?: number
   status: 'draft' | 'published'
 }
 
@@ -24,6 +26,8 @@ export type ArtworkDetail = {
   likeCount: number
   favoriteCount?: number
   isFavorite: boolean
+  isLiked?: boolean
+  hotScore?: number
 }
 
 

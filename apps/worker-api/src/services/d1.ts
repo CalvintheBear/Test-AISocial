@@ -11,6 +11,7 @@ export type Artwork = {
   likeCount: number
   favoriteCount: number
   createdAt: number
+  publishedAt?: number
 }
 
 export class D1Service {
@@ -117,7 +118,8 @@ export class D1Service {
         },
         likeCount: Number(row.like_count || 0),
         favoriteCount: Number(row.favorite_count || 0),
-        createdAt: Number(row.created_at)
+        createdAt: Number(row.created_at),
+        publishedAt: row.published_at ? Number(row.published_at) : undefined
       }
     })
   }
@@ -168,7 +170,8 @@ export class D1Service {
         },
         likeCount: Number(row.like_count || 0),
         favoriteCount: Number(row.favorite_count || 0),
-        createdAt: Number(row.created_at)
+        createdAt: Number(row.created_at),
+        publishedAt: row.published_at ? Number(row.published_at) : undefined
       }
     })
   }
@@ -284,6 +287,15 @@ export class D1Service {
     await stmt.bind(delta, artworkId).run()
     const row = await this.db.prepare(`SELECT favorite_count FROM artworks WHERE id = ?`).bind(artworkId).first() as any
     return Number(row?.favorite_count || 0)
+  }
+
+  async incrEngagement(artworkId: string, delta: number): Promise<number> {
+    const stmt = this.db.prepare(`
+      UPDATE artworks SET engagement_weight = MAX(0, COALESCE(engagement_weight, 0) + ?) WHERE id = ?
+    `)
+    await stmt.bind(delta, artworkId).run()
+    const row = await this.db.prepare(`SELECT engagement_weight FROM artworks WHERE id = ?`).bind(artworkId).first() as any
+    return Number(row?.engagement_weight || 0)
   }
 
   // Persist per-user favorite mapping for durability of "我的收藏" list
