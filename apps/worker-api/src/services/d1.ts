@@ -15,9 +15,19 @@ export class D1Service {
   static fromEnv(env: any) {
     if (!env.DB) {
       console.warn('D1 database not configured, using mock data for dev')
-      // 创建mock服务
+      // 创建mock服务（兼容 prepare().bind().all()/first()/run() 调用链）
+      const mockStmt = {
+        bind: (..._args: any[]) => ({
+          all: async () => ({ results: [] }),
+          first: async () => null,
+          run: async () => ({})
+        }),
+        all: async () => ({ results: [] }),
+        first: async () => null,
+        run: async () => ({})
+      }
       return new D1Service({
-        prepare: () => ({ first: async () => null, all: async () => ({ results: [] }), run: async () => ({}) }),
+        prepare: () => mockStmt,
         exec: async () => ({ results: [] })
       } as any)
     }

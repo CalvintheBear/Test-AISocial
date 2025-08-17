@@ -16,12 +16,9 @@ export class RedisService {
   constructor(private url: string, private token: string) {}
 
   static fromEnv(env: any) {
-    const isDev = env?.DEV_MODE === '1'
-    if (!env.UPSTASH_REDIS_REST_URL || !env.UPSTASH_REDIS_REST_TOKEN) {
-      if (isDev) {
-        return new RedisService('', '') // DEV 模式使用内存
-      }
-      throw new Error('Upstash Redis not configured')
+    // 若未配置 Upstash，则统一回退到内存实现，避免生产环境 500
+    if (!env?.UPSTASH_REDIS_REST_URL || !env?.UPSTASH_REDIS_REST_TOKEN) {
+      return new RedisService('', '')
     }
     return new RedisService(env.UPSTASH_REDIS_REST_URL, env.UPSTASH_REDIS_REST_TOKEN)
   }
