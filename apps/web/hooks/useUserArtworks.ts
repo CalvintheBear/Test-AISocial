@@ -19,10 +19,26 @@ export function useUserArtworks(userId: string) {
     }
   )
 
+  const optimisticAddDraft = (item: ArtworkListItem) => {
+    mutate((prev) => {
+      const list = Array.isArray(prev) ? prev.slice(0) : []
+      return [item, ...list]
+    }, false)
+  }
+
+  const optimisticRemove = (artworkId: string) => {
+    mutate((prev) => {
+      const list = Array.isArray(prev) ? prev : []
+      return list.filter((a) => a.id !== artworkId)
+    }, false)
+  }
+
   return {
     artworks: data || [],
     isLoading,
     error,
     mutate,
+    optimisticAddDraft,
+    optimisticRemove,
   }
 }

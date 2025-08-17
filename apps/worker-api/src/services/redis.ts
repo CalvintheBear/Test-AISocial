@@ -76,6 +76,14 @@ export class RedisService {
     return Number(result) || 0
   }
 
+  async delLikes(artworkId: string): Promise<void> {
+    if (this.isDevMode) {
+      memory.likeByArtworkId.delete(artworkId)
+      return
+    }
+    await this.execute('DEL', `artwork:${artworkId}:likes`)
+  }
+
   async addFavorite(userId: string, artworkId: string): Promise<void> {
     if (this.isDevMode) {
       const set = memory.favoriteByUserId.get(userId) || new Set<string>()
@@ -159,6 +167,19 @@ export class RedisService {
   async invalidateUserFavorites(userId: string): Promise<void> {
     if (this.isDevMode) return
     await this.execute('DEL', `user:${userId}:favorites:list`)
+  }
+
+  async invalidateAllFavoritesLists(): Promise<void> {
+    if (this.isDevMode) {
+      memory.favoriteByUserId.clear()
+      return
+    }
+    const keys = await this.execute('KEYS', 'user:*:favorites:list')
+    if (Array.isArray(keys)) {
+      for (const key of keys) {
+        await this.execute('DEL', key)
+      }
+    }
   }
 
   // Cache invalidation helpers

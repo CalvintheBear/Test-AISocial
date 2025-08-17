@@ -5,6 +5,10 @@ import { Button, Card } from '@/components/ui'
 import { Upload, Sparkles } from 'lucide-react'
 import Image from 'next/image'
 import { usePostPublishRedirect } from '@/hooks/usePostPublishRedirect'
+import { authFetch } from '@/lib/api/client'
+import { API } from '@/lib/api/endpoints'
+import { useEffect, useRef } from 'react'
+import { useUserArtworks } from '@/hooks/useUserArtworks'
 
 export function CreateArtworkPanel() {
   const [step, setStep] = useState<'generate' | 'preview' | 'publish'>('generate')
@@ -21,9 +25,63 @@ export function CreateArtworkPanel() {
     setIsGenerating(false)
   }
 
-  const handleSaveDraft = () => {
-    alert('草稿已保存！')
-    resetPanel()
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const { optimisticAddDraft } = useUserArtworks(currentUserId || '')
+  const uploadingRef = useRef(false)
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const me = await authFetch(API.me)
+        setCurrentUserId(me?.id || null)
+      } catch {
+        setCurrentUserId(null)
+      }
+    })()
+  }, [])
+
+  const handleSaveDraft = async () => {
+    // 这里以“生成图像”的占位图模拟上传；真实项目应对接文件选择并用 FormData 上传
+    try {
+      if (uploadingRef.current) return
+      uploadingRef.current = true
+
+      // 模拟文件上传：用 dataURL 占位（真实场景请替换为 <input type="file"/> 文件）
+      const file = new File([new Uint8Array([1])], 'placeholder.png', { type: 'image/png' })
+      const form = new FormData()
+      form.append('file', file)
+      form.append('title', title || 'untitled')
+
+      const resp = await fetch(API.base('/api/artworks/upload'), {
+        method: 'POST',
+        body: form,
+        credentials: 'include',
+      })
+      if (!resp.ok) throw new Error('上传失败')
+      const data = await resp.json()
+      const payload = data?.success ? data.data : data
+
+      // 本地预插草稿卡片
+      if (currentUserId && payload?.id) {
+        optimisticAddDraft({
+          id: String(payload.id),
+          slug: 'draft',
+          title: title || 'Untitled',
+          thumbUrl: String(payload.thumbUrl || payload.originalUrl),
+          author: { id: currentUserId, name: '' },
+          likeCount: 0,
+          isFavorite: false,
+          status: 'draft',
+        })
+      }
+
+      alert('草稿已保存！')
+      resetPanel()
+    } catch (e) {
+      alert('保存草稿失败')
+    } finally {
+      uploadingRef.current = false
+    }
   }
 
   const { redirectToFeed } = usePostPublishRedirect()

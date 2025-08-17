@@ -144,7 +144,9 @@ router.delete('/:id', async (c) => {
   const userId = (c as any).get('userId') as string
   await Promise.all([
     redis.invalidateUserArtworks(userId),
-    redis.invalidateFeed()
+    redis.invalidateFeed(),
+    redis.delLikes(id),
+    redis.invalidateAllFavoritesLists()
   ])
   return c.json(ok({ deleted: true, id }))
 })

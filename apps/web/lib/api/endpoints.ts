@@ -10,6 +10,7 @@ export const API = {
   publish: (id: string) => `/api/artworks/${id}/publish`,
   unpublish: (id: string) => `/api/artworks/${id}/unpublish`,
   delete: (id: string) => `/api/artworks/${id}`,
+  base: (p: string) => p,
 }
 
 
