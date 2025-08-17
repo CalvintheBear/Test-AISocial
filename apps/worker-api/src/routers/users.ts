@@ -3,6 +3,7 @@ import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { UserIdParamSchema, PaginationQuerySchema, validateParam } from '../schemas/validation'
 import { ok, fail } from '../utils/response'
+import { formatArtworkForAPI, formatArtworkListForAPI } from '../utils/formatters'
 
 const router = new Hono()
 
@@ -61,31 +62,37 @@ router.get('/:id/artworks', async (c) => {
     : list.filter((a: any) => a.status === 'published')
   
   const artworkIds = visibleList.map((a: any) => a.id)
-  const [favorites, likedIds] = await Promise.all([
-    redis.listFavorites(currentUserId),
-    redis.listUserLikes(currentUserId)
-  ])
-  const likedSet = new Set(likedIds)
   
-  const items = visibleList.map((a: any) => ({
-    id: a.id,
-    slug: a.slug,
-    title: a.title,
-    thumbUrl: a.url,
-    author: a.author,
-    likeCount: (a as any).likeCount || 0,
-    isFavorite: favorites.includes(a.id),
-    favoriteCount: (a as any).favoriteCount || 0,
-    isLiked: likedSet.has(a.id),
-    status: a.status,
-    hotScore: (() => {
-      const base = a as any
-      const publishedAt = (base.publishedAt || base.createdAt || 0) as number
-      const ageDays = Math.max(0, Math.floor((Date.now() - publishedAt) / 86400000))
-      const engagement = Number(base.engagementWeight || base.engagement_weight || 0)
-      return engagement * Math.pow(0.5, ageDays)
-    })(),
-  }))
+  // Get user states for all artworks
+  let userStates: Array<{ liked: boolean; faved: boolean }> = []
+  
+  if (currentUserId && artworkIds.length > 0) {
+    try {
+      const [likedIds, favedIds] = await Promise.all([
+        redis.listUserLikes(currentUserId),
+        d1.listUserFavorites(currentUserId)
+      ])
+      
+      const likedSet = new Set(likedIds)
+      const favedSet = new Set(favedIds)
+      
+      userStates = artworkIds.map((id: string) => ({
+        liked: likedSet.has(id),
+        faved: favedSet.has(id)
+      }))
+    } catch (e) {
+      userStates = await Promise.all(
+        artworkIds.map(async (id: string) => ({
+          liked: await d1.isLikedByUser(currentUserId, id),
+          faved: await d1.isFavoritedByUser(currentUserId, id)
+        }))
+      )
+    }
+  } else {
+    userStates = artworkIds.map(() => ({ liked: false, faved: false }))
+  }
+  
+  const items = formatArtworkListForAPI(visibleList, userStates)
   return c.json(ok(items))
 })
 
@@ -99,31 +106,45 @@ router.get('/:id/favorites', async (c) => {
   if (cached) {
     favIds = JSON.parse(cached)
   } else {
-    favIds = await redis.listFavorites(id)
+    favIds = await d1.listUserFavorites(id)
     await redis.setUserFavorites(id, JSON.stringify(favIds), 600)
   }
   
-  const items = await Promise.all(
-    favIds.map(async (artId: string) => {
-      const a = await d1.getArtwork(artId)
-      if (!a) return null
-      const likeCount = await redis.getLikes(artId)
-      const currentUserId = (c as any).get('userId') as string
-      return {
-        id: a.id,
-        slug: a.slug,
-        title: a.title,
-        thumbUrl: a.url,
-        author: a.author,
-        likeCount,
-        isFavorite: true,
-        isLiked: await redis.isLiked(currentUserId, a.id),
-        favoriteCount: (a as any).favoriteCount || 0,
-        status: a.status,
-      }
-    })
-  )
-  return c.json(ok(items.filter(Boolean)))
+  const currentUserId = (c as any).get('userId') as string
+  const artworks = await Promise.all(favIds.map((id: string) => d1.getArtwork(id)))
+  const validArtworks = artworks.filter(Boolean)
+  
+  // Get user states for all artworks
+  let userStates: Array<{ liked: boolean; faved: boolean }> = []
+  
+  if (currentUserId && validArtworks.length > 0) {
+    try {
+      const [likedIds, favedIds] = await Promise.all([
+        redis.listUserLikes(currentUserId),
+        d1.listUserFavorites(currentUserId)
+      ])
+      
+      const likedSet = new Set(likedIds)
+      const favedSet = new Set(favedIds)
+      
+      userStates = validArtworks.filter(art => art != null).map((art: any) => ({
+        liked: likedSet.has(art.id),
+        faved: favedSet.has(art.id)
+      }))
+    } catch (e) {
+      userStates = await Promise.all(
+        validArtworks.filter(art => art != null).map(async (art: any) => ({
+          liked: await d1.isLikedByUser(currentUserId, art!.id),
+          faved: true // All are favorites since this is favorites endpoint
+        }))
+      )
+    }
+  } else {
+    userStates = validArtworks.map(() => ({ liked: false, faved: true }))
+  }
+  
+  const items = formatArtworkListForAPI(validArtworks.filter(art => art != null) as any[], userStates)
+  return c.json(ok(items))
 })
 
 router.get('/:id/likes', async (c) => {
@@ -140,29 +161,42 @@ router.get('/:id/likes', async (c) => {
       likeIds = (rows?.results || []).map((r: any) => String(r.artwork_id))
     } catch {}
   }
+  
   const currentUserId = (c as any).get('userId') as string
-  const items = await Promise.all(
-    likeIds.map(async (artId: string) => {
-      const a = await d1.getArtwork(artId)
-      if (!a) return null
-      const likeCount = a.likeCount
-      return {
-        id: a.id,
-        slug: a.slug,
-        title: a.title,
-        thumbUrl: a.url,
-        author: a.author,
-        likeCount,
-        isFavorite: await redis.isFavorite(currentUserId, a.id),
-        favoriteCount: (a as any).favoriteCount || 0,
-        isLiked: await redis.isLiked(currentUserId, a.id),
-        status: a.status,
-      }
-    })
-  )
-  return c.json(ok(items.filter(Boolean)))
+  const artworks = await Promise.all(likeIds.map((id: string) => d1.getArtwork(id)))
+  const validArtworks = artworks.filter(Boolean)
+  
+  // Get user states for all artworks
+  let userStates: Array<{ liked: boolean; faved: boolean }> = []
+  
+  if (currentUserId && validArtworks.length > 0) {
+    try {
+      const [likedIds, favedIds] = await Promise.all([
+        redis.listUserLikes(currentUserId),
+        d1.listUserFavorites(currentUserId)
+      ])
+      
+      const likedSet = new Set(likedIds)
+      const favedSet = new Set(favedIds)
+      
+      userStates = validArtworks.filter(art => art != null).map((art: any) => ({
+        liked: likedSet.has(art.id),
+        faved: favedSet.has(art.id)
+      }))
+    } catch (e) {
+      userStates = await Promise.all(
+        validArtworks.filter(art => art != null).map(async (art: any) => ({
+          liked: true, // All are likes since this is likes endpoint
+          faved: await d1.isFavoritedByUser(currentUserId, art.id)
+        }))
+      )
+    }
+  } else {
+    userStates = validArtworks.map(() => ({ liked: true, faved: false }))
+  }
+  
+  const items = formatArtworkListForAPI(validArtworks.filter(art => art != null) as any[], userStates)
+  return c.json(ok(items))
 })
 
 export default router
-
-

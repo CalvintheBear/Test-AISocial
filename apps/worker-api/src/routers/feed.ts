@@ -3,6 +3,7 @@ import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { PaginationQuerySchema, validateParam } from '../schemas/validation'
 import { ok } from '../utils/response'
+import { formatArtworkListForAPI } from '../utils/formatters'
 
 const router = new Hono()
 
@@ -33,26 +34,10 @@ router.get('/', async (c) => {
   ])
   const likedSet = new Set(likedIds)
   
-  const items = list.map((a: any) => {
-    const base = (a as any)
-    const publishedAt = (base.publishedAt || base.createdAt || 0) as number
-    const ageDays = Math.max(0, Math.floor((Date.now() - publishedAt) / 86400000))
-    const engagement = Number(base.engagementWeight || base.engagement_weight || 0)
-    const hotScore = engagement * Math.pow(0.5, ageDays)
-    return {
-      id: a.id,
-      slug: a.slug,
-      title: a.title,
-      thumbUrl: base.thumb_url || a.url,
-      author: a.author,
-      likeCount: base.likeCount || 0,
-      isFavorite: favorites.includes(a.id),
-      isLiked: likedSet.has(a.id),
-      favoriteCount: base.favoriteCount || 0,
-      status: a.status,
-      hotScore,
-    }
-  })
+  const items = formatArtworkListForAPI(list, artworkIds.map((id: string) => ({
+    liked: likedSet.has(id),
+    faved: favorites.includes(id)
+  })))
   return c.json(ok(items))
 })
 
