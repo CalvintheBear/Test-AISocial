@@ -85,7 +85,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 		if (likedOnceRef.current.has(artworkId)) return
 		likedOnceRef.current.add(artworkId)
 		// optimistic update in all tabs
-		const bump = (list: ArtworkListItem[]) => list.map(a => a.id === artworkId ? { ...a, likeCount: (a.likeCount || 0) + 1 } : a)
+		const bump = (list: ArtworkListItem[]) => list.map(a => a.id === artworkId ? { ...a, like_count: a.like_count + 1, user_state: { ...a.user_state, liked: true } } : a)
 		setArtworks(prev => bump(prev))
 		setFavorites(prev => bump(prev))
 		setLikes(prev => bump(prev))
@@ -97,8 +97,8 @@ export default function UserProfileClient({ username }: { username: string }) {
 		let nextIsFav = false
 		const toggle = (list: ArtworkListItem[]) => list.map(a => {
 			if (a.id !== artworkId) return a
-			nextIsFav = !a.isFavorite
-			return { ...a, isFavorite: nextIsFav }
+			nextIsFav = !a.user_state.faved
+			return { ...a, fav_count: a.fav_count + (nextIsFav ? 1 : -1), user_state: { ...a.user_state, faved: nextIsFav } }
 		})
 		setArtworks(prev => toggle(prev))
 		setFavorites(prev => toggle(prev))

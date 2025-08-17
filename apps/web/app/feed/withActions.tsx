@@ -12,7 +12,11 @@ export default function ClientFeedActions({ initialArtworks }: { initialArtworks
   const { addFavorite, removeFavorite } = useFavorite()
 
   const onLike = useCallback(async (id: string) => {
-    setArtworks(prev => prev.map(a => a.id === id && !a.isLiked ? { ...a, isLiked: true, likeCount: (a.likeCount || 0) + 1 } : a))
+    setArtworks(prev => prev.map(a => a.id === id && !a.user_state.liked ? { 
+      ...a, 
+      like_count: a.like_count + 1, 
+      user_state: { ...a.user_state, liked: true }
+    } : a))
     try { await like(id) } catch {}
   }, [like])
 
@@ -20,8 +24,12 @@ export default function ClientFeedActions({ initialArtworks }: { initialArtworks
     let nextIsFav: boolean | undefined
     setArtworks(prev => prev.map(a => {
       if (a.id !== id) return a
-      nextIsFav = !a.isFavorite
-      return { ...a, isFavorite: nextIsFav, favoriteCount: (a.favoriteCount || 0) + (nextIsFav ? 1 : -1) }
+      nextIsFav = !a.user_state.faved
+      return { 
+        ...a, 
+        fav_count: a.fav_count + (nextIsFav ? 1 : -1),
+        user_state: { ...a.user_state, faved: nextIsFav }
+      }
     }))
     try {
       if (nextIsFav) await addFavorite(id)

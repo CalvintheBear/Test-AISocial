@@ -1,13 +1,13 @@
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
+import type { Env } from '../types'
 
 /**
  * 同步D1数据库中的like_count和favorite_count字段
  * 从关系表计算实际数量并更新到artworks表
  */
-export async function syncArtworkCounts(env: any) {
+export async function syncArtworkCounts(env: Env) {
   const d1 = D1Service.fromEnv(env)
-  const redis = RedisService.fromEnv(env)
   
   console.log('开始同步作品点赞和收藏数量...')
   
@@ -26,7 +26,7 @@ export async function syncArtworkCounts(env: any) {
       
       // 计算实际的收藏数量
       const actualFavorites = await (async () => {
-        const stmt = d1.db.prepare(`SELECT COUNT(*) as count FROM artworks_favorite WHERE artwork_id = ?`)
+        const stmt = (d1 as any).db.prepare(`SELECT COUNT(*) as count FROM artworks_favorite WHERE artwork_id = ?`)
         const rows = await stmt.bind(id).all() as any
         return Number((rows.results || [])[0]?.count || 0)
       })()
@@ -40,7 +40,7 @@ export async function syncArtworkCounts(env: any) {
       
       // 检查是否需要更新
       if (currentLikes !== actualLikes || currentFavorites !== actualFavorites) {
-        await d1.db.prepare(`
+        await (d1 as any).db.prepare(`
           UPDATE artworks 
           SET like_count = ?, favorite_count = ? 
           WHERE id = ?
@@ -67,7 +67,7 @@ export async function syncArtworkCounts(env: any) {
 /**
  * 同步Redis缓存与D1数据库
  */
-async function syncRedisWithD1(env: any) {
+async function syncRedisWithD1(env: Env) {
   const d1 = D1Service.fromEnv(env)
   const redis = RedisService.fromEnv(env)
   
@@ -82,7 +82,7 @@ async function syncRedisWithD1(env: any) {
       
       // 同步用户的点赞列表到Redis
       const likedArtworks = await (async () => {
-        const stmt = d1.db.prepare(`SELECT artwork_id FROM artworks_like WHERE user_id = ?`)
+        const stmt = (d1 as any).db.prepare(`SELECT artwork_id FROM artworks_like WHERE user_id = ?`)
         const rows = await stmt.bind(userId).all() as any
         return (rows.results || []).map((row: any) => String(row.artwork_id))
       })()
@@ -110,9 +110,8 @@ async function syncRedisWithD1(env: any) {
 /**
  * 检查数据一致性
  */
-export async function checkDataConsistency(env: any) {
+export async function checkDataConsistency(env: Env) {
   const d1 = D1Service.fromEnv(env)
-  const redis = RedisService.fromEnv(env)
   
   console.log('开始检查数据一致性...')
   
@@ -125,7 +124,7 @@ export async function checkDataConsistency(env: any) {
     // 检查D1中的数量是否正确
     const actualLikes = await d1.getLikesCount(id)
     const actualFavorites = await (async () => {
-      const stmt = d1.db.prepare(`SELECT COUNT(*) as count FROM artworks_favorite WHERE artwork_id = ?`)
+      const stmt = (d1 as any).db.prepare(`SELECT COUNT(*) as count FROM artworks_favorite WHERE artwork_id = ?`)
       const rows = await stmt.bind(id).all() as any
       return Number((rows.results || [])[0]?.count || 0)
     })()

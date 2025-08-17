@@ -60,10 +60,10 @@ export function ArtworkCard({ artwork }: ArtworkCardProps) {
       <CardFooter className="p-4 pt-0 flex items-center justify-between">
         <LikeFavoriteBar
           artworkId={artwork.id}
-          initialLikeCount={artwork.likeCount}
-          initialFavoriteCount={artwork.favoriteCount ?? 0}
-          initialIsLiked={!!artwork.isLiked}
-          initialIsFavorite={!!artwork.isFavorite}
+          initialLikeCount={artwork.like_count}
+          initialFavoriteCount={artwork.fav_count ?? 0}
+          initialIsLiked={!!artwork.user_state.liked}
+          initialIsFavorite={!!artwork.user_state.faved}
         />
         {typeof artwork.hotScore === 'number' && (
           <div className="text-xs text-gray-500">热度 {artwork.hotScore.toFixed(2)}</div>

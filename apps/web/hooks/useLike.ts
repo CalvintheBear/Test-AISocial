@@ -2,8 +2,12 @@ import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 
 interface LikeResponse {
-  likeCount: number
-  isLiked: boolean
+  like_count: number
+  fav_count: number
+  user_state: {
+    liked: boolean
+    faved: boolean
+  }
 }
 
 export function useLike() {

@@ -84,10 +84,10 @@ export default async function ArtworkPage({
             <div className="flex items-center justify-between">
               <LikeFavoriteBar
                 artworkId={artwork.id}
-                initialLikeCount={artwork.likeCount}
-                initialFavoriteCount={artwork.favoriteCount ?? 0}
-                initialIsLiked={!!artwork.isLiked}
-                initialIsFavorite={!!artwork.isFavorite}
+                initialLikeCount={artwork.like_count}
+                initialFavoriteCount={artwork.fav_count ?? 0}
+                initialIsLiked={!!artwork.user_state.liked}
+                initialIsFavorite={!!artwork.user_state.faved}
                 size="md"
               />
             </div>
@@ -95,7 +95,7 @@ export default async function ArtworkPage({
           {/* 热度与收藏计数 */}
           <Card className="p-4">
             <div className="flex items-center space-x-6 text-sm text-gray-600">
-              <div>收藏数：{artwork.favoriteCount ?? 0}</div>
+              <div>收藏数：{artwork.fav_count ?? 0}</div>
               {typeof artwork.hotScore === 'number' && (
                 <div>热度：{artwork.hotScore.toFixed(2)}</div>
               )}
@@ -106,11 +106,11 @@ export default async function ArtworkPage({
           <Card className="p-4">
             <div className="grid grid-cols-2 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold">{artwork.likeCount}</p>
+                <p className="text-2xl font-bold">{artwork.like_count}</p>
                 <p className="text-sm text-gray-600">点赞数</p>
               </div>
               <div>
-                <p className="text-2xl font-bold">{artwork.isFavorite ? '1' : '0'}</p>
+                <p className="text-2xl font-bold">{artwork.fav_count ?? 0}</p>
                 <p className="text-sm text-gray-600">收藏数</p>
               </div>
             </div>

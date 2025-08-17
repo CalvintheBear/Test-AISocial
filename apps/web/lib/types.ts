@@ -6,10 +6,12 @@ export type ArtworkListItem = {
   title: string
   thumbUrl: string
   author: User
-  likeCount: number
-  isFavorite: boolean
-  favoriteCount?: number
-  isLiked?: boolean
+  like_count: number
+  fav_count: number
+  user_state: {
+    liked: boolean
+    faved: boolean
+  }
   hotScore?: number
   status: 'draft' | 'published'
 }
@@ -23,10 +25,12 @@ export type ArtworkDetail = {
   createdAt: number
   status: 'draft' | 'published'
   author: User
-  likeCount: number
-  favoriteCount?: number
-  isFavorite: boolean
-  isLiked?: boolean
+  like_count: number
+  fav_count: number
+  user_state: {
+    liked: boolean
+    faved: boolean
+  }
   hotScore?: number
 }
 

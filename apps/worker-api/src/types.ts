@@ -14,6 +14,8 @@ export type Env = {
   // R2 Public URLs
   R2_PUBLIC_UPLOAD_BASE?: string
   R2_PUBLIC_AFTER_BASE?: string
+  // Admin
+  ADMIN_TOKEN?: string
   // Dev
   DEV_MODE?: string
 }

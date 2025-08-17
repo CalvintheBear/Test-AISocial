@@ -37,11 +37,19 @@ export default function LikeFavoriteBar({
       if (isLiked) {
         setIsLiked(false)
         setLikeCount((c) => Math.max(0, c - 1))
-        await unlike(artworkId)
+        const res = await unlike(artworkId)
+        setLikeCount(res.like_count)
+        setFavoriteCount(res.fav_count)
+        setIsLiked(res.user_state.liked)
+        setIsFavorite(res.user_state.faved)
       } else {
         setIsLiked(true)
         setLikeCount((c) => c + 1)
-        await like(artworkId)
+        const res = await like(artworkId)
+        setLikeCount(res.like_count)
+        setFavoriteCount(res.fav_count)
+        setIsLiked(res.user_state.liked)
+        setIsFavorite(res.user_state.faved)
       }
     } catch (e) {
       // revert on error
@@ -53,19 +61,26 @@ export default function LikeFavoriteBar({
   const onToggleFavorite = useCallback(async () => {
     try {
       if (isFavorite) {
-        const res = await removeFavorite(artworkId)
         setIsFavorite(false)
-        if (typeof res?.favoriteCount === 'number') setFavoriteCount(res.favoriteCount)
-        else setFavoriteCount((c) => Math.max(0, c - 1))
+        setFavoriteCount((c) => Math.max(0, c - 1))
+        const res = await removeFavorite(artworkId)
+        setLikeCount(res.like_count)
+        setFavoriteCount(res.fav_count)
+        setIsLiked(res.user_state.liked)
+        setIsFavorite(res.user_state.faved)
       } else {
-        const res = await addFavorite(artworkId)
         setIsFavorite(true)
-        if (typeof res?.favoriteCount === 'number') setFavoriteCount(res.favoriteCount)
-        else setFavoriteCount((c) => c + 1)
+        setFavoriteCount((c) => c + 1)
+        const res = await addFavorite(artworkId)
+        setLikeCount(res.like_count)
+        setFavoriteCount(res.fav_count)
+        setIsLiked(res.user_state.liked)
+        setIsFavorite(res.user_state.faved)
       }
     } catch (e) {
       // revert on error
       setIsFavorite((v) => !v)
+      setFavoriteCount((c) => (isFavorite ? c + 1 : Math.max(0, c - 1)))
     }
   }, [artworkId, isFavorite, addFavorite, removeFavorite])
 

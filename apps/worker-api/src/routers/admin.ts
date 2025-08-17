@@ -2,8 +2,9 @@ import { Hono } from 'hono'
 import { syncArtworkCounts, checkDataConsistency } from '../utils/sync-counts'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
+import type { Env } from '../types'
 
-const router = new Hono()
+const router = new Hono<{ Bindings: Env }>()
 
 /**
  * 管理员接口：同步所有作品的点赞和收藏数量
@@ -66,13 +67,13 @@ router.post('/fix-artwork/:id', async (c) => {
     // 计算实际数量
     const actualLikes = await d1.getLikesCount(artworkId)
     const actualFavorites = await (async () => {
-      const stmt = d1.db.prepare(`SELECT COUNT(*) as count FROM artworks_favorite WHERE artwork_id = ?`)
+      const stmt = (d1 as any).db.prepare(`SELECT COUNT(*) as count FROM artworks_favorite WHERE artwork_id = ?`)
       const rows = await stmt.bind(artworkId).all() as any
       return Number((rows.results || [])[0]?.count || 0)
     })()
     
     // 更新D1
-    await d1.db.prepare(`
+    await (d1 as any).db.prepare(`
       UPDATE artworks 
       SET like_count = ?, favorite_count = ? 
       WHERE id = ?
