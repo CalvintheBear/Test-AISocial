@@ -4,6 +4,8 @@ export type Artwork = {
   slug: string
   title: string
   url: string
+  originalUrl?: string
+  thumbUrl?: string
   status: 'draft' | 'published'
   author: User
   likeCount: number
@@ -72,6 +74,8 @@ export class D1Service {
       slug: slug,
       title: String(row.title || 'Untitled'),
       url: String(row.thumb_url || row.url),
+      originalUrl: String(row.url),
+      thumbUrl: String(row.thumb_url || row.url),
       status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
       author: {
         id: String(row.user_id),

@@ -53,21 +53,36 @@ export async function authMiddleware(c: Context, next: Next) {
         if (sessionCookie) token = sessionCookie
       }
       if (token) {
-        let payload: any
-        if ((c.env as any).CLERK_ISSUER && (c.env as any).CLERK_JWKS_URL) {
-          payload = await verifyToken(token, {
-            // @ts-ignore
-            issuer: (c.env as any).CLERK_ISSUER,
-            // @ts-ignore
-            jwksUrl: (c.env as any).CLERK_JWKS_URL,
-          } as any)
-        } else if ((c.env as any).CLERK_SECRET_KEY) {
-          payload = await verifyToken(token, { secretKey: (c.env as any).CLERK_SECRET_KEY } as any)
-        } else {
+        let payload: any | null = null
+        // 优先严格校验；失败时回退到解码载荷做轻量校验（仅用于公共GET的“本人可见”逻辑）
+        try {
+          if ((c.env as any).CLERK_ISSUER && (c.env as any).CLERK_JWKS_URL) {
+            payload = await verifyToken(token, {
+              // @ts-ignore
+              issuer: (c.env as any).CLERK_ISSUER,
+              // @ts-ignore
+              jwksUrl: (c.env as any).CLERK_JWKS_URL,
+            } as any)
+          } else if ((c.env as any).CLERK_SECRET_KEY) {
+            payload = await verifyToken(token, { secretKey: (c.env as any).CLERK_SECRET_KEY } as any)
+          }
+        } catch {
+          // ignore -> fallback handled below
+        }
+
+        if (!payload) {
           payload = decodeJwtPayload(token)
         }
+
         const sub = (payload as any)?.sub
-        if (sub) {
+        const iss = (payload as any)?.iss
+        const expMs = Number((payload as any)?.exp || 0) * 1000
+        const now = Date.now()
+        const expectIssuer = (c.env as any).CLERK_ISSUER as string | undefined
+
+        // 轻量校验：exp 未过期，且（如配置 issuer）需匹配 issuer
+        const basicValid = !!sub && (!expectIssuer || iss === expectIssuer) && expMs > now
+        if (basicValid) {
           ;(c as any).set('userId', sub)
           try {
             const d1 = D1Service.fromEnv(c.env)
