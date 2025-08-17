@@ -32,13 +32,8 @@ export default function UserProfileClient({ username }: { username: string }) {
 		let mounted = true
 		async function run() {
 			try {
-				const res = await fetch(API.me, { credentials: 'include' })
+				const profile = await authFetch(API.me)
 				if (!mounted) return
-				if (res.status === 401) {
-					setNeedSignin(true)
-					return
-				}
-				const profile = await res.json().then((d) => (d?.success ? d.data : d))
 				setMe(profile)
 				if (profile?.id) {
 					await reloadAll(profile.id)
