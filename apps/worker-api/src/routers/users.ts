@@ -43,12 +43,7 @@ router.get('/:id/artworks', async (c) => {
     : list.filter((a: any) => a.status === 'published')
   
   const artworkIds = visibleList.map((a: any) => a.id)
-  const [likesMap, favorites] = await Promise.all([
-    Promise.all(artworkIds.map((id: string) => redis.getLikes(id))).then(likes => 
-      Object.fromEntries(artworkIds.map((id: string, i: number) => [id, likes[i]]))
-    ),
-    redis.listFavorites(currentUserId)
-  ])
+  const favorites = await redis.listFavorites(currentUserId)
   
   const items = visibleList.map((a: any) => ({
     id: a.id,
@@ -56,8 +51,9 @@ router.get('/:id/artworks', async (c) => {
     title: a.title,
     thumbUrl: a.url,
     author: a.author,
-    likeCount: likesMap[a.id] || 0,
+    likeCount: (a as any).likeCount || 0,
     isFavorite: favorites.includes(a.id),
+    favoriteCount: (a as any).favoriteCount || 0,
     status: a.status,
   }))
   return c.json(ok(items))
@@ -69,7 +65,6 @@ router.get('/:id/favorites', async (c) => {
   const d1 = D1Service.fromEnv(c.env)
   
   const cached = await redis.getUserFavorites(id)
-  
   let favIds
   if (cached) {
     favIds = JSON.parse(cached)
@@ -91,6 +86,7 @@ router.get('/:id/favorites', async (c) => {
         author: a.author,
         likeCount,
         isFavorite: true,
+        favoriteCount: (a as any).favoriteCount || 0,
         status: a.status,
       }
     })
@@ -103,22 +99,34 @@ router.get('/:id/likes', async (c) => {
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
 
-  const list = await d1.listUserLikes(id)
-  const artworkIds = list.map((a: any) => a.id)
-  const likesMap = await Promise.all(artworkIds.map((aid: string) => redis.getLikes(aid)))
-    .then(likes => Object.fromEntries(artworkIds.map((aid: string, i: number) => [aid, likes[i]])))
-
-  const items = list.map((a: any) => ({
-    id: a.id,
-    slug: a.slug,
-    title: a.title,
-    thumbUrl: a.url,
-    author: a.author,
-    likeCount: likesMap[a.id] || 0,
-    isFavorite: false,
-    status: a.status,
-  }))
-  return c.json(ok(items))
+  // 新实现：优先从 Redis 的用户 Like 集合读取；若为空则从 D1 关系表兜底
+  let likeIds = await redis.listUserLikes(id)
+  if (!likeIds || likeIds.length === 0) {
+    try {
+      // 直接查询关系表（保持与旧数据兼容）
+      const rows = await (d1 as any).db.prepare(`SELECT artwork_id FROM artworks_like WHERE user_id = ?`).bind(id).all()
+      likeIds = (rows?.results || []).map((r: any) => String(r.artwork_id))
+    } catch {}
+  }
+  const items = await Promise.all(
+    likeIds.map(async (artId: string) => {
+      const a = await d1.getArtwork(artId)
+      if (!a) return null
+      const likeCount = a.likeCount
+      return {
+        id: a.id,
+        slug: a.slug,
+        title: a.title,
+        thumbUrl: a.url,
+        author: a.author,
+        likeCount,
+        isFavorite: await redis.isFavorite(id, a.id),
+        favoriteCount: (a as any).favoriteCount || 0,
+        status: a.status,
+      }
+    })
+  )
+  return c.json(ok(items.filter(Boolean)))
 })
 
 export default router

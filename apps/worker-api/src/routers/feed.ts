@@ -25,14 +25,9 @@ router.get('/', async (c) => {
     await redis.setFeed(limit, JSON.stringify(list), 600) // 10 minutes TTL
   }
   
-  // Get likes and favorites for the current user
+  // Get favorites set for current user (for isFavorite display)
   const artworkIds = list.map((a: any) => a.id)
-  const [likesMap, favorites] = await Promise.all([
-    Promise.all(artworkIds.map((id: string) => redis.getLikes(id))).then(likes => 
-      Object.fromEntries(artworkIds.map((id: string, i: number) => [id, likes[i]]))
-    ),
-    redis.listFavorites(userId)
-  ])
+  const favorites = await redis.listFavorites(userId)
   
   const items = list.map((a: any) => ({
     id: a.id,
@@ -40,8 +35,9 @@ router.get('/', async (c) => {
     title: a.title,
     thumbUrl: (a as any).thumb_url || a.url,
     author: a.author,
-    likeCount: likesMap[a.id] || 0,
+    likeCount: (a as any).likeCount || 0,
     isFavorite: favorites.includes(a.id),
+    favoriteCount: (a as any).favoriteCount || 0,
     status: a.status,
   }))
   return c.json(ok(items))

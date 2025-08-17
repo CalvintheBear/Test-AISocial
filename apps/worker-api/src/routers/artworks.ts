@@ -48,73 +48,79 @@ router.get('/:id', async (c) => {
 
 router.post('/:id/like', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
-  const redis = RedisService.fromEnv(c.env)
   const d1 = D1Service.fromEnv(c.env)
-  try { await d1.addLike((c as any).get('userId'), id) } catch {}
-  const likeCount = await redis.incrLikes(id, 1)
-  
-  // Invalidate relevant caches
-  await redis.invalidateFeed()
-  
+  // Sync DB counter
+  const likeCount = await d1.incrLikeCount(id, 1)
+  // Track per-user like set AND持久化关系表
+  try {
+    const userId = (c as any).get('userId') as string
+    if (userId) {
+      const redis = RedisService.fromEnv(c.env)
+      await redis.addUserLike(userId, id)
+      // 同步关系到 D1（为“我的点赞”提供持久化兜底）
+      await d1.addLike(userId, id)
+    }
+  } catch {}
+  // Optional: also bump cache counter if configured
+  try { await RedisService.fromEnv(c.env).invalidateFeed() } catch {}
   return c.json(ok({ likeCount, isLiked: true }))
 })
 
 router.delete('/:id/like', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
-  const redis = RedisService.fromEnv(c.env)
   const d1 = D1Service.fromEnv(c.env)
-  try { await d1.removeLike((c as any).get('userId'), id) } catch {}
-  const likeCount = await redis.incrLikes(id, -1)
-  
-  // Invalidate relevant caches
-  await redis.invalidateFeed()
-  
+  const likeCount = await d1.incrLikeCount(id, -1)
+  try {
+    const userId = (c as any).get('userId') as string
+    if (userId) {
+      const redis = RedisService.fromEnv(c.env)
+      await redis.removeUserLike(userId, id)
+      await d1.removeLike(userId, id)
+    }
+  } catch {}
+  try { await RedisService.fromEnv(c.env).invalidateFeed() } catch {}
   return c.json(ok({ likeCount, isLiked: false }))
 })
 
 router.post('/:id/favorite', async (c) => {
   const userId = (c as any).get('userId') as string
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
-  const redis = RedisService.fromEnv(c.env)
   const d1 = D1Service.fromEnv(c.env)
+  const redis = RedisService.fromEnv(c.env)
   await redis.addFavorite(userId, id)
-  try { await d1.addFavorite(userId, id) } catch {}
-  
-  // Invalidate relevant caches
+  const favoriteCount = await d1.incrFavoriteCount(id, 1)
   await Promise.all([
     redis.invalidateUserFavorites(userId),
     redis.invalidateFeed()
   ])
-  
-  return c.json(ok({ isFavorite: true }))
+  return c.json(ok({ isFavorite: true, favoriteCount }))
 })
 
 router.delete('/:id/favorite', async (c) => {
   const userId = (c as any).get('userId') as string
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
-  const redis = RedisService.fromEnv(c.env)
   const d1 = D1Service.fromEnv(c.env)
+  const redis = RedisService.fromEnv(c.env)
   await redis.removeFavorite(userId, id)
-  try { await d1.removeFavorite(userId, id) } catch {}
-  
-  // Invalidate relevant caches
+  const favoriteCount = await d1.incrFavoriteCount(id, -1)
   await Promise.all([
     redis.invalidateUserFavorites(userId),
     redis.invalidateFeed()
   ])
-  
-  return c.json(ok({ isFavorite: false }))
+  return c.json(ok({ isFavorite: false, favoriteCount }))
 })
 
 router.post('/:id/publish', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
-  const art = await d1.publishArtwork(id)
+  const art = await d1.getArtwork(id)
   if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
+  const userId = (c as any).get('userId') as string
+  if (art.author.id !== userId) return c.json(fail('FORBIDDEN', 'Not author'), 403)
+  await d1.publishArtwork(id)
   
   // Invalidate relevant caches
-  const userId = (c as any).get('userId') as string
   await Promise.all([
     redis.invalidateUserArtworks(userId),
     redis.invalidateFeed()
@@ -127,8 +133,11 @@ router.post('/:id/unpublish', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
-  await d1.unpublishArtwork(id)
+  const art = await d1.getArtwork(id)
+  if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
   const userId = (c as any).get('userId') as string
+  if (art.author.id !== userId) return c.json(fail('FORBIDDEN', 'Not author'), 403)
+  await d1.unpublishArtwork(id)
   await Promise.all([
     redis.invalidateUserArtworks(userId),
     redis.invalidateFeed()
@@ -140,8 +149,11 @@ router.delete('/:id', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
-  await d1.deleteArtwork(id)
+  const art = await d1.getArtwork(id)
+  if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
   const userId = (c as any).get('userId') as string
+  if (art.author.id !== userId) return c.json(fail('FORBIDDEN', 'Not author'), 403)
+  await d1.deleteArtwork(id)
   await Promise.all([
     redis.invalidateUserArtworks(userId),
     redis.invalidateFeed(),

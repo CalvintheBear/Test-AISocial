@@ -9,6 +9,7 @@ export type Artwork = {
   status: 'draft' | 'published'
   author: User
   likeCount: number
+  favoriteCount: number
   createdAt: number
 }
 
@@ -82,7 +83,8 @@ export class D1Service {
         name: String(row.user_name || ''),
         profilePic: row.profile_pic ? String(row.profile_pic) : undefined
       },
-      likeCount: 0, // Will be updated by Redis
+      likeCount: Number(row.like_count || 0),
+      favoriteCount: Number(row.favorite_count || 0),
       createdAt: Number(row.created_at)
     }
   }
@@ -113,7 +115,8 @@ export class D1Service {
           name: String(row.user_name || ''),
           profilePic: row.profile_pic ? String(row.profile_pic) : undefined
         },
-        likeCount: 0,
+        likeCount: Number(row.like_count || 0),
+        favoriteCount: Number(row.favorite_count || 0),
         createdAt: Number(row.created_at)
       }
     })
@@ -163,37 +166,15 @@ export class D1Service {
           name: String(row.user_name),
           profilePic: row.profile_pic ? String(row.profile_pic) : undefined
         },
-        likeCount: 0,
+        likeCount: Number(row.like_count || 0),
+        favoriteCount: Number(row.favorite_count || 0),
         createdAt: Number(row.created_at)
       }
     })
   }
 
-  async listUserLikes(userId: string): Promise<Artwork[]> {
-    const stmt = this.db.prepare(`
-      SELECT a.*, u.name as user_name, u.profile_pic
-      FROM artworks_like l
-      JOIN artworks a ON a.id = l.artwork_id
-      JOIN users u ON a.user_id = u.id
-      WHERE l.user_id = ?
-      ORDER BY COALESCE(a.published_at, a.created_at) DESC
-    `)
-    const rows = await stmt.bind(userId).all() as any
-    return (rows.results || []).map((row: any) => ({
-      id: String(row.id),
-      slug: row.slug || this.generateSlug(String(row.title) || 'untitled'),
-      title: String(row.title || 'Untitled'),
-      url: String(row.thumb_url || row.url),
-      status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
-      author: {
-        id: String(row.user_id),
-        name: String(row.user_name || ''),
-        profilePic: row.profile_pic ? String(row.profile_pic) : undefined
-      },
-      likeCount: 0,
-      createdAt: Number(row.created_at)
-    }))
-  }
+  // No per-user likes table anymore; keep a no-op list API for compatibility
+  async listUserLikes(_: string): Promise<Artwork[]> { return [] }
 
   async publishArtwork(id: string): Promise<Artwork | null> {
     const now = Date.now()
@@ -262,6 +243,16 @@ export class D1Service {
     return id
   }
 
+  async incrLikeCount(artworkId: string, delta: number): Promise<number> {
+    const stmt = this.db.prepare(`
+      UPDATE artworks SET like_count = MAX(0, COALESCE(like_count, 0) + ?) WHERE id = ?
+    `)
+    await stmt.bind(delta, artworkId).run()
+    const row = await this.db.prepare(`SELECT like_count FROM artworks WHERE id = ?`).bind(artworkId).first() as any
+    return Number(row?.like_count || 0)
+  }
+
+  // Persist per-user like mapping for durability of "我的点赞" list
   async addLike(userId: string, artworkId: string): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO artworks_like (user_id, artwork_id, created_at)
@@ -286,6 +277,16 @@ export class D1Service {
     return (res?.results || []).length > 0
   }
 
+  async incrFavoriteCount(artworkId: string, delta: number): Promise<number> {
+    const stmt = this.db.prepare(`
+      UPDATE artworks SET favorite_count = MAX(0, COALESCE(favorite_count, 0) + ?) WHERE id = ?
+    `)
+    await stmt.bind(delta, artworkId).run()
+    const row = await this.db.prepare(`SELECT favorite_count FROM artworks WHERE id = ?`).bind(artworkId).first() as any
+    return Number(row?.favorite_count || 0)
+  }
+
+  // Persist per-user favorite mapping for durability of "我的收藏" list
   async addFavorite(userId: string, artworkId: string): Promise<void> {
     const stmt = this.db.prepare(`
       INSERT INTO artworks_favorite (user_id, artwork_id, created_at)

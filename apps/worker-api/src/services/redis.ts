@@ -10,6 +10,7 @@ type StringSet = Set<string>
 const memory = {
   likeByArtworkId: new Map<string, number>(),
   favoriteByUserId: new Map<string, StringSet>(),
+  likedByUserId: new Map<string, StringSet>(),
 }
 
 export class RedisService {
@@ -115,6 +116,41 @@ export class RedisService {
       return memory.favoriteByUserId.get(userId)?.has(artworkId) || false
     }
     const result = await this.execute('SISMEMBER', `user:${userId}:favorites`, artworkId)
+    return result === 1
+  }
+
+  // Per-user likes set (for "我的点赞" 列表与 isLiked 判断)
+  async addUserLike(userId: string, artworkId: string): Promise<void> {
+    if (this.isDevMode) {
+      const set = memory.likedByUserId.get(userId) || new Set<string>()
+      set.add(artworkId)
+      memory.likedByUserId.set(userId, set)
+      return
+    }
+    await this.execute('SADD', `user:${userId}:likes`, artworkId)
+  }
+
+  async removeUserLike(userId: string, artworkId: string): Promise<void> {
+    if (this.isDevMode) {
+      memory.likedByUserId.get(userId)?.delete(artworkId)
+      return
+    }
+    await this.execute('SREM', `user:${userId}:likes`, artworkId)
+  }
+
+  async listUserLikes(userId: string): Promise<string[]> {
+    if (this.isDevMode) {
+      return Array.from(memory.likedByUserId.get(userId) || [])
+    }
+    const result = await this.execute('SMEMBERS', `user:${userId}:likes`)
+    return (result as string[]) || []
+  }
+
+  async isLiked(userId: string, artworkId: string): Promise<boolean> {
+    if (this.isDevMode) {
+      return memory.likedByUserId.get(userId)?.has(artworkId) || false
+    }
+    const result = await this.execute('SISMEMBER', `user:${userId}:likes`, artworkId)
     return result === 1
   }
 

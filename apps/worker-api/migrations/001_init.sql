@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS artworks (
   width INTEGER,
   height INTEGER,
   mime_type TEXT,
+  like_count INTEGER DEFAULT 0,
+  favorite_count INTEGER DEFAULT 0,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

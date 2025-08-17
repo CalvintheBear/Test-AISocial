@@ -8,6 +8,7 @@ export type ArtworkListItem = {
   author: User
   likeCount: number
   isFavorite: boolean
+  favoriteCount?: number
   status: 'draft' | 'published'
 }
 
@@ -21,6 +22,7 @@ export type ArtworkDetail = {
   status: 'draft' | 'published'
   author: User
   likeCount: number
+  favoriteCount?: number
   isFavorite: boolean
 }
 

@@ -30,6 +30,9 @@ export default async function ArtworkPage({
 }) {
   const { id } = params
   const artwork = await getArtworkDetail(id)
+  // SSR 场景下已无法直接拿到前端 Clerk 的 token，这里保持按钮展示的最小权限：
+  // 仅当后端返回的详情中作者与会话匹配才渲染（未来可改为客户端小部件）。
+  let isAuthor = false
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -82,6 +85,8 @@ export default async function ArtworkPage({
             initialLikeCount={artwork.likeCount}
             initialIsFavorite={artwork.isFavorite}
             status={artwork.status}
+            isAuthor={false}
+            authorId={artwork.author.id}
           />
 
           {/* Stats */}
