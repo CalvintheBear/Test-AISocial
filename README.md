@@ -216,10 +216,12 @@ CREATE TABLE users (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   email TEXT NOT NULL,
-  profile_pic TEXT
+  profile_pic TEXT,
+  created_at INTEGER,
+  updated_at INTEGER
 );
 
--- 作品表（建议参照迁移包含 thumb_url/slug）
+-- 作品表（包含完整元数据字段）
 CREATE TABLE artworks (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -228,7 +230,15 @@ CREATE TABLE artworks (
   thumb_url TEXT,
   slug TEXT,
   status TEXT NOT NULL CHECK (status IN ('draft','published')),
-  created_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER,
+  published_at INTEGER,
+  mime_type TEXT,
+  width INTEGER,
+  height INTEGER,
+  prompt TEXT,
+  model TEXT,
+  seed INTEGER
 );
 
 -- 点赞表

@@ -72,7 +72,8 @@ vercel --prod
 - **Database**: Cloudflare D1 (SQLite)
 - **Storage**: Cloudflare R2 (S3-compatible)
 - **Cache**: Upstash Redis (REST API)
-- **Deployment**: Serverless (Workers + Vercel/Cloudflare Pages)
+- **Deployment**: Serverless (Workers + Cloudflare Pages)
+- **Package Manager**: npm workspaces (monorepo)
 
 ### Key Features
 - AI artwork generation and sharing
@@ -100,7 +101,7 @@ vercel --prod
 
 ### Database Schema (D1)
 - **users**: id, name, email, profile_pic
-- **artworks**: id, user_id, title, url, status (draft/published), created_at
+- **artworks**: id, user_id, title, url, thumb_url, slug, status (draft/published), created_at
 - **artworks_like**: user_id, artwork_id, created_at (composite PK)
 - **artworks_favorite**: user_id, artwork_id, created_at (composite PK)
 
@@ -131,9 +132,15 @@ DEV_MODE=1
 
 #### Backend (wrangler.toml)
 ```toml
+name = "ai-social-api"
+main = "src/index.ts"
+compatibility_date = "2024-06-01"
+compatibility_flags = ["nodejs_compat"]
+
 [vars]
 R2_PUBLIC_UPLOAD_BASE = "https://your-r2-domain.r2.dev"
 R2_PUBLIC_AFTER_BASE = "https://your-r2-domain.r2.dev"
+ALLOWED_ORIGIN = "https://your-frontend-domain.com"
 
 [[d1_databases]]
 binding = "DB"
@@ -147,6 +154,12 @@ bucket_name = "your-upload-bucket"
 [[r2_buckets]]
 binding = "R2_AFTER"
 bucket_name = "your-after-bucket"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[observability.logs]
+enabled = true
 ```
 
 ## Development Workflow

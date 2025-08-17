@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { UserIdParamSchema, PaginationQuerySchema, validateParam } from '../schemas/validation'
-import { ok } from '../utils/response'
+import { ok, fail } from '../utils/response'
 
 const router = new Hono()
 
@@ -87,6 +87,25 @@ router.get('/:id/favorites', async (c) => {
     })
   )
   return c.json(ok(items.filter(Boolean)))
+})
+
+router.get('/me', async (c) => {
+  const userId = (c as any).get('userId') as string
+  if (!userId) return c.json(fail('AUTH_REQUIRED', 'signin'), 401)
+  
+  const d1 = D1Service.fromEnv(c.env)
+  const user = await d1.getUser(userId)
+  
+  if (!user) return c.json(fail('NOT_FOUND', 'User not found'), 404)
+  
+  return c.json(ok({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    profilePic: user.profilePic,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  }))
 })
 
 export default router

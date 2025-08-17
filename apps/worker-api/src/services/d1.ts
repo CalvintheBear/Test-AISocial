@@ -86,7 +86,7 @@ export class D1Service {
       FROM artworks a
       JOIN users u ON a.user_id = u.id
       WHERE a.status = 'published'
-      ORDER BY a.created_at DESC
+      ORDER BY COALESCE(a.published_at, a.created_at) DESC
       LIMIT ?
     `)
     const rows = await stmt.bind(limit).all() as any
@@ -137,7 +137,7 @@ export class D1Service {
       FROM artworks a
       JOIN users u ON a.user_id = u.id
       WHERE a.user_id = ?
-      ORDER BY a.created_at DESC
+      ORDER BY COALESCE(a.published_at, a.created_at) DESC
     `)
     const rows = await stmt.bind(userId).all() as any
     
@@ -163,23 +163,54 @@ export class D1Service {
   }
 
   async publishArtwork(id: string): Promise<Artwork | null> {
+    const now = Date.now()
     const stmt = this.db.prepare(`
-      UPDATE artworks SET status = 'published' WHERE id = ?
+      UPDATE artworks SET status = 'published', published_at = ?, updated_at = ? WHERE id = ?
     `)
-    await stmt.bind(id).run()
+    await stmt.bind(now, now, id).run()
     
     return this.getArtwork(id)
   }
 
-  async createArtwork(userId: string, title: string, url: string, thumbUrl?: string): Promise<string> {
+  async createArtwork(
+    userId: string, 
+    title: string, 
+    url: string, 
+    thumbUrl?: string,
+    opts?: { 
+      mimeType?: string; 
+      width?: number; 
+      height?: number; 
+      prompt?: string; 
+      model?: string; 
+      seed?: number;
+    }
+  ): Promise<string> {
     const id = crypto.randomUUID()
     const slug = this.generateSlug(title || 'untitled')
+    const now = Date.now()
     
     const stmt = this.db.prepare(`
-      INSERT INTO artworks (id, user_id, title, url, thumb_url, slug, status, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)
+      INSERT INTO artworks (
+        id, user_id, title, url, thumb_url, slug, status, created_at, updated_at, mime_type, width, height, prompt, model, seed
+      ) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?)
     `)
-    await stmt.bind(id, userId, title, url, thumbUrl || url, slug, Date.now()).run()
+    await stmt.bind(
+      id, 
+      userId, 
+      title, 
+      url, 
+      thumbUrl || url, 
+      slug, 
+      now, // created_at
+      now, // updated_at
+      opts?.mimeType || 'image/png', // mime_type
+      opts?.width || null, // width
+      opts?.height || null, // height
+      opts?.prompt || null, // prompt
+      opts?.model || null, // model
+      opts?.seed || null // seed
+    ).run()
     return id
   }
 
@@ -237,6 +268,26 @@ export class D1Service {
     `)
     const rows = await stmt.bind(userId).all() as any
     return (rows.results || []).map((row: any) => String(row.artwork_id))
+  }
+
+  async getUser(userId: string): Promise<{ id: string; name: string; email: string; profilePic?: string; createdAt?: number; updatedAt?: number } | null> {
+    const stmt = this.db.prepare(`
+      SELECT id, name, email, profile_pic, created_at, updated_at
+      FROM users
+      WHERE id = ?
+    `)
+    const result = await stmt.bind(userId).first() as any
+    
+    if (!result) return null
+    
+    return {
+      id: String(result.id),
+      name: String(result.name || ''), 
+      email: String(result.email || ''),
+      profilePic: result.profile_pic ? String(result.profile_pic) : undefined,
+      createdAt: result.created_at ? Number(result.created_at) : undefined,
+      updatedAt: result.updated_at ? Number(result.updated_at) : undefined
+    }
   }
 
   async updateThumbUrl(artworkId: string, thumbUrl: string): Promise<void> {

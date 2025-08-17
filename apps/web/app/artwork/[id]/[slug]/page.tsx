@@ -39,7 +39,7 @@ export default async function ArtworkPage({
         {/* Artwork Image */}
         <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
           <Image
-            src={artwork.originalUrl}
+            src={artwork.thumbUrl || artwork.originalUrl}
             alt={artwork.title}
             fill
             className="object-contain"

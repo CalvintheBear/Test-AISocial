@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button, Card } from '@/components/ui'
 import { Upload, Sparkles } from 'lucide-react'
 import Image from 'next/image'
+import { usePostPublishRedirect } from '@/hooks/usePostPublishRedirect'
 
 export function CreateArtworkPanel() {
   const [step, setStep] = useState<'generate' | 'preview' | 'publish'>('generate')
@@ -25,9 +26,12 @@ export function CreateArtworkPanel() {
     resetPanel()
   }
 
+  const { redirectToFeed } = usePostPublishRedirect()
+
   const handlePublish = () => {
     alert('作品已发布！')
     resetPanel()
+    redirectToFeed()
   }
 
   const resetPanel = () => {

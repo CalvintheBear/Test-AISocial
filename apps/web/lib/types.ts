@@ -16,6 +16,7 @@ export type ArtworkDetail = {
   slug: string
   title: string
   originalUrl: string
+  thumbUrl: string
   createdAt: number
   status: 'draft' | 'published'
   author: User

@@ -38,7 +38,7 @@ router.get('/', async (c) => {
     id: a.id,
     slug: a.slug,
     title: a.title,
-    thumbUrl: a.url,
+    thumbUrl: (a as any).thumb_url || a.url,
     author: a.author,
     likeCount: likesMap[a.id] || 0,
     isFavorite: favorites.includes(a.id),

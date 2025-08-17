@@ -150,7 +150,11 @@ router.post('/upload', async (c) => {
     
     // Create artwork in D1
     const d1 = D1Service.fromEnv(c.env)
-    const artworkId = await d1.createArtwork(userId, title, url, url) // thumbUrl same as originalUrl initially
+    const artworkId = await d1.createArtwork(userId, title, url, url, {
+      mimeType: contentType,
+      width: null, // Could be extracted from image if needed
+      height: null // Could be extracted from image if needed
+    })
     
     const response = {
       id: artworkId,

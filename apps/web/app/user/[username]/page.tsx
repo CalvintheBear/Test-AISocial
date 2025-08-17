@@ -11,20 +11,25 @@ interface UserProfile {
   name: string
   username: string
   profilePic?: string
-  bio?: string
-  followersCount: number
-  followingCount: number
+  email?: string
+  createdAt?: number
+  updatedAt?: number
 }
 
-// Mock user data for demo
-const mockUser: UserProfile = {
-  id: 'user-demo',
-  name: '演示用户',
-  username: 'demo-user',
-  profilePic: 'https://via.placeholder.com/120x120/3b74ff/ffffff?text=演',
-  bio: 'AI 艺术家，探索人类创造力与人工智能之间的边界',
-  followersCount: 1234,
-  followingCount: 567
+async function getCurrentUser(): Promise<UserProfile | null> {
+  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
+    return {
+      id: 'user-demo',
+      name: '演示用户',
+      username: 'demo-user',
+      profilePic: 'https://via.placeholder.com/120x120/3b74ff/ffffff?text=演',
+    }
+  }
+  try {
+    return await authFetch('/api/users/me')
+  } catch {
+    return null
+  }
 }
 
 async function getUserArtworks(userId: string): Promise<ArtworkListItem[]> {
@@ -42,11 +47,11 @@ async function getUserFavorites(userId: string): Promise<ArtworkListItem[]> {
 }
 
 export const metadata = {
-  title: '演示用户 - AI 社区',
-  description: '查看演示用户的个人资料和创作作品',
+  title: '我的主页 - AI 社区',
+  description: '查看您的个人资料和创作作品',
   openGraph: {
-    title: '演示用户 - AI 社区',
-    description: '查看演示用户的个人资料和创作作品',
+    title: '我的主页 - AI 社区',
+    description: '查看您的个人资料和创作作品',
   },
 }
 
@@ -55,10 +60,19 @@ export default async function UserPage({
 }: { 
   params: { username: string } 
 }) {
-  const { username } = params
+  const user = await getCurrentUser()
   
-  // For demo, use mock user. In real implementation, fetch by username
-  const user = mockUser
+  if (!user) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">请先登录</h1>
+          <p className="text-gray-600">需要登录才能查看个人资料</p>
+        </div>
+      </div>
+    )
+  }
+  
   const artworks = await getUserArtworks(user.id)
   const favorites = await getUserFavorites(user.id)
 
@@ -76,27 +90,20 @@ export default async function UserPage({
           />
           <div className="text-white">
             <h1 className="text-3xl font-bold">{user.name}</h1>
-            <p className="text-lg opacity-90">@{user.username}</p>
-            <p className="mt-2 max-w-md">{user.bio}</p>
+            <p className="text-lg opacity-90">{user.email}</p>
             
             <div className="flex space-x-6 mt-4">
               <div className="text-center">
-                <div className="font-bold text-2xl">{user.followersCount}</div>
-                <div className="opacity-80">关注者</div>
+                <div className="font-bold text-2xl">{artworks.length}</div>
+                <div className="opacity-80">作品</div>
               </div>
               <div className="text-center">
-                <div className="font-bold text-2xl">{user.followingCount}</div>
-                <div className="opacity-80">关注中</div>
+                <div className="font-bold text-2xl">{favorites.length}</div>
+                <div className="opacity-80">收藏</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* 提示：登录后可展示更多私有数据 */}
-      <div className="mb-6 text-sm text-gray-600">
-        <SignedOut>您当前以游客身份浏览。登录后可查看草稿与个性化数据。</SignedOut>
-        <SignedIn>您已登录，可查看私有数据与交互能力。</SignedIn>
       </div>
 
       {/* Tabs */}
