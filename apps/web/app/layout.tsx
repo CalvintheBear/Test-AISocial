@@ -2,8 +2,8 @@ import '../styles/globals.css'
 import type { ReactNode } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import { ClerkProvider } from '@clerk/nextjs'
 import { ClientLayout } from './ClientLayout'
+import ClientProviders from './ClientProviders'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -46,9 +46,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ClerkProvider publishableKey={publishableKey}>
+    <ClientProviders publishableKey={publishableKey}>
       <Shell>{children}</Shell>
-    </ClerkProvider>
+    </ClientProviders>
   )
 }
 

@@ -1,19 +1,11 @@
-// 可选接入 Clerk：在存在 @clerk/nextjs 时动态获取 token，否则回退到 DEV_JWT
-// 注意：为兼容 Edge/Pages 构建环境，不在顶层 require/clerk。
+// 运行时 Token 方案（Edge 兼容）：优先使用环境变量 DEV_JWT；
+// 如需接入 Clerk，请在 Node.js 运行时下通过独立服务器动作读取并下发到前端或设置 Cookie，再由此处读取。
 let tokenProvider: (() => Promise<string | undefined>) | null = null
 export async function initClerkTokenProvider(): Promise<void> {
+  // 为保障 Edge 构建通过，当前不从 @clerk/nextjs 动态导入。
+  // 预留扩展点：可接入从 Cookie/Headers 读取 Bearer Token 的方案。
   if (tokenProvider) return
-  try {
-    // 动态导入，避免在 Edge 构建时引入 Node 依赖（fs/path）
-    const mod = (await import('@clerk/nextjs')).default || (await import('@clerk/nextjs'))
-    const { auth } = (mod as any)
-    tokenProvider = async () => {
-      const { getToken } = auth()
-      return await getToken()?.catch(() => undefined)
-    }
-  } catch {
-    tokenProvider = null
-  }
+  tokenProvider = async () => undefined
 }
 
 export async function authFetch<T = any>(input: RequestInfo, init: RequestInit = {}) {
@@ -22,12 +14,8 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
     token = process.env.NEXT_PUBLIC_DEV_JWT
   } else {
-    try {
-      await initClerkTokenProvider()
-      token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
-    } catch {
-      token = process.env.NEXT_PUBLIC_DEV_JWT
-    }
+    await initClerkTokenProvider()
+    token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
   }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'

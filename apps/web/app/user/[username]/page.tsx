@@ -113,4 +113,4 @@ export default async function UserPage({
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export const runtime = 'nodejs'
+export const runtime = 'edge'

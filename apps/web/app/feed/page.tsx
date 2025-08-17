@@ -5,7 +5,7 @@ import { ArtworkListItem } from '@/lib/types'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-export const runtime = 'nodejs'
+export const runtime = 'edge'
 
 async function getFeedData(): Promise<ArtworkListItem[]> {
   // 动态运行时直接使用 API 相对路径，交由 authFetch 在服务器端拼接 BASE
