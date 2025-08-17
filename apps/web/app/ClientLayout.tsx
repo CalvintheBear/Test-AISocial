@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar'
 import { Header } from '@/components/ui/header'
 import { Button } from '@/components/ui/button'
-import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 import { CreateArtworkModal } from '@/components/app/CreateArtworkModal'
 
 const inter = Inter({ 
@@ -40,21 +39,16 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                 <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/">{isSidebarCollapsed ? '🏠' : '首页 / Landing'}</Link>
                 <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/features">{isSidebarCollapsed ? '📘' : '功能介绍'}</Link>
                 <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/feed">{isSidebarCollapsed ? '🖼️' : '推荐 Feed'}</Link>
-                <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/demo">{isSidebarCollapsed ? '👤' : '用户主页'}</Link>
+                <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/me">{isSidebarCollapsed ? '👤' : '我的主页'}</Link>
                 <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/artwork">{isSidebarCollapsed ? '🖌️' : '工作台'}</Link>
               </nav>
             </SidebarContent>
             <SidebarFooter>
               {!isSidebarCollapsed && (
                 <div className="w-full flex justify-between items-center px-3 py-2">
-                  <SignedOut>
-                    <SignInButton mode="modal">
-                      <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
-                    </SignInButton>
-                  </SignedOut>
-                  <SignedIn>
-                    <UserButton afterSignOutUrl="/" />
-                  </SignedIn>
+                  <Link href="/login" className="w-full">
+                    <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
+                  </Link>
                 </div>
               )}
             </SidebarFooter>
@@ -69,22 +63,15 @@ export function ClientLayout({ children }: ClientLayoutProps) {
               <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/" onClick={() => setIsSidebarOpen(false)}>首页 / Landing</Link>
               <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/features" onClick={() => setIsSidebarOpen(false)}>功能介绍</Link>
               <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/feed" onClick={() => setIsSidebarOpen(false)}>推荐 Feed</Link>
-              <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/demo" onClick={() => setIsSidebarOpen(false)}>用户主页</Link>
+              <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/me" onClick={() => setIsSidebarOpen(false)}>我的主页</Link>
               <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/artwork" onClick={() => setIsSidebarOpen(false)}>工作台</Link>
             </nav>
           </SidebarContent>
           <SidebarFooter>
             <div className="w-full px-3 py-2">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
-                </SignInButton>
-              </SignedOut>
-              <SignedIn>
-                <div className="flex justify-end">
-                  <UserButton afterSignOutUrl="/" />
-                </div>
-              </SignedIn>
+              <Link href="/login" className="w-full">
+                <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
+              </Link>
             </div>
           </SidebarFooter>
         </Sidebar>

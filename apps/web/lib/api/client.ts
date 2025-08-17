@@ -3,7 +3,7 @@
 let tokenProvider: (() => Promise<string | undefined>) | null = null
 export async function initClerkTokenProvider(): Promise<void> {
   // 为保障 Edge 构建通过，当前不从 @clerk/nextjs 动态导入。
-  // 预留扩展点：可接入从 Cookie/Headers 读取 Bearer Token 的方案。
+
   if (tokenProvider) return
   tokenProvider = async () => undefined
 }
@@ -18,9 +18,17 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     if (typeof window !== 'undefined' && (window as any)?.Clerk) {
       try {
         const clerk = (window as any).Clerk
-        // 更可靠的获取方式：跳过缓存，必要时多次尝试
-        token = await clerk?.session?.getToken?.({ skipCache: true })
-        if (!token) token = await clerk?.session?.getToken?.()
+        if (!(clerk as any)?.loaded) {
+          await clerk.load?.()
+        }
+        const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE
+        if (template) {
+          token = await clerk?.session?.getToken?.({ template, skipCache: true })
+          if (!token) token = await clerk?.session?.getToken?.({ template })
+        } else {
+          token = await clerk?.session?.getToken?.({ skipCache: true })
+          if (!token) token = await clerk?.session?.getToken?.()
+        }
       } catch {
         token = undefined
       }
@@ -52,7 +60,7 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     ...(init.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
-  const res = await fetch(url, { ...init, headers, cache: 'no-store' })
+  const res = await fetch(url, { ...init, headers, cache: 'no-store', credentials: 'include' })
   if (!res.ok) {
     let err: any
     try { err = await res.json() } catch { err = { message: res.statusText } }

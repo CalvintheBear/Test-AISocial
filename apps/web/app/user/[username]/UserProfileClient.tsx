@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { SignedIn, SignedOut } from '@clerk/nextjs'
+import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArtworkGrid } from '@/components/app/ArtworkGrid'
@@ -15,6 +15,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 	const [favorites, setFavorites] = useState<ArtworkListItem[]>([])
 	const [likes, setLikes] = useState<ArtworkListItem[]>([])
 	const [loading, setLoading] = useState(true)
+	const [needSignin, setNeedSignin] = useState(false)
 
 	async function reloadAll(userId: string) {
 		const [arts, favs, lks] = await Promise.all([
@@ -31,14 +32,20 @@ export default function UserProfileClient({ username }: { username: string }) {
 		let mounted = true
 		async function run() {
 			try {
-				const profile = await authFetch('/api/users/me')
+				// 先请求 /api/users/me，401 则提示登录
+				const res = await fetch('/api/users/me', { credentials: 'include' })
 				if (!mounted) return
+				if (res.status === 401) {
+					setNeedSignin(true)
+					return
+				}
+				const profile = await res.json().then((d) => (d?.success ? d.data : d))
 				setMe(profile)
 				if (profile?.id) {
 					await reloadAll(profile.id)
 				}
 			} catch {
-				// 未登录或接口失败，忽略
+				setNeedSignin(true)
 			} finally {
 				if (mounted) setLoading(false)
 			}
@@ -46,6 +53,15 @@ export default function UserProfileClient({ username }: { username: string }) {
 		run()
 		return () => { mounted = false }
 	}, [])
+
+	if (needSignin) {
+		return (
+			<div className="py-16 text-center">
+				<p className="mb-4 text-gray-600">您尚未登录，请先登录以查看个人主页。</p>
+				<SignInButton mode="modal"/>
+			</div>
+		)
+	}
 
 	return (
 		<div>
