@@ -29,15 +29,25 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+
+  const Shell = ({ children }: { children: ReactNode }) => (
+    <html lang="zh-CN" className={`${inter.variable}`}>
+      <body className="font-sans antialiased bg-bg">
+        <ClientLayout>
+          {children}
+        </ClientLayout>
+      </body>
+    </html>
+  )
+
+  if (!publishableKey) {
+    return <Shell>{children}</Shell>
+  }
+
   return (
-    <ClerkProvider>
-      <html lang="zh-CN" className={`${inter.variable}`}>
-        <body className="font-sans antialiased bg-bg">
-          <ClientLayout>
-            {children}
-          </ClientLayout>
-        </body>
-      </html>
+    <ClerkProvider publishableKey={publishableKey}>
+      <Shell>{children}</Shell>
     </ClerkProvider>
   )
 }

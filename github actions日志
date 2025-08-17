@@ -1,0 +1,5 @@
+14s
+Run npx --yes @cloudflare/next-on-pages@1 --project-dir=apps/web
+npm warn deprecated path-match@1.2.4: This package is archived and no longer maintained. For support, visit https://github.com/expressjs/express/discussions
+error: unknown option '--project-dir=apps/web'
+Error: Process completed with exit code 1.

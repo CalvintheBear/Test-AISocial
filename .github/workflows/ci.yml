@@ -16,24 +16,21 @@ jobs:
           cache: 'npm'
       - run: npm ci
       - name: Build Next.js (apps/web)
+        working-directory: apps/web
         env:
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_USE_MOCK: '0'
           NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-        run: npm --workspace apps/web run build
-      - name: Prebuild for Cloudflare Pages (next-on-pages)
-        env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          NEXT_PUBLIC_USE_MOCK: '0'
-          NEXT_PUBLIC_API_BASE_URL: ${{ secrets.NEXT_PUBLIC_API_BASE_URL }}
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
-        run: npx --yes @cloudflare/next-on-pages@1 --project-dir=apps/web
+          NODE_VERSION: '20'
+        run: |
+          npm ci
+          npm run build
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: web-output
-          path: apps/web/.vercel/output
+          path: apps/web/.next
 
   deploy-workers:
     needs: build-web
@@ -80,14 +77,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: web-output
-          path: apps/web/.vercel/output
+          path: apps/web/.next
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: ${{ secrets.CF_PAGES_PROJECT_NAME }}
-          directory: apps/web/.vercel/output
+          directory: apps/web/.next
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
 

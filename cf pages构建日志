@@ -1,106 +1,240 @@
-Run npm ci
-  
-npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
-npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
-npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
-npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
-npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
-npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
-added 509 packages, and audited 512 packages in 15s
-170 packages are looking for funding
-  run `npm fund` for details
-1 critical severity vulnerability
-To address all issues, run:
-  npm audit fix --force
-Run `npm audit` for details.
-20s
-Run npm --workspace apps/web run build
-  
-> ai-social-web@0.1.0 build
-> next build
-⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
-Attention: Next.js now collects completely anonymous telemetry regarding usage.
-This information is used to shape Next.js' roadmap and prioritize features.
-You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
-https://nextjs.org/telemetry
-  ▲ Next.js 14.2.5
-   Creating an optimized production build ...
- ✓ Compiled successfully
-   Linting and checking validity of types ...
-   Collecting page data ...
-   Generating static pages (0/8) ...
- ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
-   Generating static pages (2/8) 
-   Generating static pages (4/8) 
-   Generating static pages (6/8) 
-TypeError: Invalid URL
-    at new URL (node:internal/url:806:29)
-    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
-    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
-    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
-    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
-    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
-    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
-    at stringify (<anonymous>)
-    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
-    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698) {
-  code: 'ERR_INVALID_URL',
-  input: '/api/feed',
-  base: '***',
-  digest: '1832363763'
-}
-TypeError: Invalid URL
-    at new URL (node:internal/url:806:29)
-    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
-    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
-    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
-    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
-    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
-    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
-    at stringify (<anonymous>)
-    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
-    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698) {
-  code: 'ERR_INVALID_URL',
-  input: '/api/feed',
-  base: '***',
-  digest: '1832363763'
-}
-TypeError: Invalid URL
-    at new URL (node:internal/url:806:29)
-    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
-    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
-    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
-    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
-    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
-    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
-    at stringify (<anonymous>)
-    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
-    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698) {
-  code: 'ERR_INVALID_URL',
-  input: '/api/feed',
-  base: '***',
-  digest: '1832363763'
-}
-Error occurred prerendering page "/feed". Read more: https://nextjs.org/docs/messages/prerender-error
-TypeError: Invalid URL
-    at new URL (node:internal/url:806:29)
-    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
-    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
-    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
-    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
-    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
-    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
-    at stringify (<anonymous>)
-    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
-    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698)
- ✓ Generating static pages (8/8)
-> Export encountered errors on following paths:
-	/feed/page: /feed
-npm error Lifecycle script `build` failed with error:
-npm error code 1
-npm error path /home/runner/work/Test-AISocial/Test-AISocial/apps/web
-npm error workspace ai-social-web@0.1.0
-npm error location /home/runner/work/Test-AISocial/Test-AISocial/apps/web
-npm error command failed
-npm error command sh -c next build
-Error: Process completed with exit code 1.
+2025-08-17T05:14:16.500551Z	Cloning repository...
+2025-08-17T05:14:17.113487Z	From https://github.com/CalvintheBear/Test-AISocial
+2025-08-17T05:14:17.113964Z	 * branch            2e3c659602cd51b767a7120ee38e6562345c8568 -> FETCH_HEAD
+2025-08-17T05:14:17.114125Z	
+2025-08-17T05:14:17.151602Z	HEAD is now at 2e3c659 触发部署
+2025-08-17T05:14:17.172049Z	
+2025-08-17T05:14:17.257692Z	
+2025-08-17T05:14:17.258226Z	Using v2 root directory strategy
+2025-08-17T05:14:17.281513Z	Success: Finished cloning repository files
+2025-08-17T05:14:19.029623Z	Checking for configuration in a Wrangler configuration file (BETA)
+2025-08-17T05:14:19.030363Z	
+2025-08-17T05:14:20.149464Z	No wrangler.toml file found. Continuing.
+2025-08-17T05:14:20.237041Z	Detected the following tools from environment: nodejs@20.19.2, npm@10.9.2
+2025-08-17T05:14:20.237753Z	Installing nodejs 20.19.2
+2025-08-17T05:14:21.332273Z	Trying to update node-build... ok
+2025-08-17T05:14:21.437764Z	To follow progress, use 'tail -f /tmp/node-build.20250817051421.494.log' or pass --verbose
+2025-08-17T05:14:21.54367Z	Downloading node-v20.19.2-linux-x64.tar.gz...
+2025-08-17T05:14:21.851169Z	-> https://nodejs.org/dist/v20.19.2/node-v20.19.2-linux-x64.tar.gz
+2025-08-17T05:14:23.612617Z	
+2025-08-17T05:14:23.613031Z	WARNING: node-v20.19.2-linux-x64 is in LTS Maintenance mode and nearing its end of life.
+2025-08-17T05:14:23.613155Z	It only receives *critical* security updates, *critical* bug fixes and documentation updates.
+2025-08-17T05:14:23.613263Z	
+2025-08-17T05:14:23.613383Z	Installing node-v20.19.2-linux-x64...
+2025-08-17T05:14:24.046424Z	Installed node-v20.19.2-linux-x64 to /opt/buildhome/.asdf/installs/nodejs/20.19.2
+2025-08-17T05:14:24.046805Z	
+2025-08-17T05:14:25.129346Z	Installing project dependencies: npm clean-install --progress=false
+2025-08-17T05:14:28.770256Z	npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2025-08-17T05:14:29.448671Z	npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2025-08-17T05:14:30.779712Z	npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2025-08-17T05:14:30.969Z	npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2025-08-17T05:14:31.410135Z	npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+2025-08-17T05:14:34.462618Z	npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2025-08-17T05:14:46.87345Z	
+2025-08-17T05:14:46.8738Z	added 509 packages, and audited 512 packages in 21s
+2025-08-17T05:14:46.873938Z	
+2025-08-17T05:14:46.874018Z	170 packages are looking for funding
+2025-08-17T05:14:46.874192Z	  run `npm fund` for details
+2025-08-17T05:14:46.929416Z	
+2025-08-17T05:14:46.929749Z	1 critical severity vulnerability
+2025-08-17T05:14:46.929889Z	
+2025-08-17T05:14:46.930013Z	To address all issues, run:
+2025-08-17T05:14:46.930145Z	  npm audit fix --force
+2025-08-17T05:14:46.930248Z	
+2025-08-17T05:14:46.930378Z	Run `npm audit` for details.
+2025-08-17T05:14:46.950317Z	Executing user command: npm ci && npm run build
+2025-08-17T05:14:56.299069Z	npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+2025-08-17T05:14:56.419277Z	npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+2025-08-17T05:14:56.428485Z	npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+2025-08-17T05:14:56.520383Z	npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+2025-08-17T05:14:56.520921Z	npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+2025-08-17T05:14:58.519845Z	npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+2025-08-17T05:15:05.053122Z	
+2025-08-17T05:15:05.05352Z	added 509 packages, and audited 512 packages in 18s
+2025-08-17T05:15:05.053667Z	
+2025-08-17T05:15:05.053904Z	170 packages are looking for funding
+2025-08-17T05:15:05.054005Z	  run `npm fund` for details
+2025-08-17T05:15:05.119625Z	
+2025-08-17T05:15:05.11995Z	1 critical severity vulnerability
+2025-08-17T05:15:05.120137Z	
+2025-08-17T05:15:05.120229Z	To address all issues, run:
+2025-08-17T05:15:05.120312Z	  npm audit fix --force
+2025-08-17T05:15:05.120465Z	
+2025-08-17T05:15:05.120671Z	Run `npm audit` for details.
+2025-08-17T05:15:05.557771Z	
+2025-08-17T05:15:05.558123Z	> ai-social@1.0.0 build
+2025-08-17T05:15:05.558306Z	> npm --workspace apps/web run build
+2025-08-17T05:15:05.558435Z	
+2025-08-17T05:15:05.778201Z	
+2025-08-17T05:15:05.778533Z	> ai-social-web@0.1.0 build
+2025-08-17T05:15:05.778681Z	> next build
+2025-08-17T05:15:05.778846Z	
+2025-08-17T05:15:06.43357Z	⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+2025-08-17T05:15:06.43834Z	Attention: Next.js now collects completely anonymous telemetry regarding usage.
+2025-08-17T05:15:06.438637Z	This information is used to shape Next.js' roadmap and prioritize features.
+2025-08-17T05:15:06.438747Z	You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+2025-08-17T05:15:06.438813Z	https://nextjs.org/telemetry
+2025-08-17T05:15:06.438874Z	
+2025-08-17T05:15:06.501713Z	  ▲ Next.js 14.2.5
+2025-08-17T05:15:06.502288Z	
+2025-08-17T05:15:06.565812Z	   Creating an optimized production build ...
+2025-08-17T05:15:21.989023Z	 ✓ Compiled successfully
+2025-08-17T05:15:21.99012Z	   Linting and checking validity of types ...
+2025-08-17T05:15:26.161308Z	   Collecting page data ...
+2025-08-17T05:15:27.722744Z	   Generating static pages (0/8) ...
+2025-08-17T05:15:28.805347Z	   Generating static pages (2/8) 
+2025-08-17T05:15:28.805693Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.805833Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.805944Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.806066Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.80618Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.806491Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.806717Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.806914Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.807105Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.807192Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.807263Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546) {
+2025-08-17T05:15:28.807403Z	  digest: '1748102155'
+2025-08-17T05:15:28.807534Z	}
+2025-08-17T05:15:28.807651Z	
+2025-08-17T05:15:28.807767Z	Error occurred prerendering page "/login". Read more: https://nextjs.org/docs/messages/prerender-error
+2025-08-17T05:15:28.807888Z	
+2025-08-17T05:15:28.807988Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.808054Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.808112Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.808175Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.808268Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.808335Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.80842Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.808536Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.80863Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.808745Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.808901Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.809913Z	   Generating static pages (4/8) 
+2025-08-17T05:15:28.810042Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.810149Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.810572Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.81067Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.810738Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.810815Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.810875Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.810966Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.811084Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.811197Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.811326Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546) {
+2025-08-17T05:15:28.811526Z	  digest: '1748102155'
+2025-08-17T05:15:28.811679Z	}
+2025-08-17T05:15:28.811798Z	
+2025-08-17T05:15:28.811915Z	Error occurred prerendering page "/_not-found". Read more: https://nextjs.org/docs/messages/prerender-error
+2025-08-17T05:15:28.812129Z	
+2025-08-17T05:15:28.812295Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.812421Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.812558Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.812676Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.812788Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.812924Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.813035Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.813142Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.813249Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.813364Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.81347Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.813637Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.813855Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.814004Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.814134Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.814205Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.814262Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.814341Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.814438Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.81455Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.814649Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.814762Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546) {
+2025-08-17T05:15:28.814869Z	  digest: '1748102155'
+2025-08-17T05:15:28.81497Z	}
+2025-08-17T05:15:28.815063Z	
+2025-08-17T05:15:28.815153Z	Error occurred prerendering page "/". Read more: https://nextjs.org/docs/messages/prerender-error
+2025-08-17T05:15:28.815246Z	
+2025-08-17T05:15:28.81534Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.81542Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.815522Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.81573Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.815895Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.816011Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.816113Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.816219Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.816315Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.816407Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.81681Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.816975Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.817088Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.817191Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.817299Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.817398Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.81752Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.817623Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.817731Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.817827Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.817945Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.81805Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546) {
+2025-08-17T05:15:28.818204Z	  digest: '1748102155'
+2025-08-17T05:15:28.818311Z	}
+2025-08-17T05:15:28.818413Z	
+2025-08-17T05:15:28.818537Z	Error occurred prerendering page "/artwork". Read more: https://nextjs.org/docs/messages/prerender-error
+2025-08-17T05:15:28.818656Z	
+2025-08-17T05:15:28.818765Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.818912Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.819019Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.819118Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.819288Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.819406Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.81952Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.819639Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.819732Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.819828Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.819945Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.820046Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.820163Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.820274Z	   Generating static pages (6/8) 
+2025-08-17T05:15:28.820385Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.820522Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.820664Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.820795Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.820928Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.82104Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.821141Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.821231Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.821324Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546) {
+2025-08-17T05:15:28.821413Z	  digest: '1748102155'
+2025-08-17T05:15:28.821526Z	}
+2025-08-17T05:15:28.821634Z	
+2025-08-17T05:15:28.821747Z	Error occurred prerendering page "/features". Read more: https://nextjs.org/docs/messages/prerender-error
+2025-08-17T05:15:28.821857Z	
+2025-08-17T05:15:28.821952Z	Error: @clerk/clerk-react: Missing publishableKey. You can get your key at https://dashboard.clerk.com/last-active?path=api-keys.
+2025-08-17T05:15:28.822034Z	    at Object.throwMissingPublishableKeyError (/opt/buildhome/repo/apps/web/.next/server/chunks/814.js:75:1550)
+2025-08-17T05:15:28.822165Z	    at /opt/buildhome/repo/apps/web/.next/server/chunks/814.js:71:51184
+2025-08-17T05:15:28.822451Z	    at nj (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:46251)
+2025-08-17T05:15:28.822587Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47571)
+2025-08-17T05:15:28.822692Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.822791Z	    at nI (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47010)
+2025-08-17T05:15:28.822898Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:47717)
+2025-08-17T05:15:28.822999Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.823104Z	    at nM (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:61156)
+2025-08-17T05:15:28.823201Z	    at nN (/opt/buildhome/repo/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:64546)
+2025-08-17T05:15:28.823297Z	 ✓ Generating static pages (8/8)
+2025-08-17T05:15:28.880369Z	
+2025-08-17T05:15:28.880706Z	> Export encountered errors on following paths:
+2025-08-17T05:15:28.880872Z		/(marketing)/features/page: /features
+2025-08-17T05:15:28.880961Z		/(marketing)/page: /
+2025-08-17T05:15:28.881059Z		/_not-found/page: /_not-found
+2025-08-17T05:15:28.881181Z		/artwork/page: /artwork
+2025-08-17T05:15:28.881277Z		/login/page: /login
+2025-08-17T05:15:28.90805Z	npm error Lifecycle script `build` failed with error:
+2025-08-17T05:15:28.909248Z	npm error code 1
+2025-08-17T05:15:28.909437Z	npm error path /opt/buildhome/repo/apps/web
+2025-08-17T05:15:28.909545Z	npm error workspace ai-social-web@0.1.0
+2025-08-17T05:15:28.909614Z	npm error location /opt/buildhome/repo/apps/web
+2025-08-17T05:15:28.909671Z	npm error command failed
+2025-08-17T05:15:28.909735Z	npm error command sh -c next build
+2025-08-17T05:15:28.937928Z	Failed: Error while executing user command. Exited with error code: 1
+2025-08-17T05:15:28.949423Z	Failed: build command exited with code: 1
+2025-08-17T05:15:30.026717Z	Failed: error occurred while running build command
