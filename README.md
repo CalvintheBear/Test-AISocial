@@ -160,18 +160,18 @@ R2_PUBLIC_AFTER_BASE=...
 
 #### 前端变量 (`apps/web/.env.local`)
 ```
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=https://cuttingasmr.org
 NEXT_PUBLIC_USE_MOCK=0           # 0=真实API，1=mock数据
-NEXT_PUBLIC_DEV_JWT=dev-token    # 开发环境JWT
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
+NEXT_PUBLIC_DEV_JWT=dev-token    # 开发环境JWT（未接 Clerk 前）
+NEXT_PUBLIC_API_BASE_URL=https://your-worker-subdomain.workers.dev
 ```
 
 #### 后端变量 (`apps/worker-api/.dev.vars`)
 ```
 # Clerk配置
-CLERK_SECRET_KEY=sk_test_...
-CLERK_ISSUER=https://your-clerk-instance.clerk.accounts.dev
-CLERK_JWKS_URL=https://your-clerk-instance.clerk.accounts.dev/.well-known/jwks.json
+CLERK_SECRET_KEY=sk_live_...
+CLERK_ISSUER=https://<your>.clerk.accounts.dev
+CLERK_JWKS_URL=https://<your>.clerk.accounts.dev/.well-known/jwks.json
 
 # Upstash Redis
 UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
@@ -180,6 +180,9 @@ UPSTASH_REDIS_REST_TOKEN=your-upstash-token
 # R2 公网访问（可选）
 R2_PUBLIC_UPLOAD_BASE=https://...
 R2_PUBLIC_AFTER_BASE=https://...
+
+# 允许的前端域（CORS）
+ALLOWED_ORIGIN=https://cuttingasmr.org
 
 # 开发模式
 DEV_MODE=1
