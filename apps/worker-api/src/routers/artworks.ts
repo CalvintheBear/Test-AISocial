@@ -156,6 +156,7 @@ router.post('/upload', async (c) => {
   const body = await c.req.parseBody()
   const file = body.file as File
   const title = body.title as string
+  const prompt = (body as any).prompt as string | undefined
   
   if (!file) {
     return c.json(fail('INVALID_INPUT', 'No file provided'), 400)
@@ -182,7 +183,8 @@ router.post('/upload', async (c) => {
       mimeType: contentType,
       // 若可获取尺寸再填；此处不传递以满足类型
       width: undefined,
-      height: undefined
+      height: undefined,
+      prompt: prompt || undefined,
     })
     
     const response = {
