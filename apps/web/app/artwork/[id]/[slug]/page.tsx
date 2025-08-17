@@ -3,6 +3,7 @@ import { API } from '@/lib/api/endpoints'
 import { ArtworkDetail } from '@/lib/types'
 import Image from 'next/image'
 import { Button, Card } from '@/components/ui'
+import { ArtworkActions } from '@/components/app/ArtworkActions'
 
 async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
   return authFetch(API.artwork(artworkId))
@@ -76,36 +77,12 @@ export default async function ArtworkPage({
           </div>
 
           {/* Action Bar */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between space-x-4">
-              <div className="flex items-center space-x-4">
-                <Button 
-                  variant={artwork.isFavorite ? "primary" : "outline"}
-                  className="flex items-center space-x-2"
-                >
-                  <span>{artwork.isFavorite ? '★' : '☆'}</span>
-                  <span>收藏</span>
-                </Button>
-                
-                <Button 
-                  variant="outline" 
-                  className="flex items-center space-x-2"
-                >
-                  <span>♥</span>
-                  <span>{artwork.likeCount}</span>
-                </Button>
-              </div>
-              
-              {artwork.status === 'draft' && (
-                <Button 
-                  variant="primary" 
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  发布作品
-                </Button>
-              )}
-            </div>
-          </Card>
+          <ArtworkActions
+            artworkId={artwork.id}
+            initialLikeCount={artwork.likeCount}
+            initialIsFavorite={artwork.isFavorite}
+            status={artwork.status}
+          />
 
           {/* Stats */}
           <Card className="p-4">

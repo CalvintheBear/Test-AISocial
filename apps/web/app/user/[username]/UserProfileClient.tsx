@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { SignedIn, SignedOut, SignInButton, useAuth } from '@clerk/nextjs'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -10,6 +10,8 @@ import { API } from '@/lib/api/endpoints'
 import type { ArtworkListItem } from '@/lib/types'
 import { useUserArtworks } from '@/hooks/useUserArtworks'
 import { useFavorites } from '@/hooks/useFavorites'
+import { useLike } from '@/hooks/useLike'
+import { useFavorite } from '@/hooks/useFavorite'
 
 export default function UserProfileClient({ username }: { username: string }) {
 	const { isLoaded, isSignedIn } = useAuth()
@@ -59,6 +61,40 @@ export default function UserProfileClient({ username }: { username: string }) {
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
 
+	// Actions: like / favorite
+	const { like } = useLike()
+	const { addFavorite, removeFavorite } = useFavorite()
+	const likedOnceRef = useRef<Set<string>>(new Set())
+
+	const handleLike = useCallback(async (artworkId: string) => {
+		if (!artworkId) return
+		if (likedOnceRef.current.has(artworkId)) return
+		likedOnceRef.current.add(artworkId)
+		// optimistic update in all tabs
+		const bump = (list: ArtworkListItem[]) => list.map(a => a.id === artworkId ? { ...a, likeCount: (a.likeCount || 0) + 1 } : a)
+		setArtworks(prev => bump(prev))
+		setFavorites(prev => bump(prev))
+		setLikes(prev => bump(prev))
+		try { await like(artworkId) } catch {}
+	}, [like])
+
+	const handleFavorite = useCallback(async (artworkId: string) => {
+		if (!artworkId) return
+		let nextIsFav = false
+		const toggle = (list: ArtworkListItem[]) => list.map(a => {
+			if (a.id !== artworkId) return a
+			nextIsFav = !a.isFavorite
+			return { ...a, isFavorite: nextIsFav }
+		})
+		setArtworks(prev => toggle(prev))
+		setFavorites(prev => toggle(prev))
+		setLikes(prev => toggle(prev))
+		try {
+			if (nextIsFav) await addFavorite(artworkId)
+			else await removeFavorite(artworkId)
+		} catch {}
+	}, [addFavorite, removeFavorite])
+
 	// 当 Clerk 已加载且未登录时，显示登录提示
 	if (isLoaded && !isSignedIn) {
 		return (
@@ -100,13 +136,13 @@ export default function UserProfileClient({ username }: { username: string }) {
 				</TabsList>
 
 				<TabsContent value="works">
-					<ArtworkGrid artworks={artworks} loading={loading} />
+					<ArtworkGrid artworks={artworks} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
 				</TabsContent>
 				<TabsContent value="favorites">
-					<ArtworkGrid artworks={favorites} loading={loading} />
+					<ArtworkGrid artworks={favorites} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
 				</TabsContent>
 				<TabsContent value="likes">
-					<ArtworkGrid artworks={likes} loading={loading} />
+					<ArtworkGrid artworks={likes} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
 				</TabsContent>
 			</Tabs>
 		</div>
