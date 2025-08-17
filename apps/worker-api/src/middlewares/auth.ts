@@ -67,9 +67,19 @@ export async function authMiddleware(c: Context, next: Next) {
     const userId = (payload as any)?.sub as string
     if (!userId) throw new Error('NO_SUB')
     ;(c as any).set('userId', userId)
+    // Extract custom claims from Clerk template if present
+    const claims = {
+      name: (payload as any)?.name ?? null,
+      email: (payload as any)?.email ?? null,
+      picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? null,
+      username: (payload as any)?.username ?? null,
+      email_verified: (payload as any)?.email_verified ?? null,
+      updated_at: (payload as any)?.updated_at ?? null,
+    }
+    ;(c as any).set('claims', claims)
     try {
       const d1 = D1Service.fromEnv(c.env)
-      await d1.upsertUser({ id: userId, name: null, email: null, profilePic: null })
+      await d1.upsertUser({ id: userId, name: claims.name, email: claims.email, profilePic: claims.picture })
     } catch {}
     return next()
   } catch (_) {
@@ -81,9 +91,18 @@ export async function authMiddleware(c: Context, next: Next) {
     const now = Date.now()
     if (sub && iss && exp > now && (!((c.env as any).CLERK_ISSUER) || iss === (c.env as any).CLERK_ISSUER)) {
       ;(c as any).set('userId', sub as string)
+      const claims = {
+        name: (payload as any)?.name ?? null,
+        email: (payload as any)?.email ?? null,
+        picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? null,
+        username: (payload as any)?.username ?? null,
+        email_verified: (payload as any)?.email_verified ?? null,
+        updated_at: (payload as any)?.updated_at ?? null,
+      }
+      ;(c as any).set('claims', claims)
       try {
         const d1 = D1Service.fromEnv(c.env)
-        await d1.upsertUser({ id: sub as string, name: null, email: null, profilePic: null })
+        await d1.upsertUser({ id: sub as string, name: claims.name, email: claims.email, profilePic: claims.picture })
       } catch {}
       return next()
     }

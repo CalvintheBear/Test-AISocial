@@ -11,7 +11,8 @@ router.get('/me', async (c) => {
 	if (!userId) return c.json({ success: false, code: 'AUTH_REQUIRED', message: 'signin' }, 401)
 	const d1 = D1Service.fromEnv(c.env)
 	try { 
-		await d1.upsertUser({ id: userId, name: null, email: null, profilePic: null }) 
+		const claims = (c as any).get('claims') as any || {}
+		await d1.upsertUser({ id: userId, name: claims.name ?? null, email: claims.email ?? null, profilePic: claims.picture ?? null }) 
 		console.log(JSON.stringify({ level: 'info', event: 'upsert_user', userId }))
 	} catch (e: any) {
 		console.error(JSON.stringify({ level: 'error', event: 'upsert_user_failed', userId, message: e?.message }))
