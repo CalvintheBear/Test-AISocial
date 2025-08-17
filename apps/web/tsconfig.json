@@ -23,6 +23,7 @@
     "incremental": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
+    "types": ["node"],
     "plugins": [
       {
         "name": "next"

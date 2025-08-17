@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   title: 'AI Social - Create Amazing Art with AI',
   description: 'Transform your ideas into stunning visual art using the power of artificial intelligence.',
   keywords: ['AI art', 'text to image', 'AI creator', 'art generator', 'AI social'],
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://example.com'),
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',

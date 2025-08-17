@@ -24,9 +24,19 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'
-  const url = typeof input === 'string' && input.startsWith('/api/')
-    ? new URL(input, API_BASE).toString()
-    : input
+  const SITE_BASE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  let url: RequestInfo
+  if (typeof input === 'string') {
+    if (input.startsWith('/api/')) {
+      url = new URL(input, API_BASE).toString()
+    } else if (input.startsWith('/mocks/')) {
+      url = new URL(input, SITE_BASE).toString()
+    } else {
+      url = input
+    }
+  } else {
+    url = input
+  }
 
   const headers = {
     'Content-Type': 'application/json',

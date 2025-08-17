@@ -3,15 +3,13 @@ import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 import { ArtworkListItem } from '@/lib/types'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
+
 async function getFeedData(): Promise<ArtworkListItem[]> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const apiBase = process.env.NEXT_PUBLIC_USE_MOCK === '1' ? base : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787')
-  
-  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
-    return authFetch(new URL('/mocks/feed.json', base).toString())
-  }
-  
-  return authFetch(new URL(API.feed, apiBase).toString())
+  // 动态运行时直接使用 API 相对路径，交由 authFetch 在服务器端拼接 BASE
+  return authFetch(API.feed)
 }
 
 export const metadata = {

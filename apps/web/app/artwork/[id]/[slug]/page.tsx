@@ -5,15 +5,15 @@ import Image from 'next/image'
 import { Button, Card } from '@/components/ui'
 
 async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const apiBase = process.env.NEXT_PUBLIC_USE_MOCK === '1' ? base : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787')
-  
   if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
-    return authFetch(new URL('/mocks/artwork-detail.json', base).toString())
+    return authFetch('/mocks/artwork-detail.json')
   }
-  
-  return authFetch(new URL(API.artwork(artworkId), apiBase).toString())
+  return authFetch(API.artwork(artworkId))
 }
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+export const runtime = 'nodejs'
 
 export const metadata = {
   title: '赛博朋克猫咪 - AI 艺术作品',

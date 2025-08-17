@@ -85,6 +85,70 @@ vercel --prod
 wrangler pages deploy apps/web/.next/static --project-name=ai-social-web
 ```
 
+### Cloudflare Pages（前端）与 Workers（后端）联动部署指南
+
+> 已将以下页面改为动态渲染并使用 Node.js 运行时，适配 Cloudflare 平台：`/feed`、`/artwork/[id]/[slug]`、`/user/[username]`。
+
+#### 1) 前端（Cloudflare Pages）环境变量（apps/web）
+
+在 Cloudflare Pages 项目的 Settings → Environment Variables 中配置：
+
+```
+NEXT_PUBLIC_SITE_URL=https://your-frontend-domain.com
+NEXT_PUBLIC_API_BASE_URL=https://your-worker-subdomain.workers.dev
+# 可选：开发/预发时用于后端鉴权的临时 Token（若未集成 Clerk 时）
+NEXT_PUBLIC_DEV_JWT=dev-token
+# 可选：使用前端静态 mock 数据（本地调试或 API 未就绪时）
+NEXT_PUBLIC_USE_MOCK=0
+```
+
+注意：
+- 这些变量在 `apps/web/lib/api/client.ts` 中用于将 `API.feed` 等相对路径拼接为完整后端地址；`/mocks/` 则使用 `NEXT_PUBLIC_SITE_URL`.
+- `app/layout.tsx` 中的 `metadataBase` 也使用 `NEXT_PUBLIC_SITE_URL`，建议配置为你的正式域名。
+
+#### 2) 后端（Cloudflare Workers）部署与变量（apps/worker-api）
+
+在 `apps/worker-api` 目录下：
+
+```bash
+# 本地开发
+npm --workspace apps/worker-api run dev
+
+# 部署
+npm --workspace apps/worker-api run deploy
+```
+
+必须配置的 Secrets/Vars（可在 Cloudflare Dashboard → Workers → your worker → Settings 中设置）：
+
+```
+CLERK_SECRET_KEY=sk_live_...
+UPSTASH_REDIS_REST_URL=...
+UPSTASH_REDIS_REST_TOKEN=...
+# 如需 R2，按需配置以下变量
+R2_PUBLIC_UPLOAD_BASE=...
+R2_PUBLIC_AFTER_BASE=...
+```
+
+#### 3) CORS 与网络
+
+- 若前端域与 Worker 子域不同，请在 Worker 侧确保响应头包含允许的 CORS 头（如 `Access-Control-Allow-Origin: https://your-frontend-domain.com`）。
+- 推荐将前端与后端放在同一主域/子域下，以减少跨域复杂度。
+
+#### 4) 运行时与页面策略
+
+- 已为以下页面设置：
+  - `apps/web/app/feed/page.tsx`: `dynamic = 'force-dynamic'`, `revalidate = 0`, `runtime = 'nodejs'`
+  - `apps/web/app/artwork/[id]/[slug]/page.tsx`: 同上
+  - `apps/web/app/user/[username]/page.tsx`: 同上
+- 目的：避免在构建阶段预取 API，改为在运行时（Node.js）服务端拉取，兼容 Clerk 在 Node 环境对 `fs/path` 的依赖。
+
+#### 5) 常见问题排查（Cloudflare）
+
+- 构建时报 `Invalid URL`：请确认未在构建期使用 `new URL('/api/...')`，并确保上述页面为动态渲染；前端通过 `authFetch(API.xxx)` 发起请求。
+- Edge 运行时报 `fs/path` 模块找不到：将页面 `runtime` 设为 `nodejs`（已处理）。
+- 请求 4xx/5xx：检查 `NEXT_PUBLIC_API_BASE_URL` 是否正确指向 Worker，检查 Worker 日志 `wrangler tail`。
+
+
 ## 环境配置
 
 ### 必需服务

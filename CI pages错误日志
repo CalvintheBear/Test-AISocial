@@ -1,0 +1,106 @@
+Run npm ci
+  
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+added 509 packages, and audited 512 packages in 15s
+170 packages are looking for funding
+  run `npm fund` for details
+1 critical severity vulnerability
+To address all issues, run:
+  npm audit fix --force
+Run `npm audit` for details.
+20s
+Run npm --workspace apps/web run build
+  
+> ai-social-web@0.1.0 build
+> next build
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+  ▲ Next.js 14.2.5
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/8) ...
+ ⚠ metadataBase property in metadata export is not set for resolving social open graph or twitter images, using "http://localhost:3000". See https://nextjs.org/docs/app/api-reference/functions/generate-metadata#metadatabase
+   Generating static pages (2/8) 
+   Generating static pages (4/8) 
+   Generating static pages (6/8) 
+TypeError: Invalid URL
+    at new URL (node:internal/url:806:29)
+    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
+    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
+    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
+    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
+    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
+    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
+    at stringify (<anonymous>)
+    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
+    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698) {
+  code: 'ERR_INVALID_URL',
+  input: '/api/feed',
+  base: '***',
+  digest: '1832363763'
+}
+TypeError: Invalid URL
+    at new URL (node:internal/url:806:29)
+    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
+    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
+    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
+    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
+    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
+    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
+    at stringify (<anonymous>)
+    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
+    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698) {
+  code: 'ERR_INVALID_URL',
+  input: '/api/feed',
+  base: '***',
+  digest: '1832363763'
+}
+TypeError: Invalid URL
+    at new URL (node:internal/url:806:29)
+    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
+    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
+    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
+    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
+    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
+    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
+    at stringify (<anonymous>)
+    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
+    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698) {
+  code: 'ERR_INVALID_URL',
+  input: '/api/feed',
+  base: '***',
+  digest: '1832363763'
+}
+Error occurred prerendering page "/feed". Read more: https://nextjs.org/docs/messages/prerender-error
+TypeError: Invalid URL
+    at new URL (node:internal/url:806:29)
+    at o (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5475)
+    at c (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/.next/server/app/feed/page.js:1:5722)
+    at eh (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:134786)
+    at e (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:137671)
+    at ek (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:138145)
+    at Array.toJSON (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:135755)
+    at stringify (<anonymous>)
+    at eR (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142219)
+    at eE (/home/runner/work/Test-AISocial/Test-AISocial/apps/web/node_modules/next/dist/compiled/next-server/app-page.runtime.prod.js:12:142698)
+ ✓ Generating static pages (8/8)
+> Export encountered errors on following paths:
+	/feed/page: /feed
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path /home/runner/work/Test-AISocial/Test-AISocial/apps/web
+npm error workspace ai-social-web@0.1.0
+npm error location /home/runner/work/Test-AISocial/Test-AISocial/apps/web
+npm error command failed
+npm error command sh -c next build
+Error: Process completed with exit code 1.
