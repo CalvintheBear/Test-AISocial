@@ -8,6 +8,19 @@ export async function authMiddleware(c: Context, next: Next) {
     return next()
   }
 
+  // Public GET endpoints: allow anonymous access for read-only pages
+  const url = new URL(c.req.url)
+  const isGet = c.req.method === 'GET'
+  const pathname = url.pathname
+  const isPublicGet = isGet && (
+    pathname === '/api/feed' ||
+    pathname.startsWith('/api/artworks/') ||
+    pathname.startsWith('/api/users/')
+  )
+  if (isPublicGet) {
+    return next()
+  }
+
   const auth = c.req.header('authorization')
   if (!auth?.startsWith('Bearer ')) {
     return c.json({ code: 'AUTH_REQUIRED', message: 'Authorization header required' }, 401)
