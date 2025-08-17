@@ -35,18 +35,21 @@ export class D1Service {
   }
 
   async upsertUser(user: { id: string; name?: string | null; email?: string | null; profilePic?: string | null }): Promise<void> {
-    const name = user.name ?? null
-    const email = user.email ?? null
+    // D1 schema requires users.name/email NOT NULL in initial migration; use empty string when missing
+    const name = (user.name ?? '').trim()
+    const email = (user.email ?? '').trim()
     const profilePic = user.profilePic ?? null
+    const now = Date.now()
     const stmt = this.db.prepare(`
-      INSERT INTO users (id, name, email, profile_pic)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO users (id, name, email, profile_pic, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         name=excluded.name,
         email=excluded.email,
-        profile_pic=excluded.profile_pic
+        profile_pic=excluded.profile_pic,
+        updated_at=excluded.updated_at
     `)
-    await stmt.bind(user.id, name, email, profilePic).run()
+    await stmt.bind(user.id, name, email, profilePic, now, now).run()
   }
 
   async getArtwork(id: string): Promise<Artwork | null> {
@@ -72,7 +75,7 @@ export class D1Service {
       status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
       author: {
         id: String(row.user_id),
-        name: String(row.user_name),
+        name: String(row.user_name || ''),
         profilePic: row.profile_pic ? String(row.profile_pic) : undefined
       },
       likeCount: 0, // Will be updated by Redis
@@ -103,7 +106,7 @@ export class D1Service {
         status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
         author: {
           id: String(row.user_id),
-          name: String(row.user_name),
+          name: String(row.user_name || ''),
           profilePic: row.profile_pic ? String(row.profile_pic) : undefined
         },
         likeCount: 0,
@@ -180,7 +183,7 @@ export class D1Service {
       status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
       author: {
         id: String(row.user_id),
-        name: String(row.user_name),
+        name: String(row.user_name || ''),
         profilePic: row.profile_pic ? String(row.profile_pic) : undefined
       },
       likeCount: 0,
