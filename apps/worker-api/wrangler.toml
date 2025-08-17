@@ -9,6 +9,9 @@ account_id = "9a5ff316a26b8abb696af519e515d2de"
 R2_PUBLIC_UPLOAD_BASE = "https://pub-59ae9a96b6614a9db89af40b2970d3ab.r2.dev"
 R2_PUBLIC_AFTER_BASE = "https://pub-c6cdf19c1dc84237813b1f66cf8afeff.r2.dev"
 ALLOWED_ORIGIN = "https://cuttingasmr.org"
+CLERK_ISSUER = "https://clerk.cuttingasmr.org"
+CLERK_JWKS_URL = "https://clerk.cuttingasmr.org/.well-known/jwks.json"
+CLERK_SECRET_KEY = "sk_live_IHF9Y65N6Q6NUtJU5FNmlges6IBrFPFwzwXwqb3Qxf"
 
 [[d1_databases]]
 binding = "DB"

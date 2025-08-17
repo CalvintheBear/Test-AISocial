@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from 'react'
-import { SignedIn, SignedOut, SignInButton } from '@clerk/nextjs'
+import { useEffect, useState, useCallback } from 'react'
+import { SignedIn, SignedOut, SignInButton, useAuth } from '@clerk/nextjs'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArtworkGrid } from '@/components/app/ArtworkGrid'
@@ -10,6 +10,7 @@ import { API } from '@/lib/api/endpoints'
 import type { ArtworkListItem } from '@/lib/types'
 
 export default function UserProfileClient({ username }: { username: string }) {
+	const { isLoaded, isSignedIn } = useAuth()
 	const [me, setMe] = useState<any>(null)
 	const [artworks, setArtworks] = useState<ArtworkListItem[]>([])
 	const [favorites, setFavorites] = useState<ArtworkListItem[]>([])
@@ -17,7 +18,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 	const [loading, setLoading] = useState(true)
 	const [needSignin, setNeedSignin] = useState(false)
 
-	async function reloadAll(userId: string) {
+	const reloadAll = useCallback(async (userId: string) => {
 		const [arts, favs, lks] = await Promise.all([
 			authFetch(API.userArtworks(userId)),
 			authFetch(API.userFavorites(userId)),
@@ -26,27 +27,34 @@ export default function UserProfileClient({ username }: { username: string }) {
 		setArtworks(arts || [])
 		setFavorites(favs || [])
 		setLikes(lks || [])
-	}
-
-	useEffect(() => {
-		let mounted = true
-		async function run() {
-			try {
-				const profile = await authFetch(API.me)
-				if (!mounted) return
-				setMe(profile)
-				if (profile?.id) {
-					await reloadAll(profile.id)
-				}
-			} catch {
-				setNeedSignin(true)
-			} finally {
-				if (mounted) setLoading(false)
-			}
-		}
-		run()
-		return () => { mounted = false }
 	}, [])
+
+	const loadProfile = useCallback(async () => {
+		try {
+			setLoading(true)
+			const profile = await authFetch(API.me)
+			setMe(profile)
+			if (profile?.id) await reloadAll(profile.id)
+			setNeedSignin(false)
+		} catch {
+			setNeedSignin(true)
+		} finally {
+			setLoading(false)
+		}
+	}, [reloadAll])
+
+	// 当认证状态变化时，重新加载资料
+	useEffect(() => {
+		if (!isLoaded) return
+		if (!isSignedIn) {
+			setNeedSignin(true)
+			setMe(null)
+			setArtworks([]); setFavorites([]); setLikes([])
+			setLoading(false)
+			return
+		}
+		loadProfile()
+	}, [isLoaded, isSignedIn, loadProfile])
 
 	if (needSignin) {
 		return (
@@ -59,7 +67,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 
 	return (
 		<div>
-			<div className="bg-gradient-to-r from-blue-500 to purple-600 h-64 rounded-lg mb-8 flex items-center">
+			<div className="bg-gradient-to-r from-blue-500 to-purple-600 h-64 rounded-lg mb-8 flex items-center">
 				<div className="flex items-center space-x-6 px-8">
 					<Image
 						src={me?.profilePic || 'https://via.placeholder.com/120x120/cccccc/666666?text=用户'}
