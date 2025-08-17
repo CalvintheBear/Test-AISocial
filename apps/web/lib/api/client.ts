@@ -55,8 +55,9 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     url = input
   }
 
+  const isFormData = typeof FormData !== 'undefined' && (init as any)?.body instanceof FormData
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(init.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
