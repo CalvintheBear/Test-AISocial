@@ -16,7 +16,8 @@ export async function authMiddleware(c: Context, next: Next) {
   const isPublicGet = isGet && (
     pathname === '/api/feed' ||
     pathname.startsWith('/api/artworks/') ||
-    pathname.startsWith('/api/users/')
+    // 仅放行 artworks 与 favorites 的用户读接口，/api/users/me 必须鉴权
+    /\/api\/users\/.+\/(artworks|favorites)$/.test(pathname)
   )
   if (isPublicGet) {
     return next()
