@@ -22,6 +22,24 @@ router.get('/me', async (c) => {
 	return c.json(ok(me || { id: userId }))
 })
 
+// Update privacy flags
+router.post('/me/privacy', async (c) => {
+  const userId = (c as any).get('userId') as string
+  if (!userId) return c.json({ success: false, code: 'AUTH_REQUIRED', message: 'signin' }, 401)
+  const body = await c.req.json().catch(() => ({})) as any
+  const d1 = D1Service.fromEnv(c.env)
+  await d1.updateUserPrivacy(userId, { hideName: body?.hideName, hideEmail: body?.hideEmail })
+  const me = await d1.getUser(userId)
+  return c.json(ok(me || { id: userId }))
+})
+
+router.get('/:id/profile', async (c) => {
+  const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
+  const d1 = D1Service.fromEnv(c.env)
+  const user = await d1.getUser(id)
+  return c.json(ok(user || { id }))
+})
+
 router.get('/:id/artworks', async (c) => {
   const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
   const currentUserId = (c as any).get('userId') as string

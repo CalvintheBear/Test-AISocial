@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui'
 import { Button } from '@/components/ui'
 import Image from 'next/image'
 import Link from 'next/link'
+import LikeFavoriteBar from './LikeFavoriteBar'
 
 interface ArtworkCardProps {
   artwork: ArtworkListItem
@@ -12,17 +13,7 @@ interface ArtworkCardProps {
   onFavorite?: (artworkId: string) => Promise<void>
 }
 
-export function ArtworkCard({ artwork, onLike, onFavorite }: ArtworkCardProps) {
-  const handleLike = async () => {
-    if (!onLike) return
-    if (artwork.isLiked) return
-    try { await onLike(artwork.id) } catch (error) { console.error('Failed to like artwork:', error) }
-  }
-
-  const handleFavorite = async () => {
-    if (!onFavorite) return
-    try { await onFavorite(artwork.id) } catch (error) { console.error('Failed to favorite artwork:', error) }
-  }
+export function ArtworkCard({ artwork }: ArtworkCardProps) {
 
   return (
     <Card className="overflow-hidden transition-transform hover:scale-105">
@@ -47,14 +38,18 @@ export function ArtworkCard({ artwork, onLike, onFavorite }: ArtworkCardProps) {
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Image
-              src={artwork.author.profilePic || '/images/default-avatar.jpg'}
-              alt={artwork.author.name}
-              width={24}
-              height={24}
-              className="rounded-full"
-            />
-            <span className="text-sm font-medium">{artwork.author.name}</span>
+            <Link href={`/user/${artwork.author.id}`}>
+              <Image
+                src={artwork.author.profilePic || '/images/default-avatar.jpg'}
+                alt={artwork.author.name}
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+            </Link>
+            <Link href={`/user/${artwork.author.id}`} className="text-sm font-medium hover:underline">
+              {artwork.author.name}
+            </Link>
           </div>
         </div>
         <Link href={`/artwork/${artwork.id}/${artwork.slug}`}>
@@ -63,28 +58,13 @@ export function ArtworkCard({ artwork, onLike, onFavorite }: ArtworkCardProps) {
       </CardHeader>
       
       <CardFooter className="p-4 pt-0 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLike}
-            className={`flex items-center space-x-1 ${artwork.isLiked ? 'text-red-600' : ''}`}
-            disabled={artwork.isLiked}
-          >
-            <span>♥</span>
-            <span>{artwork.likeCount}</span>
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleFavorite}
-            className={`flex items-center space-x-1 ${artwork.isFavorite ? 'text-yellow-500' : ''}`}
-          >
-            <span>{artwork.isFavorite ? '★' : '☆'}</span>
-            <span>{artwork.favoriteCount ?? 0}</span>
-          </Button>
-        </div>
+        <LikeFavoriteBar
+          artworkId={artwork.id}
+          initialLikeCount={artwork.likeCount}
+          initialFavoriteCount={artwork.favoriteCount ?? 0}
+          initialIsLiked={!!artwork.isLiked}
+          initialIsFavorite={!!artwork.isFavorite}
+        />
         {typeof artwork.hotScore === 'number' && (
           <div className="text-xs text-gray-500">热度 {artwork.hotScore.toFixed(2)}</div>
         )}

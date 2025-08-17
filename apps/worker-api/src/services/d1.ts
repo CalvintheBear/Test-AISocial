@@ -56,6 +56,13 @@ export class D1Service {
     await stmt.bind(user.id, name, email, profilePic, now, now).run()
   }
 
+  async updateUserPrivacy(userId: string, opts: { hideName?: boolean; hideEmail?: boolean }): Promise<void> {
+    const row = await this.db.prepare(`SELECT hide_name, hide_email FROM users WHERE id = ?`).bind(userId).first() as any
+    const hideName = typeof opts.hideName === 'boolean' ? (opts.hideName ? 1 : 0) : Number(row?.hide_name || 0)
+    const hideEmail = typeof opts.hideEmail === 'boolean' ? (opts.hideEmail ? 1 : 0) : Number(row?.hide_email || 0)
+    await this.db.prepare(`UPDATE users SET hide_name = ?, hide_email = ?, updated_at = ? WHERE id = ?`).bind(hideName, hideEmail, Date.now(), userId).run()
+  }
+
   async getArtwork(id: string): Promise<Artwork | null> {
     const stmt = this.db.prepare(`
       SELECT a.*, u.name as user_name, u.profile_pic
@@ -331,9 +338,9 @@ export class D1Service {
     return (rows.results || []).map((row: any) => String(row.artwork_id))
   }
 
-  async getUser(userId: string): Promise<{ id: string; name: string; email: string; profilePic?: string; createdAt?: number; updatedAt?: number } | null> {
+  async getUser(userId: string): Promise<{ id: string; name: string; email: string; profilePic?: string; createdAt?: number; updatedAt?: number; hideName?: boolean; hideEmail?: boolean } | null> {
     const stmt = this.db.prepare(`
-      SELECT id, name, email, profile_pic, created_at, updated_at
+      SELECT id, name, email, profile_pic, hide_name, hide_email, created_at, updated_at
       FROM users
       WHERE id = ?
     `)
@@ -343,11 +350,13 @@ export class D1Service {
     
     return {
       id: String(result.id),
-      name: String(result.name || ''), 
-      email: String(result.email || ''),
+      name: Number(result.hide_name || 0) ? '' : String(result.name || ''), 
+      email: Number(result.hide_email || 0) ? '' : String(result.email || ''),
       profilePic: result.profile_pic ? String(result.profile_pic) : undefined,
       createdAt: result.created_at ? Number(result.created_at) : undefined,
-      updatedAt: result.updated_at ? Number(result.updated_at) : undefined
+      updatedAt: result.updated_at ? Number(result.updated_at) : undefined,
+      hideName: Number(result.hide_name || 0) === 1,
+      hideEmail: Number(result.hide_email || 0) === 1,
     }
   }
 

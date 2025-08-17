@@ -25,21 +25,34 @@ router.get('/', async (c) => {
     await redis.setFeed(limit, JSON.stringify(list), 600) // 10 minutes TTL
   }
   
-  // Get favorites set for current user (for isFavorite display)
+  // Get favorites and likes for the current user
   const artworkIds = list.map((a: any) => a.id)
-  const favorites = await redis.listFavorites(userId)
+  const [favorites, likedIds] = await Promise.all([
+    redis.listFavorites(userId),
+    redis.listUserLikes(userId)
+  ])
+  const likedSet = new Set(likedIds)
   
-  const items = list.map((a: any) => ({
-    id: a.id,
-    slug: a.slug,
-    title: a.title,
-    thumbUrl: (a as any).thumb_url || a.url,
-    author: a.author,
-    likeCount: (a as any).likeCount || 0,
-    isFavorite: favorites.includes(a.id),
-    favoriteCount: (a as any).favoriteCount || 0,
-    status: a.status,
-  }))
+  const items = list.map((a: any) => {
+    const base = (a as any)
+    const publishedAt = (base.publishedAt || base.createdAt || 0) as number
+    const ageDays = Math.max(0, Math.floor((Date.now() - publishedAt) / 86400000))
+    const engagement = Number(base.engagementWeight || base.engagement_weight || 0)
+    const hotScore = engagement * Math.pow(0.5, ageDays)
+    return {
+      id: a.id,
+      slug: a.slug,
+      title: a.title,
+      thumbUrl: base.thumb_url || a.url,
+      author: a.author,
+      likeCount: base.likeCount || 0,
+      isFavorite: favorites.includes(a.id),
+      isLiked: likedSet.has(a.id),
+      favoriteCount: base.favoriteCount || 0,
+      status: a.status,
+      hotScore,
+    }
+  })
   return c.json(ok(items))
 })
 

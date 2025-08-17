@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
   name TEXT,
   email TEXT,
   profile_pic TEXT,
+  hide_name INTEGER DEFAULT 0,
+  hide_email INTEGER DEFAULT 0,
   created_at INTEGER,
   updated_at INTEGER
 );

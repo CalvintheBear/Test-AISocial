@@ -10,12 +10,15 @@ import { API } from '@/lib/api/endpoints'
 import type { ArtworkListItem } from '@/lib/types'
 import { useUserArtworks } from '@/hooks/useUserArtworks'
 import { useFavorites } from '@/hooks/useFavorites'
+import { Button } from '@/components/ui/button'
 import { useLike } from '@/hooks/useLike'
 import { useFavorite } from '@/hooks/useFavorite'
 
 export default function UserProfileClient({ username }: { username: string }) {
 	const { isLoaded, isSignedIn } = useAuth()
 	const [me, setMe] = useState<any>(null)
+	const [hideName, setHideName] = useState(false)
+	const [hideEmail, setHideEmail] = useState(false)
 	const [artworks, setArtworks] = useState<ArtworkListItem[]>([])
 	const [favorites, setFavorites] = useState<ArtworkListItem[]>([])
 	const [likes, setLikes] = useState<ArtworkListItem[]>([])
@@ -34,6 +37,8 @@ export default function UserProfileClient({ username }: { username: string }) {
 			setLoading(true)
 			const profile = await authFetch(API.me)
 			setMe(profile)
+			setHideName(!profile?.name)
+			setHideEmail(!profile?.email)
 			if (profile?.id) await reloadAll(profile.id)
 		} catch {
 			// 忽略错误，不把它当作未登录；保持 UI 为已登录状态并允许稍后重试
@@ -60,6 +65,15 @@ export default function UserProfileClient({ username }: { username: string }) {
 	const { artworks: swrFavorites } = useFavorites(userId || '')
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
+
+	const persistPrivacy = useCallback(async (payload: { hideName?: boolean; hideEmail?: boolean }) => {
+		try {
+			const updated = await authFetch('/api/users/me/privacy', { method: 'POST', body: JSON.stringify(payload) })
+			setMe(updated)
+			if (typeof payload.hideName === 'boolean') setHideName(payload.hideName)
+			if (typeof payload.hideEmail === 'boolean') setHideEmail(payload.hideEmail)
+		} catch {}
+	}, [])
 
 	// Actions: like / favorite
 	const { like } = useLike()
@@ -117,8 +131,18 @@ export default function UserProfileClient({ username }: { username: string }) {
 						className="rounded-full border-4 border-white"
 					/>
 					<div className="text-white">
-						<h1 className="text-3xl font-bold">{me?.name || '未登录用户'}</h1>
-						<p className="text-lg opacity-90">{me?.email || '未绑定邮箱'}</p>
+						<div className="flex items-center space-x-3">
+							<h1 className="text-3xl font-bold">{hideName ? '匿名用户' : (me?.name || '未登录用户')}</h1>
+							<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideName: !hideName })}>
+								{hideName ? '显示名称' : '隐藏名称'}
+							</Button>
+						</div>
+						<div className="flex items-center space-x-3">
+							<p className="text-lg opacity-90">{hideEmail ? '暂不可见' : (me?.email || '未绑定邮箱')}</p>
+							<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideEmail: !hideEmail })}>
+								{hideEmail ? '显示邮箱' : '隐藏邮箱'}
+							</Button>
+						</div>
 					</div>
 				</div>
 			</div>
