@@ -1,14 +1,20 @@
 // 可选接入 Clerk：在存在 @clerk/nextjs 时动态获取 token，否则回退到 DEV_JWT
+// 注意：为兼容 Edge/Pages 构建环境，不在顶层 require/clerk。
 let tokenProvider: (() => Promise<string | undefined>) | null = null
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const mod = require('@clerk/nextjs')
-  tokenProvider = async () => {
-    const { auth } = mod
-    const { getToken } = auth()
-    return await getToken()?.catch(() => undefined)
+export async function initClerkTokenProvider(): Promise<void> {
+  if (tokenProvider) return
+  try {
+    // 动态导入，避免在 Edge 构建时引入 Node 依赖（fs/path）
+    const mod = (await import('@clerk/nextjs')).default || (await import('@clerk/nextjs'))
+    const { auth } = (mod as any)
+    tokenProvider = async () => {
+      const { getToken } = auth()
+      return await getToken()?.catch(() => undefined)
+    }
+  } catch {
+    tokenProvider = null
   }
-} catch {}
+}
 
 export async function authFetch<T = any>(input: RequestInfo, init: RequestInit = {}) {
   let token: string | undefined
@@ -17,6 +23,7 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     token = process.env.NEXT_PUBLIC_DEV_JWT
   } else {
     try {
+      await initClerkTokenProvider()
       token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
     } catch {
       token = process.env.NEXT_PUBLIC_DEV_JWT
