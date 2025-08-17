@@ -1,12 +1,11 @@
 import useSWR from 'swr'
 import { ArtworkListItem } from '@/lib/types'
-import { authFetch, useMock } from '@/lib/api/client'
+import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 
 const fetchUserArtworks = async (userId: string): Promise<ArtworkListItem[]> => {
   if (!userId) throw new Error('User ID is required')
-  const url = useMock() ? '/mocks/user-artworks.json' : API.userArtworks(userId)
-  return authFetch(url)
+  return authFetch(API.userArtworks(userId))
 }
 
 export function useUserArtworks(userId: string) {

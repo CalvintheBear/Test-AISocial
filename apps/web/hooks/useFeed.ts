@@ -1,11 +1,10 @@
 import useSWR from 'swr'
 import { ArtworkListItem } from '@/lib/types'
-import { authFetch, useMock } from '@/lib/api/client'
+import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 
 const fetchFeed = async (): Promise<ArtworkListItem[]> => {
-  const url = useMock() ? '/mocks/feed.json' : API.feed
-  return authFetch(url)
+  return authFetch(API.feed)
 }
 
 export function useFeed() {

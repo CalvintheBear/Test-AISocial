@@ -5,9 +5,6 @@ import Image from 'next/image'
 import { Button, Card } from '@/components/ui'
 
 async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
-  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
-    return authFetch('/mocks/artwork-detail.json')
-  }
   return authFetch(API.artwork(artworkId))
 }
 

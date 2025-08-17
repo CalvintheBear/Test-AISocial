@@ -1,12 +1,11 @@
 import useSWR from 'swr'
 import { ArtworkDetail } from '@/lib/types'
-import { authFetch, useMock } from '@/lib/api/client'
+import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 
 const fetchArtworkDetail = async (artworkId: string): Promise<ArtworkDetail> => {
   if (!artworkId) throw new Error('Artwork ID is required')
-  const url = useMock() ? '/mocks/artwork-detail.json' : API.artwork(artworkId)
-  return authFetch(url)
+  return authFetch(API.artwork(artworkId))
 }
 
 export function useArtworkDetail(artworkId: string) {

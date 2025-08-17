@@ -8,6 +8,8 @@ import { ArtworkGrid } from '@/components/app/ArtworkGrid'
 import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 import type { ArtworkListItem } from '@/lib/types'
+import { useUserArtworks } from '@/hooks/useUserArtworks'
+import { useFavorites } from '@/hooks/useFavorites'
 
 export default function UserProfileClient({ username }: { username: string }) {
 	const { isLoaded, isSignedIn } = useAuth()
@@ -19,13 +21,9 @@ export default function UserProfileClient({ username }: { username: string }) {
 	const [needSignin, setNeedSignin] = useState(false)
 
 	const reloadAll = useCallback(async (userId: string) => {
-		const [arts, favs, lks] = await Promise.all([
-			authFetch(API.userArtworks(userId)),
-			authFetch(API.userFavorites(userId)),
+		const [lks] = await Promise.all([
 			authFetch(API.userLikes(userId)),
 		])
-		setArtworks(arts || [])
-		setFavorites(favs || [])
 		setLikes(lks || [])
 	}, [])
 
@@ -55,6 +53,13 @@ export default function UserProfileClient({ username }: { username: string }) {
 		}
 		loadProfile()
 	}, [isLoaded, isSignedIn, loadProfile])
+
+	// 使用 SWR 驱动作品与收藏，确保上传后缓存失效能反映到页面
+	const userId = me?.id as string | undefined
+	const { artworks: swrArtworks } = useUserArtworks(userId || '')
+	const { artworks: swrFavorites } = useFavorites(userId || '')
+	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
+	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
 
 	if (needSignin) {
 		return (

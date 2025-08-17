@@ -1,12 +1,11 @@
 import useSWR from 'swr'
 import { ArtworkListItem } from '@/lib/types'
-import { authFetch, useMock } from '@/lib/api/client'
+import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 
 const fetchUserFavorites = async (userId: string): Promise<ArtworkListItem[]> => {
   if (!userId) throw new Error('User ID is required')
-  const url = useMock() ? '/mocks/favorites.json' : API.userFavorites(userId)
-  return authFetch(url)
+  return authFetch(API.userFavorites(userId))
 }
 
 export function useFavorites(userId: string) {

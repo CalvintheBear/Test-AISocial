@@ -11,33 +11,29 @@ export async function initClerkTokenProvider(): Promise<void> {
 export async function authFetch<T = any>(input: RequestInfo, init: RequestInit = {}) {
   let token: string | undefined
 
-  if (process.env.NEXT_PUBLIC_USE_MOCK === '1') {
-    token = process.env.NEXT_PUBLIC_DEV_JWT
-  } else {
-    // 前端（浏览器）优先使用 Clerk 注入的 token（仅客户端可用）
-    if (typeof window !== 'undefined' && (window as any)?.Clerk) {
-      try {
-        const clerk = (window as any).Clerk
-        if (!(clerk as any)?.loaded) {
-          await clerk.load?.()
-        }
-        const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE
-        if (template) {
-          token = await clerk?.session?.getToken?.({ template, skipCache: true })
-          if (!token) token = await clerk?.session?.getToken?.({ template })
-        } else {
-          token = await clerk?.session?.getToken?.({ skipCache: true })
-          if (!token) token = await clerk?.session?.getToken?.()
-        }
-      } catch {
-        token = undefined
+  // 前端（浏览器）优先使用 Clerk 注入的 token（仅客户端可用）
+  if (typeof window !== 'undefined' && (window as any)?.Clerk) {
+    try {
+      const clerk = (window as any).Clerk
+      if (!(clerk as any)?.loaded) {
+        await clerk.load?.()
       }
+      const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE
+      if (template) {
+        token = await clerk?.session?.getToken?.({ template, skipCache: true })
+        if (!token) token = await clerk?.session?.getToken?.({ template })
+      } else {
+        token = await clerk?.session?.getToken?.({ skipCache: true })
+        if (!token) token = await clerk?.session?.getToken?.()
+      }
+    } catch {
+      token = undefined
     }
-    // 回退到 DEV_JWT
-    if (!token) {
-      await initClerkTokenProvider()
-      token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
-    }
+  }
+  // 回退到 DEV_JWT
+  if (!token) {
+    await initClerkTokenProvider()
+    token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
   }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'
@@ -46,8 +42,6 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   if (typeof input === 'string') {
     if (input.startsWith('/api/')) {
       url = new URL(input, API_BASE).toString()
-    } else if (input.startsWith('/mocks/')) {
-      url = new URL(input, SITE_BASE).toString()
     } else {
       url = input
     }
@@ -73,8 +67,6 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
 }
 
 // Server-safe mock flag
-export const isMockEnabled = () => process.env.NEXT_PUBLIC_USE_MOCK === '1'
-// Deprecated: do not use in Server Components
-export const useMock = () => typeof window !== 'undefined' && isMockEnabled()
+// Deprecated mocks removed in production
 
 

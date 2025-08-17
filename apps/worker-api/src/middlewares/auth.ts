@@ -42,6 +42,40 @@ export async function authMiddleware(c: Context, next: Next) {
     /\/api\/users\/.+\/(artworks|favorites)$/.test(pathname)
   )
   if (isPublicGet) {
+    // Public GET: 不强制鉴权，但若携带 token 则解析并注入 userId，便于返回“本人可见”的草稿等
+    try {
+      let token: string | undefined
+      const auth = c.req.header('authorization')
+      if (auth?.startsWith('Bearer ')) token = auth.slice('Bearer '.length)
+      if (!token) {
+        const cookie = c.req.header('cookie')
+        const sessionCookie = getCookie('__session', cookie)
+        if (sessionCookie) token = sessionCookie
+      }
+      if (token) {
+        let payload: any
+        if ((c.env as any).CLERK_ISSUER && (c.env as any).CLERK_JWKS_URL) {
+          payload = await verifyToken(token, {
+            // @ts-ignore
+            issuer: (c.env as any).CLERK_ISSUER,
+            // @ts-ignore
+            jwksUrl: (c.env as any).CLERK_JWKS_URL,
+          } as any)
+        } else if ((c.env as any).CLERK_SECRET_KEY) {
+          payload = await verifyToken(token, { secretKey: (c.env as any).CLERK_SECRET_KEY } as any)
+        } else {
+          payload = decodeJwtPayload(token)
+        }
+        const sub = (payload as any)?.sub
+        if (sub) {
+          ;(c as any).set('userId', sub)
+          try {
+            const d1 = D1Service.fromEnv(c.env)
+            await d1.upsertUser({ id: sub as string, name: (payload as any)?.name ?? null, email: (payload as any)?.email ?? null, profilePic: (payload as any)?.picture ?? null })
+          } catch {}
+        }
+      }
+    } catch {}
     return next()
   }
 
