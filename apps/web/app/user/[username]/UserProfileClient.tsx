@@ -32,8 +32,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 		let mounted = true
 		async function run() {
 			try {
-				// 先请求 /api/users/me，401 则提示登录
-				const res = await fetch('/api/users/me', { credentials: 'include' })
+				const res = await fetch(API.me, { credentials: 'include' })
 				if (!mounted) return
 				if (res.status === 401) {
 					setNeedSignin(true)
@@ -65,7 +64,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 
 	return (
 		<div>
-			<div className="bg-gradient-to-r from-blue-500 to-purple-600 h-64 rounded-lg mb-8 flex items-center">
+			<div className="bg-gradient-to-r from-blue-500 to purple-600 h-64 rounded-lg mb-8 flex items-center">
 				<div className="flex items-center space-x-6 px-8">
 					<Image
 						src={me?.profilePic || 'https://via.placeholder.com/120x120/cccccc/666666?text=用户'}

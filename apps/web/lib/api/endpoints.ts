@@ -1,5 +1,6 @@
 export const API = {
   feed: '/api/feed',
+  me: '/api/users/me',
   userArtworks: (id: string) => `/api/users/${id}/artworks`,
   userFavorites: (id: string) => `/api/users/${id}/favorites`,
   userLikes: (id: string) => `/api/users/${id}/likes`,
