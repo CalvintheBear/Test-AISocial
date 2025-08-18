@@ -1,4 +1,6 @@
 import { RedisService } from './redis.js';
+import { D1Service } from './d1.js';
+import { HotnessCalculator } from '../utils/hotness-calculator.js';
 
 /**
  * 热度计算服务
@@ -6,9 +8,11 @@ import { RedisService } from './redis.js';
  */
 export class HotnessService {
   private redis: RedisService;
+  private d1: D1Service;
 
-  constructor(redis: RedisService) {
+  constructor(redis: RedisService, d1: D1Service) {
     this.redis = redis;
+    this.d1 = d1;
   }
 
   /**
@@ -139,7 +143,75 @@ export class HotnessService {
   }
 
   /**
-   * 重新计算热度分数
+   * 基于数据库计算热度
+   */
+  async calculateHotnessFromDB(artworkId: string) {
+    const artwork = await this.d1.getArtwork(artworkId);
+    if (!artwork) return 0;
+    
+    const interactions = await this.d1.getArtworkInteractionData(artworkId);
+    
+    const calculator = new HotnessCalculator();
+    const score = calculator.calculateHotScore(
+      {
+        id: artwork.id,
+        user_id: artwork.author.id,
+        title: artwork.title,
+        prompt: '', // TODO: 需要从artwork详情中获取
+        model: '', // TODO: 需要从artwork详情中获取
+        width: 0, // TODO: 需要从artwork详情中获取
+        height: 0, // TODO: 需要从artwork详情中获取
+        created_at: artwork.createdAt,
+        published_at: artwork.publishedAt || artwork.createdAt,
+        like_count: interactions.likes,
+        favorite_count: interactions.favorites,
+        comment_count: interactions.comments,
+        share_count: interactions.shares,
+        view_count: interactions.views
+      },
+      interactions
+    );
+    
+    return score;
+  }
+
+  /**
+   * 同步热度到数据库
+   */
+  async syncHotnessToDatabase(artworkId: string) {
+    const score = await this.calculateHotnessFromDB(artworkId);
+    const level = HotnessCalculator.getHotnessLevel(score);
+    
+    await this.d1.updateArtworkHotness(artworkId, score, level);
+    
+    // 同时更新Redis
+    await this.redis.zadd('hot_rank', score, artworkId);
+    await this.redis.hmset(`artwork:${artworkId}:hot`, {
+      total_score: score,
+      updated_at: Date.now()
+    });
+    
+    return { score, level };
+  }
+
+  /**
+   * 批量同步热度到数据库
+   */
+  async batchSyncHotnessToDatabase(artworkIds: string[]) {
+    const results = await Promise.allSettled(
+      artworkIds.map(id => this.syncHotnessToDatabase(id))
+    );
+    
+    return {
+      total: artworkIds.length,
+      success: results.filter(r => r.status === 'fulfilled').length,
+      failed: results.filter(r => r.status === 'rejected').length,
+      errors: results.filter(r => r.status === 'rejected').map(r => r.reason)
+    };
+  }
+
+  /**
+   * 重新计算热度分数（基于Redis缓存）
    */
   private async recalculateHotScore(
     artworkId: string, 
