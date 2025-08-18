@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-// 基础ID参数校验
+// 基础ID参数校验 - 支持任意字符串ID格式
 export const IdParamSchema = z.object({
-  id: z.string().min(1, 'ID不能为空').uuid('无效的UUID格式')
+  id: z.string().min(1, 'ID不能为空')
 })
 
 // 用户ID参数校验
