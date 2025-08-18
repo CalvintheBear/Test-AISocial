@@ -34,4 +34,9 @@ crons = ["*/15 * * * *"]
 [observability.logs]
 enabled = true
 
+# 路由配置 - 确保API路由指向Worker
+[[routes]]
+pattern = "cuttingasmr.org/api/*"
+zone_name = "cuttingasmr.org"
+
 
