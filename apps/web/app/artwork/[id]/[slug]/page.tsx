@@ -4,6 +4,7 @@ import { ArtworkDetail } from '@/lib/types'
 import Image from 'next/image'
 import { Button, Card } from '@/components/ui'
 import LikeFavoriteBarNew from '@/components/app/LikeFavoriteBarNew'
+import { ArtworkActions } from '@/components/app/ArtworkActions'
 
 async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
   return authFetch(API.artwork(artworkId))
@@ -92,6 +93,14 @@ export default async function ArtworkPage({
               />
             </div>
           </Card>
+          {/* Author Actions: 发布/取消发布/删除 */}
+          <ArtworkActions
+            artworkId={artwork.id}
+            initialLikeCount={artwork.like_count}
+            initialIsFavorite={!!artwork.user_state.faved}
+            status={artwork.status}
+            authorId={artwork.author.id}
+          />
           {/* 热度与收藏计数 */}
           <Card className="p-4">
             <div className="flex items-center space-x-6 text-sm text-gray-600">
