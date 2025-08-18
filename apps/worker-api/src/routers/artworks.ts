@@ -16,6 +16,9 @@ router.get('/:id', async (c) => {
     const art = await d1.getArtwork(id)
     if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
     
+    // Sync actual counts from relation tables
+    const actualCounts = await d1.syncArtworkCounts(id)
+    
     // Get user state (liked/faved) from Redis or D1
     let userState = { liked: false, faved: false }
     try {
@@ -35,7 +38,12 @@ router.get('/:id', async (c) => {
       }
     }
     
-    const response = formatArtworkForAPI(art, userState)
+    // Create response with actual counts
+    const response = {
+      ...formatArtworkForAPI(art, userState),
+      like_count: actualCounts.likeCount,
+      fav_count: actualCounts.favoriteCount
+    }
     return c.json(ok(response))
   } catch (error) {
     console.error('Error in artwork detail:', error)
@@ -49,7 +57,8 @@ router.post('/:id/like', async (c) => {
   const d1 = D1Service.fromEnv(c.env)
   
   // Sync DB counter
-  const likeCount = await d1.incrLikeCount(id, 1)
+  await d1.addLike(userId, id)
+  const actualCounts = await d1.syncArtworkCounts(id)
   
   // Track per-user like set and persist to D1
   let userState = { liked: true, faved: false }
@@ -80,8 +89,8 @@ router.post('/:id/like', async (c) => {
   if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
   
   return c.json(ok({
-    like_count: likeCount,
-    fav_count: art.favoriteCount,
+    like_count: actualCounts.likeCount,
+    fav_count: actualCounts.favoriteCount,
     user_state: userState
   }))
 })
@@ -91,7 +100,8 @@ router.delete('/:id/like', async (c) => {
   const userId = (c as any).get('userId') as string
   const d1 = D1Service.fromEnv(c.env)
   
-  const likeCount = await d1.incrLikeCount(id, -1)
+  await d1.removeLike(userId, id)
+  const actualCounts = await d1.syncArtworkCounts(id)
   
   let userState = { liked: false, faved: false }
   try {
@@ -117,8 +127,8 @@ router.delete('/:id/like', async (c) => {
   if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
   
   return c.json(ok({
-    like_count: likeCount,
-    fav_count: art.favoriteCount,
+    like_count: actualCounts.likeCount,
+    fav_count: actualCounts.favoriteCount,
     user_state: userState
   }))
 })
@@ -130,7 +140,8 @@ router.post('/:id/favorite', async (c) => {
   const redis = RedisService.fromEnv(c.env)
   
   await redis.addFavorite(userId, id)
-  const favoriteCount = await d1.incrFavoriteCount(id, 1)
+  await d1.addFavorite(userId, id)
+  const actualCounts = await d1.syncArtworkCounts(id)
   await Promise.all([
     redis.invalidateUserFavorites(userId),
     redis.invalidateFeed()
@@ -143,8 +154,8 @@ router.post('/:id/favorite', async (c) => {
   const isLiked = await redis.isLiked(userId, id)
   
   return c.json(ok({
-    like_count: art.likeCount,
-    fav_count: favoriteCount,
+    like_count: actualCounts.likeCount,
+    fav_count: actualCounts.favoriteCount,
     user_state: { liked: isLiked, faved: true }
   }))
 })
@@ -156,7 +167,8 @@ router.delete('/:id/favorite', async (c) => {
   const redis = RedisService.fromEnv(c.env)
   
   await redis.removeFavorite(userId, id)
-  const favoriteCount = await d1.incrFavoriteCount(id, -1)
+  await d1.removeFavorite(userId, id)
+  const actualCounts = await d1.syncArtworkCounts(id)
   await Promise.all([
     redis.invalidateUserFavorites(userId),
     redis.invalidateFeed()
@@ -169,8 +181,8 @@ router.delete('/:id/favorite', async (c) => {
   const isLiked = await redis.isLiked(userId, id)
   
   return c.json(ok({
-    like_count: art.likeCount,
-    fav_count: favoriteCount,
+    like_count: actualCounts.likeCount,
+    fav_count: actualCounts.favoriteCount,
     user_state: { liked: isLiked, faved: false }
   }))
 })

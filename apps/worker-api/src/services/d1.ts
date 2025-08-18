@@ -341,6 +341,31 @@ export class D1Service {
     return (rows.results || []).map((row: any) => String(row.artwork_id))
   }
 
+  async getLikesCount(artworkId: string): Promise<number> {
+    const stmt = this.db.prepare(`SELECT COUNT(*) as count FROM artworks_like WHERE artwork_id = ?`)
+    const rows = await stmt.bind(artworkId).all() as any
+    return Number((rows.results || [])[0]?.count || 0)
+  }
+
+  async getFavoritesCount(artworkId: string): Promise<number> {
+    const stmt = this.db.prepare(`SELECT COUNT(*) as count FROM artworks_favorite WHERE artwork_id = ?`)
+    const rows = await stmt.bind(artworkId).all() as any
+    return Number((rows.results || [])[0]?.count || 0)
+  }
+
+  async syncArtworkCounts(artworkId: string): Promise<{ likeCount: number; favoriteCount: number }> {
+    const actualLikes = await this.getLikesCount(artworkId)
+    const actualFavorites = await this.getFavoritesCount(artworkId)
+    
+    await this.db.prepare(`
+      UPDATE artworks 
+      SET like_count = ?, favorite_count = ? 
+      WHERE id = ?
+    `).bind(actualLikes, actualFavorites, artworkId).run()
+    
+    return { likeCount: actualLikes, favoriteCount: actualFavorites }
+  }
+
   async getUser(userId: string): Promise<{ id: string; name: string; email: string; profilePic?: string; createdAt?: number; updatedAt?: number; hideName?: boolean; hideEmail?: boolean } | null> {
     const stmt = this.db.prepare(`
       SELECT id, name, email, profile_pic, hide_name, hide_email, created_at, updated_at
@@ -386,14 +411,6 @@ export class D1Service {
     const stmt = this.db.prepare(`SELECT id FROM users`)
     const rows = await stmt.all() as any
     return (rows.results || []).map((row: any) => ({ id: String(row.id) }))
-  }
-
-  async getLikesCount(artworkId: string): Promise<number> {
-    const stmt = this.db.prepare(`
-      SELECT COUNT(*) as count FROM artworks_like WHERE artwork_id = ?
-    `)
-    const rows = await stmt.bind(artworkId).all() as any
-    return Number((rows.results || [])[0]?.count || 0)
   }
 
   async getUserFavorites(userId: string): Promise<string[]> {

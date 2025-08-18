@@ -3,7 +3,7 @@ import { API } from '@/lib/api/endpoints'
 import { ArtworkDetail } from '@/lib/types'
 import Image from 'next/image'
 import { Button, Card } from '@/components/ui'
-import LikeFavoriteBar from '@/components/app/LikeFavoriteBar'
+import LikeFavoriteBarNew from '@/components/app/LikeFavoriteBarNew'
 
 async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
   return authFetch(API.artwork(artworkId))
@@ -82,7 +82,7 @@ export default async function ArtworkPage({
           {/* Action Bar */}
           <Card className="p-4">
             <div className="flex items-center justify-between">
-              <LikeFavoriteBar
+              <LikeFavoriteBarNew
                 artworkId={artwork.id}
                 initialLikeCount={artwork.like_count}
                 initialFavoriteCount={artwork.fav_count ?? 0}

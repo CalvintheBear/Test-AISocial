@@ -26,7 +26,7 @@ router.get('/', async (c) => {
     await redis.setFeed(limit, JSON.stringify(list), 600) // 10 minutes TTL
   }
   
-  // Get favorites and likes for the current user
+  // Sync counts for all artworks and get actual counts
   const artworkIds = list.map((a: any) => a.id)
   const [favorites, likedIds] = await Promise.all([
     redis.listFavorites(userId),
@@ -34,7 +34,19 @@ router.get('/', async (c) => {
   ])
   const likedSet = new Set(likedIds)
   
-  const items = formatArtworkListForAPI(list, artworkIds.map((id: string) => ({
+  // Sync actual counts for all artworks
+  const syncedArtworks = await Promise.all(
+    list.map(async (artwork: any) => {
+      const actualCounts = await d1.syncArtworkCounts(artwork.id)
+      return {
+        ...artwork,
+        likeCount: actualCounts.likeCount,
+        favoriteCount: actualCounts.favoriteCount
+      }
+    })
+  )
+  
+  const items = formatArtworkListForAPI(syncedArtworks, artworkIds.map((id: string) => ({
     liked: likedSet.has(id),
     faved: favorites.includes(id)
   })))

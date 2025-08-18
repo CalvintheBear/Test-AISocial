@@ -17,7 +17,8 @@
       "Bash(powershell:*)",
       "Bash(cd:*)",
       "Bash(find:*)",
-      "Bash(wrangler secret put:*)"
+      "Bash(wrangler secret put:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui'
 import { Button } from '@/components/ui'
 import Image from 'next/image'
 import Link from 'next/link'
-import LikeFavoriteBar from './LikeFavoriteBar'
+import LikeFavoriteBarNew from './LikeFavoriteBarNew'
 
 interface ArtworkCardProps {
   artwork: ArtworkListItem
@@ -58,7 +58,7 @@ export function ArtworkCard({ artwork }: ArtworkCardProps) {
       </CardHeader>
       
       <CardFooter className="p-4 pt-0 flex items-center justify-between">
-        <LikeFavoriteBar
+        <LikeFavoriteBarNew
           artworkId={artwork.id}
           initialLikeCount={artwork.like_count}
           initialFavoriteCount={artwork.fav_count ?? 0}

@@ -92,7 +92,19 @@ router.get('/:id/artworks', async (c) => {
     userStates = artworkIds.map(() => ({ liked: false, faved: false }))
   }
   
-  const items = formatArtworkListForAPI(visibleList, userStates)
+  // Sync counts for all artworks
+  const syncedArtworks = await Promise.all(
+    visibleList.map(async (artwork: any) => {
+      const actualCounts = await d1.syncArtworkCounts(artwork.id)
+      return {
+        ...artwork,
+        likeCount: actualCounts.likeCount,
+        favoriteCount: actualCounts.favoriteCount
+      }
+    })
+  )
+  
+  const items = formatArtworkListForAPI(syncedArtworks, userStates)
   return c.json(ok(items))
 })
 
@@ -143,7 +155,19 @@ router.get('/:id/favorites', async (c) => {
     userStates = validArtworks.map(() => ({ liked: false, faved: true }))
   }
   
-  const items = formatArtworkListForAPI(validArtworks.filter(art => art != null) as any[], userStates)
+  // Sync counts for all artworks
+  const syncedArtworks = await Promise.all(
+    validArtworks.filter(art => art != null).map(async (artwork: any) => {
+      const actualCounts = await d1.syncArtworkCounts(artwork.id)
+      return {
+        ...artwork,
+        likeCount: actualCounts.likeCount,
+        favoriteCount: actualCounts.favoriteCount
+      }
+    })
+  )
+  
+  const items = formatArtworkListForAPI(syncedArtworks, userStates)
   return c.json(ok(items))
 })
 
@@ -195,7 +219,19 @@ router.get('/:id/likes', async (c) => {
     userStates = validArtworks.map(() => ({ liked: true, faved: false }))
   }
   
-  const items = formatArtworkListForAPI(validArtworks.filter(art => art != null) as any[], userStates)
+  // Sync counts for all artworks
+  const syncedArtworks = await Promise.all(
+    validArtworks.filter(art => art != null).map(async (artwork: any) => {
+      const actualCounts = await d1.syncArtworkCounts(artwork.id)
+      return {
+        ...artwork,
+        likeCount: actualCounts.likeCount,
+        favoriteCount: actualCounts.favoriteCount
+      }
+    })
+  )
+  
+  const items = formatArtworkListForAPI(syncedArtworks, userStates)
   return c.json(ok(items))
 })
 
