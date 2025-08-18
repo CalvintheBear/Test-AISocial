@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Heart } from 'lucide-react'
-import { useArtworkState } from '@/hooks/useArtworkState'
+import { useCompatibleArtworkState } from '@/hooks/useCompatibleArtworkState'
 import { cn } from '@/lib/utils'
 
 interface EnhancedLikeButtonProps {
@@ -23,7 +23,7 @@ export function EnhancedLikeButton({
   onSuccess,
   onError,
 }: EnhancedLikeButtonProps) {
-  const { state, toggleLike, isLoading, isError } = useArtworkState(artworkId)
+  const { state, toggleLike, isLoading, isError } = useCompatibleArtworkState(artworkId)
   const [isAnimating, setIsAnimating] = useState(false)
 
   // 使用初始状态或从全局状态获取

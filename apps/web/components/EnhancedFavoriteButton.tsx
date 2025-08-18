@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Bookmark } from 'lucide-react'
-import { useArtworkState } from '@/hooks/useArtworkState'
+import { useCompatibleArtworkState } from '@/hooks/useCompatibleArtworkState'
 import { cn } from '@/lib/utils'
 
 interface EnhancedFavoriteButtonProps {
@@ -23,7 +23,7 @@ export function EnhancedFavoriteButton({
   onSuccess,
   onError,
 }: EnhancedFavoriteButtonProps) {
-  const { state, toggleFavorite, isLoading, isError } = useArtworkState(artworkId)
+  const { state, toggleFavorite, isLoading, isError } = useCompatibleArtworkState(artworkId)
   const [isAnimating, setIsAnimating] = useState(false)
 
   const faved = state?.user_state.faved ?? initialState?.faved ?? false

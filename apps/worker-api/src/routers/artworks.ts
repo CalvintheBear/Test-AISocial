@@ -294,61 +294,6 @@ router.post('/upload', async (c) => {
   }
 })
 
-// 取消点赞
-router.delete('/:id/like', async (c) => {
-  const userId = (c as any).get('userId') as string
-  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
-  const d1 = D1Service.fromEnv(c.env)
-  const redis = RedisService.fromEnv(c.env)
-  
-  await redis.removeLike(userId, id)
-  await d1.removeLike(userId, id)
-  const actualCounts = await d1.syncArtworkCounts(id)
-  await Promise.all([
-    redis.invalidateUserArtworks(userId),
-    redis.invalidateFeed()
-  ])
-  
-  // Get updated artwork and user state
-  const art = await d1.getArtwork(id)
-  if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
-  
-  const isFaved = await redis.isFavorite(userId, id)
-  
-  return c.json(ok({
-    like_count: actualCounts.likeCount,
-    fav_count: actualCounts.favoriteCount,
-    user_state: { liked: false, faved: isFaved }
-  }))
-})
-
-// 取消收藏
-router.delete('/:id/favorite', async (c) => {
-  const userId = (c as any).get('userId') as string
-  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
-  const d1 = D1Service.fromEnv(c.env)
-  const redis = RedisService.fromEnv(c.env)
-  
-  await redis.removeFavorite(userId, id)
-  await d1.removeFavorite(userId, id)
-  const actualCounts = await d1.syncArtworkCounts(id)
-  await Promise.all([
-    redis.invalidateUserFavorites(userId),
-    redis.invalidateFeed()
-  ])
-  
-  // Get updated artwork and user state
-  const art = await d1.getArtwork(id)
-  if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
-  
-  const isLiked = await redis.isLiked(userId, id)
-  
-  return c.json(ok({
-    like_count: actualCounts.likeCount,
-    fav_count: actualCounts.favoriteCount,
-    user_state: { liked: isLiked, faved: false }
-  }))
-})
 
 // 获取单个作品完整状态
 router.get('/:id/state', async (c) => {
