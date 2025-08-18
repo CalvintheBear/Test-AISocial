@@ -1,0 +1,106 @@
+import { ArtworkListItem, ArtworkDetail, User } from './types'
+
+// 后端返回的统一格式
+interface BackendArtworkResponse {
+  id: string
+  title: string
+  url: string
+  thumb_url: string
+  slug: string
+  status: 'draft' | 'published'
+  created_at: number
+  published_at?: number
+  author: {
+    id: string
+    name: string
+    profile_pic?: string
+  }
+  like_count: number
+  fav_count: number
+  user_state: {
+    liked: boolean
+    faved: boolean
+  }
+  hot_score?: number
+}
+
+// 适配器函数 - 将后端响应转换为前端类型
+export function adaptArtworkListItem(backendArtwork: BackendArtworkResponse): ArtworkListItem {
+  return {
+    id: backendArtwork.id,
+    slug: backendArtwork.slug,
+    title: backendArtwork.title,
+    thumbUrl: backendArtwork.thumb_url || backendArtwork.url,
+    author: {
+      id: backendArtwork.author.id,
+      name: backendArtwork.author.name,
+      profilePic: backendArtwork.author.profile_pic
+    },
+    like_count: backendArtwork.like_count,
+    fav_count: backendArtwork.fav_count,
+    user_state: backendArtwork.user_state,
+    hotScore: backendArtwork.hot_score,
+    status: backendArtwork.status
+  }
+}
+
+export function adaptArtworkDetail(backendArtwork: BackendArtworkResponse): ArtworkDetail {
+  return {
+    id: backendArtwork.id,
+    slug: backendArtwork.slug,
+    title: backendArtwork.title,
+    originalUrl: backendArtwork.url,
+    thumbUrl: backendArtwork.thumb_url || backendArtwork.url,
+    createdAt: backendArtwork.created_at,
+    status: backendArtwork.status,
+    author: {
+      id: backendArtwork.author.id,
+      name: backendArtwork.author.name,
+      profilePic: backendArtwork.author.profile_pic
+    },
+    like_count: backendArtwork.like_count,
+    fav_count: backendArtwork.fav_count,
+    user_state: backendArtwork.user_state,
+    hotScore: backendArtwork.hot_score
+  }
+}
+
+// 批量适配器
+export function adaptArtworkList(backendArtworks: BackendArtworkResponse[]): ArtworkListItem[] {
+  return backendArtworks.map(adaptArtworkListItem)
+}
+
+// 客户端数据获取适配器
+export async function fetchArtworkList(endpoint: string): Promise<ArtworkListItem[]> {
+  const response = await fetch(endpoint, {
+    credentials: 'include',
+  })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  
+  const data = await response.json()
+  if (data.success) {
+    return adaptArtworkList(data.data)
+  }
+  
+  throw new Error('Invalid response format')
+}
+
+export async function fetchArtworkDetail(endpoint: string): Promise<ArtworkDetail> {
+  const response = await fetch(endpoint, {
+    credentials: 'include',
+  })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  
+  const data = await response.json()
+  if (data.success) {
+    return adaptArtworkDetail(data.data)
+  }
+  
+  throw new Error('Invalid response format')
+}

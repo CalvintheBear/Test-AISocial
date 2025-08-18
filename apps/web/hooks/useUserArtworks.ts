@@ -2,10 +2,12 @@ import useSWR from 'swr'
 import { ArtworkListItem } from '@/lib/types'
 import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
+import { adaptArtworkList } from '@/lib/apiAdapter'
 
 const fetchUserArtworks = async (userId: string): Promise<ArtworkListItem[]> => {
   if (!userId) throw new Error('User ID is required')
-  return authFetch(API.userArtworks(userId))
+  const response = await authFetch(API.userArtworks(userId))
+  return adaptArtworkList(response)
 }
 
 export function useUserArtworks(userId: string) {

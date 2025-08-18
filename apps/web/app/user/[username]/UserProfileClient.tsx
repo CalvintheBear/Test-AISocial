@@ -8,6 +8,7 @@ import { ArtworkGrid } from '@/components/app/ArtworkGrid'
 import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 import type { ArtworkListItem } from '@/lib/types'
+import { adaptArtworkList } from '@/lib/apiAdapter'
 import { useUserArtworks } from '@/hooks/useUserArtworks'
 import { useFavorites } from '@/hooks/useFavorites'
 import { Button } from '@/components/ui/button'
@@ -27,7 +28,7 @@ export default function UserProfileClient({ username }: { username: string }) {
 
 	const reloadAll = useCallback(async (userId: string) => {
 		const [lks] = await Promise.all([
-			authFetch(API.userLikes(userId)),
+			authFetch(API.userLikes(userId)).then(data => adaptArtworkList(data || [])),
 		])
 		setLikes(lks || [])
 	}, [])

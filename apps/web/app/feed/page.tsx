@@ -4,14 +4,16 @@ import { API } from '@/lib/api/endpoints'
 import { ArtworkListItem } from '@/lib/types'
 import ClientFeedActions from './withActions'
 import { PageRefreshWrapper } from '@/components/PageRefreshWrapper'
+import { adaptArtworkList } from '@/lib/apiAdapter'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const runtime = 'edge'
 
 async function getFeedData(): Promise<ArtworkListItem[]> {
-  // 动态运行时直接使用 API 相对路径，交由 authFetch 在服务器端拼接 BASE
-  return authFetch(API.feed)
+  // 使用API适配器确保URL字段正确映射
+  const response = await authFetch(API.feed)
+  return adaptArtworkList(response)
 }
 
 export const metadata = {

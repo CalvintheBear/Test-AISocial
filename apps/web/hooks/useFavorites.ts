@@ -2,10 +2,12 @@ import useSWR from 'swr'
 import { ArtworkListItem } from '@/lib/types'
 import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
+import { adaptArtworkList } from '@/lib/apiAdapter'
 
 const fetchUserFavorites = async (userId: string): Promise<ArtworkListItem[]> => {
   if (!userId) throw new Error('User ID is required')
-  return authFetch(API.userFavorites(userId))
+  const response = await authFetch(API.userFavorites(userId))
+  return adaptArtworkList(response)
 }
 
 export function useFavorites(userId: string) {
