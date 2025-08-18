@@ -25,7 +25,9 @@
       "Bash(tsc --noEmit)",
       "Bash(sed:*)",
       "Bash(.grep -n \"incrEngagementWeight\" src/utils/hotness-batch-updater.ts)",
-      "Bash(.node_modules.bintsc --noEmit)"
+      "Bash(.node_modules.bintsc --noEmit)",
+      "Bash(DEV_MODE=1 wrangler d1 execute test-d1 --command \"INSERT OR IGNORE INTO artworks_like (user_id, artwork_id, created_at) VALUES (''test-user-1'', ''test-art-1'', strftime(''%s'', ''now''))\")",
+      "Bash(DEV_MODE=1 wrangler d1 execute test-d1 --command \"INSERT OR IGNORE INTO artworks_favorite (user_id, artwork_id, created_at) VALUES (''test-user-1'', ''test-art-1'', strftime(''%s'', ''now''))\")"
     ],
     "deny": []
   }
