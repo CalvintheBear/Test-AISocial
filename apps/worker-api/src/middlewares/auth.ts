@@ -29,8 +29,14 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 
 export async function authMiddleware(c: Context, next: Next) {
   console.log('DEV_MODE:', c.env?.DEV_MODE, 'type:', typeof c.env?.DEV_MODE)
+  console.log('Auth Debug - DEV_MODE:', c.env?.DEV_MODE, 'path:', new URL(c.req.url).pathname);
   if (c.env?.DEV_MODE === '1' || c.env?.DEV_MODE === 1) {
     (c as any).set('userId', 'dev-user')
+    ;(c as any).set('claims', {
+      name: 'Dev User',
+      email: 'dev@example.com',
+      picture: 'https://via.placeholder.com/150'
+    })
     return next()
   }
 
@@ -86,10 +92,21 @@ export async function authMiddleware(c: Context, next: Next) {
         const basicValid = !!sub && (!expectIssuer || iss === expectIssuer) && expMs > now
         if (basicValid) {
           ;(c as any).set('userId', sub)
+          const claims = {
+            name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
+            email: (payload as any)?.email ?? (payload as any)?.email_address ?? null,
+            picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? (payload as any)?.profile_image_url ?? null,
+            username: (payload as any)?.username ?? (payload as any)?.preferred_username ?? null,
+            email_verified: (payload as any)?.email_verified ?? (payload as any)?.email_verified ?? null,
+            updated_at: (payload as any)?.updated_at ?? null,
+          }
+          ;(c as any).set('claims', claims)
           try {
             const d1 = D1Service.fromEnv(c.env)
-            await d1.upsertUser({ id: sub as string, name: (payload as any)?.name ?? null, email: (payload as any)?.email ?? null, profilePic: (payload as any)?.picture ?? null })
-          } catch {}
+            await d1.upsertUser({ id: sub as string, name: claims.name, email: claims.email, profilePic: claims.picture })
+          } catch (err) {
+            console.error('Failed to upsert user in public GET:', err)
+          }
         }
       }
     } catch {}
@@ -124,12 +141,13 @@ export async function authMiddleware(c: Context, next: Next) {
     if (!userId) throw new Error('NO_SUB')
     ;(c as any).set('userId', userId)
     // Extract custom claims from Clerk template if present
+    // Handle both Clerk standard claims and custom template claims
     const claims = {
-      name: (payload as any)?.name ?? null,
-      email: (payload as any)?.email ?? null,
-      picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? null,
-      username: (payload as any)?.username ?? null,
-      email_verified: (payload as any)?.email_verified ?? null,
+      name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
+      email: (payload as any)?.email ?? (payload as any)?.email_address ?? null,
+      picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? (payload as any)?.profile_image_url ?? null,
+      username: (payload as any)?.username ?? (payload as any)?.preferred_username ?? null,
+      email_verified: (payload as any)?.email_verified ?? (payload as any)?.email_verified ?? null,
       updated_at: (payload as any)?.updated_at ?? null,
     }
     ;(c as any).set('claims', claims)
@@ -148,11 +166,11 @@ export async function authMiddleware(c: Context, next: Next) {
     if (sub && iss && exp > now && (!((c.env as any).CLERK_ISSUER) || iss === (c.env as any).CLERK_ISSUER)) {
       ;(c as any).set('userId', sub as string)
       const claims = {
-        name: (payload as any)?.name ?? null,
-        email: (payload as any)?.email ?? null,
-        picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? null,
-        username: (payload as any)?.username ?? null,
-        email_verified: (payload as any)?.email_verified ?? null,
+        name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
+        email: (payload as any)?.email ?? (payload as any)?.email_address ?? null,
+        picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? (payload as any)?.profile_image_url ?? null,
+        username: (payload as any)?.username ?? (payload as any)?.preferred_username ?? null,
+        email_verified: (payload as any)?.email_verified ?? (payload as any)?.email_verified ?? null,
         updated_at: (payload as any)?.updated_at ?? null,
       }
       ;(c as any).set('claims', claims)
