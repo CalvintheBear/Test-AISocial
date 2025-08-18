@@ -128,7 +128,7 @@ function TrendingPageContent() {
                     <ArtworkCard artwork={artwork} />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <HotnessIndicator
-                        hotScore={artwork.hotness || 0}
+                        hotScore={(artwork as any).hot_score ?? artwork.hotness ?? 0}
                         trend={artwork.trend || 'stable'}
                         rank={artwork.rank}
                         showRank={true}

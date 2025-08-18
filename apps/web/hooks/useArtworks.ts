@@ -5,7 +5,7 @@ import { fetchArtworkList } from '@/lib/apiAdapter';
 // 获取趋势作品
 export function useTrendingArtworks(timeWindow: string = '24h', category: string = 'all') {
   const { data, error, isLoading, mutate } = useSWR(
-    [`/api/hotness/trending?time=${timeWindow}&category=${category}`],
+    [`/api/hotness/trending/${timeWindow}?category=${category}`],
     ([url]) => fetchArtworkList(url),
     {
       revalidateOnFocus: false,

@@ -39,7 +39,8 @@ export async function authMiddleware(c: Context, next: Next) {
   const isPublicGet = isGet && (
     pathname === '/api/feed' ||
     pathname.startsWith('/api/artworks/') ||
-    /\/api\/users\/.+\/(artworks|favorites)$/.test(pathname)
+    /\/api\/users\/.+\/(artworks|favorites)$/.test(pathname) ||
+    pathname.startsWith('/api/hotness')
   )
   if (isPublicGet) {
     // Public GET: 不强制鉴权，但若携带 token 则解析并注入 userId，便于返回“本人可见”的草稿等

@@ -1,4 +1,5 @@
 import { ArtworkListItem, ArtworkDetail, User } from './types'
+import { authFetch } from '@/lib/api/client'
 
 // 后端返回的统一格式
 interface BackendArtworkResponse {
@@ -81,35 +82,11 @@ export function adaptArtworkList(backendArtworks: BackendArtworkResponse[]): Art
 
 // 客户端数据获取适配器
 export async function fetchArtworkList(endpoint: string): Promise<ArtworkListItem[]> {
-  const response = await fetch(endpoint, {
-    credentials: 'include',
-  })
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
-  }
-  
-  const data = await response.json()
-  if (data.success) {
-    return adaptArtworkList(data.data)
-  }
-  
-  throw new Error('Invalid response format')
+  const data = await authFetch(endpoint)
+  return adaptArtworkList(Array.isArray(data) ? data : [])
 }
 
 export async function fetchArtworkDetail(endpoint: string): Promise<ArtworkDetail> {
-  const response = await fetch(endpoint, {
-    credentials: 'include',
-  })
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
-  }
-  
-  const data = await response.json()
-  if (data.success) {
-    return adaptArtworkDetail(data.data)
-  }
-  
-  throw new Error('Invalid response format')
+  const data = await authFetch(endpoint)
+  return adaptArtworkDetail(data)
 }
