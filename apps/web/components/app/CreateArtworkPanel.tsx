@@ -63,8 +63,12 @@ export function CreateArtworkPanel() {
           title: title || 'Untitled',
           thumbUrl: String(payload.thumbUrl || payload.originalUrl),
           author: { id: currentUserId, name: '' },
-          likeCount: 0,
-          isFavorite: false,
+          like_count: 0,
+          fav_count: 0,
+          user_state: {
+            liked: false,
+            faved: false,
+          },
           status: 'draft',
         })
       }
