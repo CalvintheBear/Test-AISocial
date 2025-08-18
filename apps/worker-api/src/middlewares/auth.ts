@@ -28,7 +28,8 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 }
 
 export async function authMiddleware(c: Context, next: Next) {
-  if (c.env?.DEV_MODE === '1') {
+  console.log('DEV_MODE:', c.env?.DEV_MODE, 'type:', typeof c.env?.DEV_MODE)
+  if (c.env?.DEV_MODE === '1' || c.env?.DEV_MODE === 1) {
     (c as any).set('userId', 'dev-user')
     return next()
   }
