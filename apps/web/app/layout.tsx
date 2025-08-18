@@ -4,6 +4,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { ClientLayout } from './ClientLayout'
 import ClientProviders from './ClientProviders'
+import { NavigationRefresh } from '@/components/NavigationRefresh'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const Shell = ({ children }: { children: ReactNode }) => (
     <html lang="zh-CN" className={`${inter.variable}`}>
       <body className="font-sans antialiased bg-bg">
+        <NavigationRefresh />
         <ClientLayout>
           {children}
         </ClientLayout>

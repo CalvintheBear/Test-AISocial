@@ -84,6 +84,58 @@ class ArtworkStateManager {
       mutate(`/api/artworks/${artworkId}/state`, state, false)
     })
   }
+
+  // 预加载可见作品状态
+  async preloadVisibleArtworks(artworkIds: string[]) {
+    try {
+      const response = await fetch('/api/artworks/batch/state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ artworkIds })
+      })
+      const result = await response.json()
+      
+      if (result.success) {
+        Object.entries(result.data).forEach(([artworkId, state]) => {
+          mutate(`/api/artworks/${artworkId}/state`, state, false)
+        })
+      }
+    } catch (error) {
+      console.error('预加载失败:', error)
+    }
+  }
+
+  // 智能刷新策略
+  async refreshWithDelay(type: 'feed' | 'user' | 'artwork', delay = 500) {
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        switch (type) {
+          case 'feed':
+            this.refreshFeed()
+            break
+          case 'user':
+            this.refreshUserFavorites()
+            break
+          case 'artwork':
+            this.refreshAll()
+            break
+        }
+      }, delay)
+    } else {
+      // 服务器端直接执行
+      switch (type) {
+        case 'feed':
+          await this.refreshFeed()
+          break
+        case 'user':
+          await this.refreshUserFavorites()
+          break
+        case 'artwork':
+          await this.refreshAll()
+          break
+      }
+    }
+  }
 }
 
 export const artworkStateManager = ArtworkStateManager.getInstance()

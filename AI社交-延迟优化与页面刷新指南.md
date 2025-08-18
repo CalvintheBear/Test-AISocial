@@ -132,17 +132,17 @@ export function usePageRefresh() {
     
     try {
       // 根据页面类型刷新对应数据
-      if (pathname.startsWith('/feed')) {
-        await artworkStateManager.refreshFeed()
-      } else if (pathname.startsWith('/user/')) {
-        await artworkStateManager.refreshUserFavorites()
-      } else if (pathname.startsWith('/artwork/')) {
-        // 单个作品页面刷新
-        const artworkId = pathname.split('/')[2]
-        if (artworkId) {
-          mutate(`/api/artworks/${artworkId}/state`, undefined, { revalidate: true })
-        }
+      const refreshStrategy = {
+        '/feed': () => artworkStateManager.refreshFeed(),
+        '/user/': () => artworkStateManager.refreshUserFavorites(),
+        '/artwork/': () => artworkStateManager.refreshAll()
       }
+
+      Object.entries(refreshStrategy).forEach(([path, refreshFn]) => {
+        if (pathname.startsWith(path)) {
+          refreshFn()
+        }
+      })
     } finally {
       setIsRefreshing(false)
     }
@@ -157,25 +157,36 @@ export function usePageRefresh() {
 }
 ```
 
-#### 2.2 页面跳转钩子
+#### 2.2 路由守卫组件
 ```typescript
-// hooks/useNavigationRefresh.ts
-import { useRouter } from 'next/navigation'
+// components/NavigationRefresh.tsx
+import { usePathname } from 'next/navigation'
+import { useEffect } from 'react'
 
-export function useNavigationRefresh() {
-  const router = useRouter()
+export function NavigationRefresh() {
+  const pathname = usePathname()
 
-  const navigateWithRefresh = useCallback((pathname: string) => {
-    // 先刷新数据，再导航
-    router.push(pathname)
-    
-    // 立即刷新相关缓存
-    setTimeout(() => {
-      artworkStateManager.refreshWithDelay('feed', 100)
-    }, 100)
-  }, [router])
+  useEffect(() => {
+    // 监听路由变化
+    const handleRouteChange = () => {
+      // 根据页面类型执行不同刷新策略
+      const refreshStrategy = {
+        '/feed': () => artworkStateManager.refreshFeed(),
+        '/user/': () => artworkStateManager.refreshUserFavorites(),
+        '/artwork/': () => artworkStateManager.refreshAll()
+      }
 
-  return { navigateWithRefresh }
+      Object.entries(refreshStrategy).forEach(([path, refreshFn]) => {
+        if (pathname.startsWith(path)) {
+          setTimeout(refreshFn, 100)
+        }
+      })
+    }
+
+    handleRouteChange()
+  }, [pathname])
+
+  return null
 }
 ```
 
