@@ -1,10 +1,10 @@
-export type User = { id: string; name: string; profilePic?: string }
+export type User = { id: string; name: string; profile_pic?: string }
 
 export type ArtworkListItem = {
   id: string
   slug: string
   title: string
-  thumbUrl: string
+  thumb_url: string
   author: User
   like_count: number
   fav_count: number
@@ -12,7 +12,7 @@ export type ArtworkListItem = {
     liked: boolean
     faved: boolean
   }
-  hotScore?: number
+  hot_score?: number
   hotness?: number
   trend?: 'up' | 'down' | 'stable'
   rank?: number
@@ -23,9 +23,9 @@ export type ArtworkDetail = {
   id: string
   slug: string
   title: string
-  originalUrl: string
-  thumbUrl: string
-  createdAt: number
+  url: string
+  thumb_url: string
+  created_at: number
   status: 'draft' | 'published'
   author: User
   like_count: number
@@ -34,7 +34,7 @@ export type ArtworkDetail = {
     liked: boolean
     faved: boolean
   }
-  hotScore?: number
+  hot_score?: number
   hotness?: number
   trend?: 'up' | 'down' | 'stable'
   rank?: number

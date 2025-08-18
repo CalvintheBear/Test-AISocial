@@ -61,7 +61,7 @@ export function CreateArtworkPanel() {
           id: String(payload.id),
           slug: 'draft',
           title: title || 'Untitled',
-          thumbUrl: String(payload.thumbUrl || payload.originalUrl),
+          thumb_url: String(payload.thumb_url || payload.url),
           author: { id: currentUserId, name: '' },
           like_count: 0,
           fav_count: 0,

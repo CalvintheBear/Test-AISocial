@@ -37,7 +37,7 @@ interface ArtworkHotnessIndicatorProps {
 }
 
 export function ArtworkHotnessIndicator({ artwork }: ArtworkHotnessIndicatorProps) {
-  const score = artwork.hotScore
+  const score = artwork.hot_score
   if (typeof score !== 'number') return null
 
   return (

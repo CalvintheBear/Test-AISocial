@@ -33,16 +33,16 @@ export function adaptArtworkListItem(backendArtwork: BackendArtworkResponse): Ar
     id: backendArtwork.id,
     slug: backendArtwork.slug,
     title: backendArtwork.title,
-    thumbUrl: backendArtwork.thumb_url || backendArtwork.url,
+    thumb_url: backendArtwork.thumb_url || backendArtwork.url,
     author: {
       id: backendArtwork.author.id,
       name: backendArtwork.author.name,
-      profilePic: backendArtwork.author.profile_pic
+      profile_pic: backendArtwork.author.profile_pic
     },
     like_count: backendArtwork.like_count,
     fav_count: backendArtwork.fav_count,
     user_state: backendArtwork.user_state,
-    hotScore: backendArtwork.hot_score ?? backendArtwork.hotness,
+    hot_score: backendArtwork.hot_score ?? backendArtwork.hotness,
     hotness: backendArtwork.hotness,
     trend: backendArtwork.trend,
     rank: backendArtwork.rank,
@@ -55,19 +55,19 @@ export function adaptArtworkDetail(backendArtwork: BackendArtworkResponse): Artw
     id: backendArtwork.id,
     slug: backendArtwork.slug,
     title: backendArtwork.title,
-    originalUrl: backendArtwork.url,
-    thumbUrl: backendArtwork.thumb_url || backendArtwork.url,
-    createdAt: backendArtwork.created_at,
+    url: backendArtwork.url,
+    thumb_url: backendArtwork.thumb_url || backendArtwork.url,
+    created_at: backendArtwork.created_at,
     status: backendArtwork.status,
     author: {
       id: backendArtwork.author.id,
       name: backendArtwork.author.name,
-      profilePic: backendArtwork.author.profile_pic
+      profile_pic: backendArtwork.author.profile_pic
     },
     like_count: backendArtwork.like_count,
     fav_count: backendArtwork.fav_count,
     user_state: backendArtwork.user_state,
-    hotScore: backendArtwork.hot_score ?? backendArtwork.hotness,
+    hot_score: backendArtwork.hot_score ?? backendArtwork.hotness,
     hotness: backendArtwork.hotness,
     trend: backendArtwork.trend,
     rank: backendArtwork.rank

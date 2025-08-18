@@ -40,7 +40,7 @@ export default async function ArtworkPage({
         {/* Artwork Image */}
         <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
           <Image
-            src={artwork.thumbUrl || artwork.originalUrl}
+            src={artwork.thumb_url || artwork.url}
             alt={artwork.title}
             fill
             className="object-contain"
@@ -57,7 +57,7 @@ export default async function ArtworkPage({
             {/* Author Info */}
             <div className="flex items-center space-x-3 mb-4">
               <Image
-                src={artwork.author.profilePic || 'https://via.placeholder.com/40x40/cccccc/666666?text=用户'}
+                src={artwork.author.profile_pic || 'https://via.placeholder.com/40x40/cccccc/666666?text=用户'}
                 alt={artwork.author.name}
                 width={40}
                 height={40}
@@ -66,7 +66,7 @@ export default async function ArtworkPage({
               <div>
                 <p className="font-semibold">{artwork.author.name}</p>
                 <p className="text-sm text-gray-600">
-                  创建于 {new Date(artwork.createdAt).toLocaleDateString('zh-CN')}
+                  创建于 {new Date(artwork.created_at).toLocaleDateString('zh-CN')}
                 </p>
               </div>
             </div>
@@ -96,8 +96,8 @@ export default async function ArtworkPage({
           <Card className="p-4">
             <div className="flex items-center space-x-6 text-sm text-gray-600">
               <div>收藏数：{artwork.fav_count ?? 0}</div>
-              {typeof artwork.hotScore === 'number' && (
-                <div>热度：{artwork.hotScore.toFixed(2)}</div>
+              {typeof artwork.hot_score === 'number' && (
+                <div>热度：{artwork.hot_score.toFixed(2)}</div>
               )}
             </div>
           </Card>
