@@ -294,6 +294,71 @@ router.post('/upload', async (c) => {
   }
 })
 
+// 获取单个作品完整状态
+router.get('/:id/state', async (c) => {
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
+  const userId = (c as any).get('userId') as string
+  const d1 = D1Service.fromEnv(c.env)
+  
+  try {
+    const [artwork, likeCount, favCount, userState] = await Promise.all([
+      d1.getArtwork(id),
+      d1.getLikeCount(id),
+      d1.getFavoriteCount(id),
+      userId ? d1.getUserArtworkState(userId, id) : { liked: false, faved: false }
+    ])
+
+    if (!artwork) {
+      return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
+    }
+
+    return c.json(ok({
+      like_count: likeCount,
+      fav_count: favCount,
+      user_state: userState
+    }))
+  } catch (error) {
+    console.error('Failed to get artwork state:', error)
+    return c.json(fail('INTERNAL_ERROR', 'Internal server error'), 500)
+  }
+})
+
+// 批量获取作品状态
+router.post('/batch/state', async (c) => {
+  const { artworkIds } = await c.req.json()
+  const userId = (c as any).get('userId') as string
+  
+  if (!Array.isArray(artworkIds) || artworkIds.length === 0) {
+    return c.json(fail('INVALID_INPUT', 'Invalid artwork IDs'), 400)
+  }
+
+  try {
+    const d1 = D1Service.fromEnv(c.env)
+    
+    // 批量获取数据
+    const [likes, favorites, userStates] = await Promise.all([
+      d1.getBatchLikeCounts(artworkIds),
+      d1.getBatchFavoriteCounts(artworkIds),
+      userId ? d1.getBatchUserArtworkStates(userId, artworkIds) : {} as Record<string, { liked: boolean; faved: boolean }>
+    ])
+
+    const resultMap = new Map()
+    
+    artworkIds.forEach(id => {
+      resultMap.set(id, {
+        like_count: likes[id] || 0,
+        fav_count: favorites[id] || 0,
+        user_state: userStates[id] || { liked: false, faved: false }
+      })
+    })
+
+    return c.json(ok(Object.fromEntries(resultMap)))
+  } catch (error) {
+    console.error('Failed to get batch artwork states:', error)
+    return c.json(fail('INTERNAL_ERROR', 'Internal server error'), 500)
+  }
+})
+
 export default router
 
 

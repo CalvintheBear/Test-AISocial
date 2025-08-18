@@ -416,6 +416,97 @@ export class D1Service {
   async getUserFavorites(userId: string): Promise<string[]> {
     return this.listUserFavorites(userId) // 复用现有方法
   }
+
+  // 新增方法用于支持状态端点
+  async getLikeCount(artworkId: string): Promise<number> {
+    return this.getLikesCount(artworkId)
+  }
+
+  async getFavoriteCount(artworkId: string): Promise<number> {
+    return this.getFavoritesCount(artworkId)
+  }
+
+  async getUserArtworkState(userId: string, artworkId: string): Promise<{ liked: boolean; faved: boolean }> {
+    const [liked, faved] = await Promise.all([
+      this.isLikedByUser(userId, artworkId),
+      this.isFavoritedByUser(userId, artworkId)
+    ])
+    return { liked, faved }
+  }
+
+  async getBatchLikeCounts(artworkIds: string[]): Promise<Record<string, number>> {
+    if (artworkIds.length === 0) return {}
+    
+    const placeholders = artworkIds.map(() => '?').join(',')
+    const stmt = this.db.prepare(`
+      SELECT artwork_id, COUNT(*) as count 
+      FROM artworks_like 
+      WHERE artwork_id IN (${placeholders})
+      GROUP BY artwork_id
+    `)
+    
+    const rows = await stmt.bind(...artworkIds).all() as any
+    const result: Record<string, number> = {}
+    
+    ;(rows.results || []).forEach((row: any) => {
+      result[String(row.artwork_id)] = Number(row.count || 0)
+    })
+    
+    return result
+  }
+
+  async getBatchFavoriteCounts(artworkIds: string[]): Promise<Record<string, number>> {
+    if (artworkIds.length === 0) return {}
+    
+    const placeholders = artworkIds.map(() => '?').join(',')
+    const stmt = this.db.prepare(`
+      SELECT artwork_id, COUNT(*) as count 
+      FROM artworks_favorite 
+      WHERE artwork_id IN (${placeholders})
+      GROUP BY artwork_id
+    `)
+    
+    const rows = await stmt.bind(...artworkIds).all() as any
+    const result: Record<string, number> = {}
+    
+    ;(rows.results || []).forEach((row: any) => {
+      result[String(row.artwork_id)] = Number(row.count || 0)
+    })
+    
+    return result
+  }
+
+  async getBatchUserArtworkStates(userId: string, artworkIds: string[]): Promise<Record<string, { liked: boolean; faved: boolean }>> {
+    if (artworkIds.length === 0) return {}
+    
+    const placeholders = artworkIds.map(() => '?').join(',')
+    
+    // 获取点赞状态
+    const likesStmt = this.db.prepare(`
+      SELECT artwork_id FROM artworks_like 
+      WHERE user_id = ? AND artwork_id IN (${placeholders})
+    `)
+    const likesRows = await likesStmt.bind(userId, ...artworkIds).all() as any
+    const likedSet = new Set((likesRows.results || []).map((row: any) => String(row.artwork_id)))
+    
+    // 获取收藏状态
+    const favsStmt = this.db.prepare(`
+      SELECT artwork_id FROM artworks_favorite 
+      WHERE user_id = ? AND artwork_id IN (${placeholders})
+    `)
+    const favsRows = await favsStmt.bind(userId, ...artworkIds).all() as any
+    const favedSet = new Set((favsRows.results || []).map((row: any) => String(row.artwork_id)))
+    
+    const result: Record<string, { liked: boolean; faved: boolean }> = {}
+    artworkIds.forEach(id => {
+      result[id] = {
+        liked: likedSet.has(id),
+        faved: favedSet.has(id)
+      }
+    })
+    
+    return result
+  }
 }
 
 

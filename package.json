@@ -11,7 +11,10 @@
     "build": "npm --workspace apps/web run build",
     "start": "npm --workspace apps/web run start",
     "api:dev": "npm --workspace apps/worker-api run dev",
-    "api:deploy": "npm --workspace apps/worker-api run deploy"
+    "api:deploy": "npm --workspace apps/worker-api run deploy",
+    "test": "node test-integration.js",
+    "test:integration": "node test-integration.js",
+    "test:performance": "node test-integration.js --performance"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",

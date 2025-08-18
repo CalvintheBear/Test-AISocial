@@ -1,0 +1,34 @@
+{
+  "rollback": {
+    "enabled": true,
+    "checkInterval": 30000,
+    "maxRetries": 3,
+    "timeout": 300000,
+    "healthCheckEndpoints": [
+      "/api/health",
+      "/api/health/metrics"
+    ],
+    "failureThreshold": {
+      "errorRate": 0.05,
+      "responseTime": 5000,
+      "availability": 0.95
+    },
+    "strategies": {
+      "immediate": {
+        "description": "立即回滚到上一个稳定版本",
+        "trigger": "manual",
+        "duration": 300
+      },
+      "gradual": {
+        "description": "逐步回滚，先回滚部分流量",
+        "trigger": "automatic",
+        "duration": 600,
+        "steps": [
+          { "percentage": 25, "duration": 120 },
+          { "percentage": 50, "duration": 120 },
+          { "percentage": 100, "duration": 120 }
+        ]
+      }
+    }
+  }
+}
