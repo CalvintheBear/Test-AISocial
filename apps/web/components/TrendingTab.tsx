@@ -15,7 +15,7 @@ interface TrendingTabProps {
 export default function TrendingTab({ timeWindow = '24h' }: TrendingTabProps) {
   const { data: trendingData, error, isLoading } = useSWR(
     `${API.trending}?timeWindow=${timeWindow}&limit=50`,
-    async (url) => {
+    async (url: string) => {
       const res = await fetch(url)
       if (!res.ok) throw new Error('Failed to fetch trending')
       const json = await res.json()
