@@ -402,4 +402,43 @@ router.post('/refresh', async (c) => {
   }
 })
 
+// 新增：强制同步热度到数据库
+router.post('/sync/:id', async (c) => {
+  try {
+    const { id } = c.req.param()
+    const redis = RedisService.fromEnv(c.env)
+    const d1 = D1Service.fromEnv(c.env)
+    const hotness = new HotnessService(redis, d1)
+    
+    const result = await hotness.syncHotnessToDatabase(id)
+    
+    return c.json(ok(result))
+  } catch (error) {
+    console.error('Failed to sync hotness:', error)
+    return c.json(fail('INTERNAL_ERROR', 'Internal server error'), 500)
+  }
+})
+
+// 新增：批量同步热度
+router.post('/sync-batch', async (c) => {
+  try {
+    const { artworkIds } = await c.req.json()
+    
+    if (!Array.isArray(artworkIds) || artworkIds.length === 0) {
+      return c.json(fail('INVALID_INPUT', 'Invalid artwork IDs'), 400)
+    }
+    
+    const redis = RedisService.fromEnv(c.env)
+    const d1 = D1Service.fromEnv(c.env)
+    const hotness = new HotnessService(redis, d1)
+    
+    const result = await hotness.batchSyncHotnessToDatabase(artworkIds)
+    
+    return c.json(ok(result))
+  } catch (error) {
+    console.error('Failed to batch sync hotness:', error)
+    return c.json(fail('INTERNAL_ERROR', 'Internal server error'), 500)
+  }
+})
+
 export default router

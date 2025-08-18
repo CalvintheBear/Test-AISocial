@@ -30,6 +30,7 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 export async function authMiddleware(c: Context, next: Next) {
   console.log('DEV_MODE:', c.env?.DEV_MODE, 'type:', typeof c.env?.DEV_MODE)
   console.log('Auth Debug - DEV_MODE:', c.env?.DEV_MODE, 'path:', new URL(c.req.url).pathname);
+  console.log('Auth Debug - CLERK_ISSUER:', (c.env as any).CLERK_ISSUER);
   if (c.env?.DEV_MODE === '1' || c.env?.DEV_MODE === 1) {
     (c as any).set('userId', 'dev-user')
     ;(c as any).set('claims', {
@@ -115,18 +116,22 @@ export async function authMiddleware(c: Context, next: Next) {
 
   let token: string | undefined
   const auth = c.req.header('authorization')
+  console.log('Authorization header:', auth)
   if (auth?.startsWith('Bearer ')) token = auth.slice('Bearer '.length)
   if (!token) {
     const cookie = c.req.header('cookie')
+    console.log('Cookie header:', cookie)
     const sessionCookie = getCookie('__session', cookie)
     if (sessionCookie) token = sessionCookie
   }
+  console.log('Found token:', !!token, 'token length:', token?.length)
   if (!token) {
     return c.json({ code: 'AUTH_REQUIRED', message: 'Authorization or Clerk session required' }, 401)
   }
 
   try {
     let payload: any
+    console.log('Attempting token verification with issuer:', (c.env as any).CLERK_ISSUER)
     if ((c.env as any).CLERK_ISSUER && (c.env as any).CLERK_JWKS_URL) {
       payload = await verifyToken(token, {
         // @ts-ignore
@@ -137,6 +142,7 @@ export async function authMiddleware(c: Context, next: Next) {
     } else if ((c.env as any).CLERK_SECRET_KEY) {
       payload = await verifyToken(token, { secretKey: (c.env as any).CLERK_SECRET_KEY } as any)
     }
+    console.log('JWT payload:', JSON.stringify(payload, null, 2))
     const userId = (payload as any)?.sub as string
     if (!userId) throw new Error('NO_SUB')
     ;(c as any).set('userId', userId)
@@ -156,14 +162,25 @@ export async function authMiddleware(c: Context, next: Next) {
       await d1.upsertUser({ id: userId, name: claims.name, email: claims.email, profilePic: claims.picture })
     } catch {}
     return next()
-  } catch (_) {
+  } catch (error) {
+    console.error('JWT verification failed:', error)
+    console.error('Token:', token?.substring(0, 50) + '...')
+    
     // Fallback: non-crypto validation（仅为当前联调使用）
+    console.log('Attempting fallback JWT decode...')
     const payload = decodeJwtPayload(token)
+    console.log('Decoded payload:', JSON.stringify(payload, null, 2))
+    
     const iss = payload?.iss
     const sub = payload?.sub
     const exp = Number(payload?.exp || 0) * 1000
     const now = Date.now()
+    
+    console.log('Fallback check - sub:', sub, 'iss:', iss, 'exp:', exp, 'now:', now)
+    console.log('Issuer match:', iss === (c.env as any).CLERK_ISSUER)
+    
     if (sub && iss && exp > now && (!((c.env as any).CLERK_ISSUER) || iss === (c.env as any).CLERK_ISSUER)) {
+      console.log('Fallback validation passed for user:', sub)
       ;(c as any).set('userId', sub as string)
       const claims = {
         name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
@@ -177,10 +194,12 @@ export async function authMiddleware(c: Context, next: Next) {
       try {
         const d1 = D1Service.fromEnv(c.env)
         await d1.upsertUser({ id: sub as string, name: claims.name, email: claims.email, profilePic: claims.picture })
-      } catch {}
+      } catch (e) {
+        console.error('Failed to upsert user in fallback:', e)
+      }
       return next()
     }
-    return c.json({ code: 'INVALID_TOKEN', message: 'Invalid or expired token' }, 401)
+    return c.json({ code: 'INVALID_TOKEN', message: 'Invalid or expired token', details: error?.message }, 401)
   }
 }
 

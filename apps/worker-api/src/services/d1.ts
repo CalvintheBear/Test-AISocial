@@ -525,6 +525,139 @@ export class D1Service {
       createdAt: Number(row.created_at)
     }))
   }
+
+  // 新增：获取作品互动数据
+  async getArtworkInteractionData(artworkId: string) {
+    const [likes, favorites, comments, shares, views] = await Promise.all([
+      this.getLikeCount(artworkId),
+      this.getFavoriteCount(artworkId),
+      this.getCommentCount(artworkId),
+      this.getShareCount(artworkId),
+      this.getViewCount(artworkId)
+    ]);
+    
+    return { likes, favorites, comments, shares, views };
+  }
+
+  // 新增：更新作品热度字段
+  async updateArtworkHotness(artworkId: string, hotScore: number, hotLevel: string) {
+    const now = Date.now();
+    await this.db.prepare(`
+      UPDATE artworks 
+      SET hot_score = ?, hot_level = ?, last_hot_update = ?
+      WHERE id = ?
+    `).bind(hotScore, hotLevel, now, artworkId).run();
+    
+    // 记录历史
+    await this.logHotnessHistory(artworkId, hotScore, hotLevel, 'realtime');
+  }
+
+  // 新增：获取作品热度数据
+  async getArtworkHotData(artworkId: string) {
+    return await this.db.prepare(`
+      SELECT id, hot_score, hot_level, last_hot_update, 
+             like_count, favorite_count, view_count, share_count, comment_count,
+             title, user_id, created_at, published_at, engagement_weight
+      FROM artworks WHERE id = ?
+    `).bind(artworkId).first();
+  }
+
+  // 新增：批量获取热度数据
+  async getArtworksHotData(artworkIds: string[]) {
+    if (artworkIds.length === 0) return [];
+    
+    const placeholders = artworkIds.map(() => '?').join(',');
+    const rows = await this.db.prepare(`
+      SELECT id, hot_score, hot_level, last_hot_update,
+             like_count, favorite_count, view_count, share_count, comment_count,
+             title, user_id, created_at, published_at, engagement_weight
+      FROM artworks WHERE id IN (${placeholders})
+    `).bind(...artworkIds).all() as any;
+    
+    return (rows.results || []).map((row: any) => ({
+      id: String(row.id),
+      hot_score: Number(row.hot_score || 0),
+      hot_level: String(row.hot_level || 'new'),
+      last_hot_update: Number(row.last_hot_update || 0),
+      like_count: Number(row.like_count || 0),
+      favorite_count: Number(row.favorite_count || 0),
+      view_count: Number(row.view_count || 0),
+      share_count: Number(row.share_count || 0),
+      comment_count: Number(row.comment_count || 0),
+      title: String(row.title || ''),
+      user_id: String(row.user_id || ''),
+      created_at: Number(row.created_at || 0),
+      published_at: Number(row.published_at || 0),
+      engagement_weight: Number(row.engagement_weight || 0)
+    }));
+  }
+
+  // 新增：记录热度历史
+  async logHotnessHistory(
+    artworkId: string, 
+    hotScore: number, 
+    hotLevel: string, 
+    method: string,
+    metadata?: any
+  ) {
+    const id = crypto.randomUUID();
+    const now = Date.now();
+    
+    await this.db.prepare(`
+      INSERT INTO artworks_hot_history 
+      (id, artwork_id, hot_score, hot_level, calculated_at, calculation_method, metadata)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      id, artworkId, hotScore, hotLevel, now, method, 
+      metadata ? JSON.stringify(metadata) : null
+    ).run();
+  }
+
+  // 新增：获取需要重新计算热度的作品
+  async getArtworksNeedingHotUpdate(limit: number = 100) {
+    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+    
+    const rows = await this.db.prepare(`
+      SELECT a.*, 
+             (SELECT COUNT(*) FROM artworks_like WHERE artwork_id = a.id) as actual_likes,
+             (SELECT COUNT(*) FROM artworks_favorite WHERE artwork_id = a.id) as actual_favorites
+      FROM artworks a
+      WHERE a.last_hot_update < ? OR a.hot_score IS NULL
+      ORDER BY a.created_at DESC
+      LIMIT ?
+    `).bind(twentyFourHoursAgo, limit).all() as any;
+    
+    return (rows.results || []).map((row: any) => ({
+      id: String(row.id),
+      title: String(row.title || ''),
+      user_id: String(row.user_id),
+      created_at: Number(row.created_at),
+      published_at: Number(row.published_at || 0),
+      like_count: Number(row.actual_likes || 0),
+      favorite_count: Number(row.actual_favorites || 0),
+      hot_score: Number(row.hot_score || 0),
+      hot_level: String(row.hot_level || 'new'),
+      last_hot_update: Number(row.last_hot_update || 0)
+    }));
+  }
+
+  // 新增：获取评论数量
+  async getCommentCount(artworkId: string): Promise<number> {
+    // TODO: 当评论功能实现后，这里需要连接到实际的评论表
+    return 0;
+  }
+
+  // 新增：获取分享数量
+  async getShareCount(artworkId: string): Promise<number> {
+    // TODO: 当分享功能实现后，这里需要连接到实际的分享表
+    return 0;
+  }
+
+  // 新增：获取浏览数量
+  async getViewCount(artworkId: string): Promise<number> {
+    // TODO: 当浏览统计功能实现后，这里需要连接到实际的浏览记录表
+    return 0;
+  }
 }
 
 

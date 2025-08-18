@@ -6,12 +6,12 @@ account_id = "9a5ff316a26b8abb696af519e515d2de"
 
 [vars]
 # 提示：生产环境请通过 wrangler secrets 注入敏感变量；本地 DEV 配置使用 .dev.vars
-DEV_MODE = "1"
+DEV_MODE = "0"
 R2_PUBLIC_UPLOAD_BASE = "https://pub-59ae9a96b6614a9db89af40b2970d3ab.r2.dev"
 R2_PUBLIC_AFTER_BASE = "https://pub-c6cdf19c1dc84237813b1f66cf8afeff.r2.dev"
 ALLOWED_ORIGIN = "https://cuttingasmr.org"
-CLERK_ISSUER = "https://cuttingasmr.org"
-CLERK_JWKS_URL = "https://cuttingasmr.org/.well-known/jwks.json"
+CLERK_ISSUER = "https://clerk.cuttingasmr.org"
+CLERK_JWKS_URL = "https://clerk.cuttingasmr.org/.well-known/jwks.json"
 
 [[d1_databases]]
 binding = "DB"
