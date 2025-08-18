@@ -35,7 +35,7 @@ const userIdSchema = z.object({
 function createDebugger(c: any): HotnessDebugger {
   const redis = RedisService.fromEnv(c.env);
   const d1 = D1Service.fromEnv(c.env);
-  const hotnessService = new HotnessService(redis);
+  const hotnessService = new HotnessService(redis, d1);
   return new HotnessDebugger(hotnessService, redis, d1);
 }
 
@@ -164,7 +164,7 @@ debugRouter.get('/batch-status', async (c) => {
   try {
     const redis = RedisService.fromEnv(c.env);
     const d1 = D1Service.fromEnv(c.env);
-    const hotnessService = new HotnessService(redis);
+    const hotnessService = new HotnessService(redis, d1);
     const batchUpdater = batchUpdateManager.getBatchUpdater(hotnessService, redis, d1, hotnessMetrics);
     
     const status = batchUpdater.getQueueStatus();
@@ -183,7 +183,7 @@ debugRouter.post('/flush-batch', async (c) => {
   try {
     const redis = RedisService.fromEnv(c.env);
     const d1 = D1Service.fromEnv(c.env);
-    const hotnessService = new HotnessService(redis);
+    const hotnessService = new HotnessService(redis, d1);
     const batchUpdater = batchUpdateManager.getBatchUpdater(hotnessService, redis, d1, hotnessMetrics);
     
     const result = await batchUpdater.flushQueue();
@@ -202,7 +202,7 @@ debugRouter.post('/cleanup', async (c) => {
   try {
     const redis = RedisService.fromEnv(c.env);
     const d1 = D1Service.fromEnv(c.env);
-    const hotnessService = new HotnessService(redis);
+    const hotnessService = new HotnessService(redis, d1);
     const batchUpdater = batchUpdateManager.getBatchUpdater(hotnessService, redis, d1, hotnessMetrics);
     
     const result = await batchUpdater.cleanupExpiredData();

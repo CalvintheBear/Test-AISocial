@@ -145,8 +145,8 @@ export class HotnessService {
   /**
    * 基于数据库计算热度
    */
-  async calculateHotnessFromDB(artworkId: string) {
-    const artwork = await this.d1.getArtwork(artworkId);
+  async calculateHotnessFromDB(artworkId: string): Promise<number> {
+    const artwork = await this.d1.getArtworkHotData(artworkId);
     if (!artwork) return 0;
     
     const interactions = await this.d1.getArtworkInteractionData(artworkId);
@@ -154,15 +154,15 @@ export class HotnessService {
     const calculator = new HotnessCalculator();
     const score = calculator.calculateHotScore(
       {
-        id: artwork.id,
-        user_id: artwork.author.id,
-        title: artwork.title,
-        prompt: '', // TODO: 需要从artwork详情中获取
-        model: '', // TODO: 需要从artwork详情中获取
-        width: 0, // TODO: 需要从artwork详情中获取
-        height: 0, // TODO: 需要从artwork详情中获取
-        created_at: artwork.createdAt,
-        published_at: artwork.publishedAt || artwork.createdAt,
+        id: String(artwork.id),
+        user_id: String(artwork.user_id),
+        title: String(artwork.title || ''),
+        prompt: String(artwork.prompt || ''),
+        model: String(artwork.model || ''),
+        width: Number(artwork.width || 0),
+        height: Number(artwork.height || 0),
+        created_at: Number(artwork.created_at),
+        published_at: Number(artwork.published_at || artwork.created_at),
         like_count: interactions.likes,
         favorite_count: interactions.favorites,
         comment_count: interactions.comments,
@@ -186,10 +186,8 @@ export class HotnessService {
     
     // 同时更新Redis
     await this.redis.zadd('hot_rank', score, artworkId);
-    await this.redis.hmset(`artwork:${artworkId}:hot`, {
-      total_score: score,
-      updated_at: Date.now()
-    });
+    await this.redis.hset(`artwork:${artworkId}:hot`, 'total_score', String(score));
+    await this.redis.hset(`artwork:${artworkId}:hot`, 'updated_at', String(Date.now()));
     
     return { score, level };
   }

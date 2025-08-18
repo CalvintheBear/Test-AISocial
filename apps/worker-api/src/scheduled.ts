@@ -107,7 +107,7 @@ export default {
       console.log('开始刷新作品热度...')
       const d1 = D1Service.fromEnv(env)
       const redis = RedisService.fromEnv(env)
-      const hotness = new HotnessService(redis)
+      const hotness = new HotnessService(redis, d1)
       const batchUpdater = batchUpdateManager.getBatchUpdater(hotness, redis, d1, hotnessMetrics)
       
       // 获取最近发布的作品

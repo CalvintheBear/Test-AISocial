@@ -199,7 +199,7 @@ export async function authMiddleware(c: Context, next: Next) {
       }
       return next()
     }
-    return c.json({ code: 'INVALID_TOKEN', message: 'Invalid or expired token', details: error?.message }, 401)
+    return c.json({ code: 'INVALID_TOKEN', message: 'Invalid or expired token', details: error && typeof error === 'object' && 'message' in error ? String(error.message) : 'Unknown error' }, 401)
   }
 }
 

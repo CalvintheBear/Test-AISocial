@@ -30,7 +30,8 @@
       "Bash(DEV_MODE=1 wrangler d1 execute test-d1 --command \"INSERT OR IGNORE INTO artworks_favorite (user_id, artwork_id, created_at) VALUES (''test-user-1'', ''test-art-1'', strftime(''%s'', ''now''))\")",
       "Bash(wrangler dev:*)",
       "Bash(DEV_MODE=1 npm run api:dev)",
-      "Bash(wrangler deploy:*)"
+      "Bash(wrangler deploy:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

@@ -26,8 +26,8 @@ router.get('/trending', async (c) => {
     }
     
     const redis = RedisService.fromEnv(c.env)
-    const hotness = new HotnessService(redis)
     const d1 = D1Service.fromEnv(c.env)
+    const hotness = new HotnessService(redis, d1)
     
     // 获取热门作品ID列表
     const hotArtworks = await hotness.getTopHotArtworks(limit + offset)
@@ -117,8 +117,8 @@ router.get('/trending/:timeWindow', async (c) => {
     }
     
     const redis = RedisService.fromEnv(c.env)
-    const hotness = new HotnessService(redis)
     const d1 = D1Service.fromEnv(c.env)
+    const hotness = new HotnessService(redis, d1)
     
     // 计算时间范围
     const now = Date.now()
@@ -214,8 +214,8 @@ router.get('/:id', async (c) => {
     const userId = (c as any).get('userId') as string
     
     const redis = RedisService.fromEnv(c.env)
-    const hotness = new HotnessService(redis)
     const d1 = D1Service.fromEnv(c.env)
+    const hotness = new HotnessService(redis, d1)
     
     // 获取作品
     const artwork = await d1.getArtwork(id)
@@ -271,8 +271,8 @@ router.get('/rank', async (c) => {
     const offset = parseInt(c.req.query('offset') || '0')
     
     const redis = RedisService.fromEnv(c.env)
-    const hotness = new HotnessService(redis)
     const d1 = D1Service.fromEnv(c.env)
+    const hotness = new HotnessService(redis, d1)
     
     // 获取排行榜
     const rankings = await hotness.getTopHotArtworks(limit + offset)
@@ -364,8 +364,8 @@ router.post('/refresh', async (c) => {
     }
     
     const redis = RedisService.fromEnv(c.env)
-    const hotness = new HotnessService(redis)
     const d1 = D1Service.fromEnv(c.env)
+    const hotness = new HotnessService(redis, d1)
     
     // 批量刷新热度
     const results = await Promise.allSettled(

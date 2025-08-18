@@ -17,7 +17,7 @@ async function recalculateAllHotness() {
     // 初始化服务
     const d1 = D1Service.fromEnv(process.env);
     const redis = RedisService.fromEnv(process.env);
-    const hotness = new HotnessService(redis);
+    const hotness = new HotnessService(redis, d1);
 
     // 获取所有作品
     console.log('📋 获取所有作品...');

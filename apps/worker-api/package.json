@@ -9,7 +9,10 @@
     "typecheck": "tsc --noEmit",
     "consistency-check": "node src/scripts/consistency-check.js",
     "consistency-check:fix": "node src/scripts/consistency-check.js --fix",
-    "hotness:recalculate-all": "node src/scripts/recalculate-hotness.js"
+    "hotness:recalculate-all": "node src/scripts/recalculate-hotness.js",
+    "hotness:fix-sync": "node src/scripts/fix-hotness-sync.js fix-sync",
+    "hotness:validate": "node src/scripts/validate-hotness.js validate",
+    "hotness:validate-artwork": "node src/scripts/validate-hotness.js validate-artwork"
   },
   "dependencies": {
     "@clerk/backend": "^1.30.0",
