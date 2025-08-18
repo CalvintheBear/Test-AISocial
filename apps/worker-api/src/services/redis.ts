@@ -11,6 +11,10 @@ const memory = {
   likeByArtworkId: new Map<string, number>(),
   favoriteByUserId: new Map<string, StringSet>(),
   likedByUserId: new Map<string, StringSet>(),
+  zsets: new Map<string, Map<string, number>>(),
+  hashes: new Map<string, Map<string, string>>(),
+  counters: new Map<string, string>(),
+  strings: new Map<string, string>(),
 }
 
 export class RedisService {
@@ -244,6 +248,162 @@ export class RedisService {
       this.invalidateUserFavorites(userId),
       this.invalidateFeed()
     ])
+  }
+
+  // === 热度计算相关Redis操作 ===
+
+  async zadd(key: string, score: number, member: string): Promise<number> {
+    if (this.isDevMode) {
+      // DEV模式下使用内存Map模拟有序集合
+      if (!memory.zsets) memory.zsets = new Map()
+      if (!memory.zsets.get(key)) memory.zsets.set(key, new Map())
+      memory.zsets.get(key)!.set(member, score)
+      return 1
+    }
+    const result = await this.execute('ZADD', key, score, member)
+    return Number(result) || 0
+  }
+
+  async zcard(key: string): Promise<number> {
+    if (this.isDevMode) {
+      if (!memory.zsets || !memory.zsets.get(key)) return 0
+      return memory.zsets.get(key)!.size
+    }
+    const result = await this.execute('ZCARD', key)
+    return Number(result) || 0
+  }
+
+  async zrevrange(key: string, start: number, stop: number): Promise<string[]> {
+    if (this.isDevMode) {
+      if (!memory.zsets || !memory.zsets.get(key)) return []
+      const entries = Array.from(memory.zsets.get(key)!.entries())
+      entries.sort((a, b) => b[1] - a[1]) // 降序排序
+      return entries.slice(start, stop + 1).map(([member]) => member)
+    }
+    const result = await this.execute('ZREVRANGE', key, start, stop)
+    return (result as string[]) || []
+  }
+
+  async zrevrank(key: string, member: string): Promise<number | null> {
+    if (this.isDevMode) {
+      if (!memory.zsets || !memory.zsets.get(key)) return null
+      const entries = Array.from(memory.zsets.get(key)!.entries())
+      entries.sort((a, b) => b[1] - a[1]) // 降序排序
+      const index = entries.findIndex(([m]) => m === member)
+      return index === -1 ? null : index
+    }
+    const result = await this.execute('ZREVRANK', key, member)
+    return result === null ? null : Number(result)
+  }
+
+  async zscore(key: string, member: string): Promise<number | null> {
+    if (this.isDevMode) {
+      if (!memory.zsets || !memory.zsets.get(key)) return null
+      return memory.zsets.get(key)!.get(member) || null
+    }
+    const result = await this.execute('ZSCORE', key, member)
+    return result === null ? null : Number(result)
+  }
+
+  async hset(key: string, field: string, value: string | number): Promise<number> {
+    if (this.isDevMode) {
+      if (!memory.hashes) memory.hashes = new Map()
+      if (!memory.hashes.get(key)) memory.hashes.set(key, new Map())
+      memory.hashes.get(key)!.set(field, String(value))
+      return 1
+    }
+    const result = await this.execute('HSET', key, field, value)
+    return Number(result) || 0
+  }
+
+  async hget(key: string, field: string): Promise<string | null> {
+    if (this.isDevMode) {
+      if (!memory.hashes || !memory.hashes.get(key)) return null
+      return memory.hashes.get(key)!.get(field) || null
+    }
+    const result = await this.execute('HGET', key, field)
+    return result as string | null
+  }
+
+  async hgetall(key: string): Promise<Record<string, string>> {
+    if (this.isDevMode) {
+      if (!memory.hashes || !memory.hashes.get(key)) return {}
+      return Object.fromEntries(memory.hashes.get(key)!.entries())
+    }
+    const result = await this.execute('HGETALL', key)
+    return (result as Record<string, string>) || {}
+  }
+
+  async hmset(key: string, ...args: (string | number)[]): Promise<string> {
+    if (this.isDevMode) {
+      if (!memory.hashes) memory.hashes = new Map()
+      if (!memory.hashes.get(key)) memory.hashes.set(key, new Map())
+      for (let i = 0; i < args.length; i += 2) {
+        memory.hashes.get(key)!.set(String(args[i]), String(args[i + 1]))
+      }
+      return 'OK'
+    }
+    const result = await this.execute('HMSET', key, ...args)
+    return result as string
+  }
+
+  async incr(key: string): Promise<number> {
+    if (this.isDevMode) {
+      if (!memory.counters) memory.counters = new Map()
+      const current = Number(memory.counters.get(key) || 0)
+      const next = current + 1
+      memory.counters.set(key, String(next))
+      return next
+    }
+    const result = await this.execute('INCR', key)
+    return Number(result) || 0
+  }
+
+  async expire(key: string, seconds: number): Promise<boolean> {
+    if (this.isDevMode) return true
+    const result = await this.execute('EXPIRE', key, seconds)
+    return result === 1
+  }
+
+  async keys(pattern: string): Promise<string[]> {
+    if (this.isDevMode) {
+      // DEV模式下返回空数组，避免内存泄露
+      return []
+    }
+    const result = await this.execute('KEYS', pattern)
+    return (result as string[]) || []
+  }
+
+  async set(key: string, value: string, ttlSeconds?: number): Promise<string> {
+    if (this.isDevMode) {
+      if (!memory.strings) memory.strings = new Map()
+      memory.strings.set(key, value)
+      return 'OK'
+    }
+    if (ttlSeconds) {
+      return await this.execute('SETEX', key, ttlSeconds, value)
+    }
+    return await this.execute('SET', key, value)
+  }
+
+  async del(key: string): Promise<number> {
+    if (this.isDevMode) {
+      memory.strings?.delete(key)
+      memory.hashes?.delete(key)
+      memory.zsets?.delete(key)
+      memory.counters?.delete(key)
+      return 1
+    }
+    const result = await this.execute('DEL', key)
+    return Number(result) || 0
+  }
+
+  async get(key: string): Promise<string | null> {
+    if (this.isDevMode) {
+      return memory.strings?.get(key) || null
+    }
+    const result = await this.execute('GET', key)
+    return result as string | null
   }
 }
 

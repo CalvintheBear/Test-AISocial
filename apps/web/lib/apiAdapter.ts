@@ -22,6 +22,9 @@ interface BackendArtworkResponse {
     faved: boolean
   }
   hot_score?: number
+  hotness?: number
+  trend?: 'up' | 'down' | 'stable'
+  rank?: number
 }
 
 // 适配器函数 - 将后端响应转换为前端类型
@@ -39,7 +42,10 @@ export function adaptArtworkListItem(backendArtwork: BackendArtworkResponse): Ar
     like_count: backendArtwork.like_count,
     fav_count: backendArtwork.fav_count,
     user_state: backendArtwork.user_state,
-    hotScore: backendArtwork.hot_score,
+    hotScore: backendArtwork.hot_score ?? backendArtwork.hotness,
+    hotness: backendArtwork.hotness,
+    trend: backendArtwork.trend,
+    rank: backendArtwork.rank,
     status: backendArtwork.status
   }
 }
@@ -61,7 +67,10 @@ export function adaptArtworkDetail(backendArtwork: BackendArtworkResponse): Artw
     like_count: backendArtwork.like_count,
     fav_count: backendArtwork.fav_count,
     user_state: backendArtwork.user_state,
-    hotScore: backendArtwork.hot_score
+    hotScore: backendArtwork.hot_score ?? backendArtwork.hotness,
+    hotness: backendArtwork.hotness,
+    trend: backendArtwork.trend,
+    rank: backendArtwork.rank
   }
 }
 

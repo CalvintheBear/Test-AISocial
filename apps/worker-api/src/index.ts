@@ -9,6 +9,8 @@ import users from './routers/users'
 import feed from './routers/feed'
 import works from './routers/works'
 import admin from './routers/admin'
+import hotness from './routers/hotness'
+import { debugRouter } from './routers/debug'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -35,6 +37,8 @@ app.route('/api/works', works)
 app.route('/api/users', users)
 app.route('/api/feed', feed)
 app.route('/api/admin', admin)
+app.route('/api/hotness', hotness)
+app.route('/api/debug', debugRouter)
 
 export default app
 

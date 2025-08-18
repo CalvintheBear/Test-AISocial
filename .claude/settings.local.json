@@ -21,7 +21,11 @@
       "Bash(grep:*)",
       "Bash(chmod:*)",
       "Bash(git checkout:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(tsc --noEmit)",
+      "Bash(sed:*)",
+      "Bash(.grep -n \"incrEngagementWeight\" src/utils/hotness-batch-updater.ts)",
+      "Bash(.node_modules.bintsc --noEmit)"
     ],
     "deny": []
   }

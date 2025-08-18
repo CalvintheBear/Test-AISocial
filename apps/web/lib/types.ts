@@ -13,6 +13,9 @@ export type ArtworkListItem = {
     faved: boolean
   }
   hotScore?: number
+  hotness?: number
+  trend?: 'up' | 'down' | 'stable'
+  rank?: number
   status: 'draft' | 'published'
 }
 
@@ -32,6 +35,9 @@ export type ArtworkDetail = {
     faved: boolean
   }
   hotScore?: number
+  hotness?: number
+  trend?: 'up' | 'down' | 'stable'
+  rank?: number
 }
 
 

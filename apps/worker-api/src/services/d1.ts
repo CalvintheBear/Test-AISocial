@@ -507,6 +507,24 @@ export class D1Service {
     
     return result
   }
+
+  /**
+   * 获取指定时间范围内的作品
+   */
+  async getArtworksInTimeRange(startTime: number, endTime: number): Promise<Array<{id: string, createdAt: number}>> {
+    const stmt = this.db.prepare(`
+      SELECT id, created_at 
+      FROM artworks 
+      WHERE created_at >= ? AND created_at <= ?
+      ORDER BY created_at DESC
+    `)
+    const rows = await stmt.bind(startTime, endTime).all() as any
+    
+    return (rows.results || []).map((row: any) => ({
+      id: String(row.id),
+      createdAt: Number(row.created_at)
+    }))
+  }
 }
 
 

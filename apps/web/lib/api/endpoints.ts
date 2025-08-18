@@ -11,6 +11,20 @@ export const API = {
   publish: (id: string) => `/api/artworks/${id}/publish`,
   unpublish: (id: string) => `/api/artworks/${id}/unpublish`,
   delete: (id: string) => `/api/artworks/${id}`,
+  
+  // 热点相关API
+  trending: '/api/hotness/trending',
+  hot: '/api/hotness/hot',
+  rising: '/api/hotness/rising',
+  viral: '/api/hotness/viral',
+  
+  hotness: {
+    trending: '/api/hotness/trending',
+    detail: (id: string) => `/api/hotness/${id}`,
+    rank: '/api/hotness/rank',
+    refresh: '/api/hotness/refresh',
+  },
+  
   base: (p: string) => p,
 }
 

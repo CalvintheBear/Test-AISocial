@@ -8,9 +8,10 @@ interface ArtworkGridProps {
   onLike?: (artworkId: string) => Promise<void>
   onFavorite?: (artworkId: string) => Promise<void>
   loading?: boolean
+  showHotness?: boolean
 }
 
-export function ArtworkGrid({ artworks, onLike, onFavorite, loading }: ArtworkGridProps) {
+export function ArtworkGrid({ artworks, onLike, onFavorite, loading, showHotness }: ArtworkGridProps) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -44,6 +45,7 @@ export function ArtworkGrid({ artworks, onLike, onFavorite, loading }: ArtworkGr
           artwork={artwork}
           onLike={onLike}
           onFavorite={onFavorite}
+          showHotness={showHotness}
         />
       ))}
     </div>

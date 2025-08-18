@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
+import { HotnessService } from '../services/hotness'
 import { IdParamSchema, validateParam } from '../schemas/validation'
 import { ok, fail } from '../utils/response'
 import { formatArtworkForAPI } from '../utils/formatters'
@@ -56,15 +57,37 @@ router.post('/:id/like', async (c) => {
   const userId = (c as any).get('userId') as string
   const d1 = D1Service.fromEnv(c.env)
   
-  // Sync DB counter
+  // 检查防刷保护
+  const redis = RedisService.fromEnv(c.env)
+  const hotness = new HotnessService(redis)
+  
+  const canProceed = await hotness.checkRateLimit(userId, 'like', id)
+  if (!canProceed) {
+    return c.json(fail('RATE_LIMIT', 'Too many likes, please try again later'), 429)
+  }
+  
+  // 检查是否已点赞（防止重复点赞刷热度）
+  const alreadyLiked = await d1.isLikedByUser(userId, id)
+  if (alreadyLiked) {
+    return c.json(fail('ALREADY_LIKED', 'Artwork already liked'), 400)
+  }
+  
+  // 执行点赞操作
   await d1.addLike(userId, id)
   const actualCounts = await d1.syncArtworkCounts(id)
+  
+  // 更新热度
+  try {
+    await hotness.updateArtworkHotness(id, 'like', userId)
+  } catch (error) {
+    console.error('Failed to update hotness for like:', error)
+    // 热度更新失败不影响点赞操作
+  }
   
   // Track per-user like set and persist to D1
   let userState = { liked: true, faved: false }
   try {
     if (userId) {
-      const redis = RedisService.fromEnv(c.env)
       await Promise.all([
         redis.addUserLike(userId, id),
         d1.addLike(userId, id)
@@ -82,7 +105,7 @@ router.post('/:id/like', async (c) => {
   }
   
   // Invalidate cache
-  try { await RedisService.fromEnv(c.env).invalidateFeed() } catch {}
+  try { await redis.invalidateFeed() } catch {}
   
   // Get updated artwork to return consistent format
   const art = await d1.getArtwork(id)
@@ -100,13 +123,28 @@ router.delete('/:id/like', async (c) => {
   const userId = (c as any).get('userId') as string
   const d1 = D1Service.fromEnv(c.env)
   
+  // 检查是否已经点赞（防止重复取消）
+  const alreadyLiked = await d1.isLikedByUser(userId, id)
+  if (!alreadyLiked) {
+    return c.json(fail('NOT_LIKED', 'Artwork not liked'), 400)
+  }
+  
+  // 执行取消点赞操作
   await d1.removeLike(userId, id)
   const actualCounts = await d1.syncArtworkCounts(id)
+  
+  // 更新热度（减少热度）
+  const redis = RedisService.fromEnv(c.env)
+  const hotness = new HotnessService(redis)
+  try {
+    await hotness.updateArtworkHotness(id, 'unlike', userId)
+  } catch (error) {
+    console.error('Failed to update hotness for unlike:', error)
+  }
   
   let userState = { liked: false, faved: false }
   try {
     if (userId) {
-      const redis = RedisService.fromEnv(c.env)
       await Promise.all([
         redis.removeUserLike(userId, id),
         d1.removeLike(userId, id)
@@ -121,7 +159,7 @@ router.delete('/:id/like', async (c) => {
     }
   }
   
-  try { await RedisService.fromEnv(c.env).invalidateFeed() } catch {}
+  try { await redis.invalidateFeed() } catch {}
   
   const art = await d1.getArtwork(id)
   if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
@@ -138,10 +176,32 @@ router.post('/:id/favorite', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
+  const hotness = new HotnessService(redis)
   
+  // 检查防刷保护
+  const canProceed = await hotness.checkRateLimit(userId, 'favorite', id)
+  if (!canProceed) {
+    return c.json(fail('RATE_LIMIT', 'Too many favorites, please try again later'), 429)
+  }
+  
+  // 检查是否已收藏
+  const alreadyFavorited = await d1.isFavoritedByUser(userId, id)
+  if (alreadyFavorited) {
+    return c.json(fail('ALREADY_FAVORITED', 'Artwork already favorited'), 400)
+  }
+  
+  // 执行收藏操作
   await redis.addFavorite(userId, id)
   await d1.addFavorite(userId, id)
   const actualCounts = await d1.syncArtworkCounts(id)
+  
+  // 更新热度
+  try {
+    await hotness.updateArtworkHotness(id, 'favorite', userId)
+  } catch (error) {
+    console.error('Failed to update hotness for favorite:', error)
+  }
+  
   await Promise.all([
     redis.invalidateUserFavorites(userId),
     redis.invalidateFeed()
@@ -165,10 +225,26 @@ router.delete('/:id/favorite', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
+  const hotness = new HotnessService(redis)
   
+  // 检查是否已收藏
+  const alreadyFavorited = await d1.isFavoritedByUser(userId, id)
+  if (!alreadyFavorited) {
+    return c.json(fail('NOT_FAVORITED', 'Artwork not favorited'), 400)
+  }
+  
+  // 执行取消收藏操作
   await redis.removeFavorite(userId, id)
   await d1.removeFavorite(userId, id)
   const actualCounts = await d1.syncArtworkCounts(id)
+  
+  // 更新热度（减少热度）
+  try {
+    await hotness.updateArtworkHotness(id, 'unfavorite', userId)
+  } catch (error) {
+    console.error('Failed to update hotness for unfavorite:', error)
+  }
+  
   await Promise.all([
     redis.invalidateUserFavorites(userId),
     redis.invalidateFeed()

@@ -1,7 +1,10 @@
 import { D1Service } from './services/d1'
 import { R2Service } from './services/r2'
 import { RedisService } from './services/redis'
+import { HotnessService } from './services/hotness'
 import { syncArtworkCounts, checkDataConsistency } from './utils/sync-counts'
+import { hotnessMetrics } from './utils/hotness-metrics'
+import { batchUpdateManager } from './utils/hotness-batch-updater'
 
 export interface Env extends Record<string, unknown> {
   DB: D1Database
@@ -97,6 +100,74 @@ export default {
       console.log(`数量同步完成: 更新 ${syncResult.updatedCount} 个作品`)
     } catch (error) {
       console.error('数量同步失败:', error)
+    }
+
+    try {
+      // 每30分钟刷新一次作品热度
+      console.log('开始刷新作品热度...')
+      const d1 = D1Service.fromEnv(env)
+      const redis = RedisService.fromEnv(env)
+      const hotness = new HotnessService(redis)
+      const batchUpdater = batchUpdateManager.getBatchUpdater(hotness, redis, d1, hotnessMetrics)
+      
+      // 获取最近发布的作品
+      const thirtyDaysAgo = Date.now() - (30 * 24 * 3600 * 1000)
+      const recentArtworks = await d1.getArtworksInTimeRange(thirtyDaysAgo, 100)
+      
+      // 使用批量更新优化
+      if (recentArtworks.length > 0) {
+        // 首先批量获取所有需要的计数
+        const countPromises = recentArtworks.map(async (artwork) => {
+          const [likeCount, favCount] = await Promise.all([
+            d1.getLikeCount(artwork.id),
+            d1.getFavoriteCount(artwork.id)
+          ])
+          
+          return {
+            artworkId: artwork.id,
+            likeCount,
+            favCount,
+            viewCount: 0,
+            commentCount: 0,
+            shareCount: 0
+          }
+        })
+        
+        const counts = await Promise.all(countPromises)
+        
+        // 添加到批量更新队列
+        for (const artwork of recentArtworks) {
+          const count = counts.find(c => c.artworkId === artwork.id)
+          if (count) {
+            batchUpdater.addToBatch({
+              artworkId: artwork.id,
+              action: 'refresh',
+              deltaWeight: 0, // 使用refresh模式，权重由现有数据计算
+              metadata: count
+            })
+          }
+        }
+        
+        // 强制处理批量队列
+        const result = await batchUpdater.flushQueue()
+        console.log(`热度刷新完成: ${result.processed}/${recentArtworks.length} 个作品已更新`)
+        
+        // 记录指标
+        hotnessMetrics.recordHotnessUpdate()
+        hotnessMetrics.recordCalculationTime(result.duration)
+        hotnessMetrics.recordTopArtworks(recentArtworks.length)
+        
+      } else {
+        console.log('没有需要刷新热度的作品')
+      }
+      
+      // 清理过期数据
+      const cleanupResult = await batchUpdater.cleanupExpiredData()
+      console.log(`清理完成: 删除 ${cleanupResult.cleaned} 个过期数据项`)
+      
+    } catch (error) {
+      console.error('热度刷新失败:', error)
+      hotnessMetrics.recordError()
     }
   }
 }
