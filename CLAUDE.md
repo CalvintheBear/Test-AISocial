@@ -10,7 +10,9 @@ npm install
 
 # Setup environment
 npm run setup
-# Or manually: cp apps/web/.env.local.example apps/web/.env.local && cp apps/worker-api/.dev.vars.example apps/worker-api/.dev.vars
+# Or manually: 
+cp apps/web/.env.local.example apps/web/.env.local
+cp apps/worker-api/.dev.vars.example apps/worker-api/.dev.vars
 
 # Database setup
 cd apps/worker-api && wrangler d1 migrations apply test-d1
@@ -24,8 +26,8 @@ npm run dev        # Frontend: http://localhost:3000
 
 ### Development
 ```bash
-npm run dev          # Frontend only
-npm run api:dev      # Backend only  
+npm run dev          # Frontend only (Next.js 14)
+npm run api:dev      # Backend only (Cloudflare Workers)
 npm run build        # Build frontend
 npm run api:deploy   # Deploy backend to Cloudflare
 npm test            # Run integration tests
@@ -55,6 +57,22 @@ curl http://localhost:8787/api/debug/hotness/{artwork_id}
 
 # View rankings
 curl http://localhost:8787/api/hotness/top?limit=20
+
+# Reset cache
+curl -X POST http://localhost:8787/api/debug/reset-hotness
+```
+
+### Production Operations
+```bash
+# Deploy to production
+npm run api:deploy
+npm run build && vercel --prod
+
+# Monitor logs
+wrangler tail
+
+# Rollback to previous version
+./rollback.sh
 ```
 
 ## Architecture Overview
@@ -88,32 +106,122 @@ Frontend (Next.js) → authFetch → Cloudflare Workers → Middleware → Route
 - **User Artworks**: `user:{id}:artworks` - 10min TTL  
 - **Hot Rankings**: `hot_rank` (sorted set) - 5min TTL
 - **Like/Favorite Counts**: Persistent Redis sets (no TTL)
+- **State Cache**: `artwork:{id}:state` - 5min TTL
 
-### Development Workflow
+## Environment Setup
+
+### Frontend (.env.local)
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8787
+NEXT_PUBLIC_SITE_URL=https://cuttingasmr.org
+NEXT_PUBLIC_DEV_JWT=dev-token
+NEXT_PUBLIC_USE_MOCK=0
+```
+
+### Backend (.dev.vars)
+```bash
+# Clerk Configuration
+CLERK_SECRET_KEY=sk_live_...
+CLERK_ISSUER=https://your-domain.clerk.accounts.dev
+CLERK_JWKS_URL=https://your-domain.clerk.accounts.dev/.well-known/jwks.json
+
+# Upstash Redis
+UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+
+# R2 Configuration
+R2_PUBLIC_UPLOAD_BASE=https://your-upload-bucket.r2.dev
+R2_PUBLIC_AFTER_BASE=https://your-after-bucket.r2.dev
+
+# Development
+DEV_MODE=1
+ALLOWED_ORIGIN=http://localhost:3000
+```
+
+## Development Workflow
+
+### Adding New Features
 1. **Backend**: Add route in `src/routers/` → Update `src/services/d1.ts`
 2. **Frontend**: Add hook in `hooks/` → Update `lib/api/endpoints.ts`
 3. **Database**: Create migration → `wrangler d1 migrations apply test-d1`
 4. **Hotness**: Update `hotness-calculator.ts` for algorithm changes
 
-### Environment Setup
-```bash
-# Frontend (.env.local)
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8787
-NEXT_PUBLIC_DEV_JWT=dev-token
-NEXT_PUBLIC_USE_MOCK=0
-
-# Backend (.dev.vars)  
-DEV_MODE=1  # Bypass Clerk auth in development
+### Database Schema
+```sql
+-- Core Tables
+CREATE TABLE users (id TEXT PRIMARY KEY, name TEXT, email TEXT, profile_pic TEXT, created_at INTEGER, updated_at INTEGER);
+CREATE TABLE artworks (id TEXT PRIMARY KEY, user_id TEXT, title TEXT, url TEXT, thumb_url TEXT, slug TEXT, status TEXT, created_at INTEGER, updated_at INTEGER, published_at INTEGER, mime_type TEXT, width INTEGER, height INTEGER, prompt TEXT, model TEXT, seed INTEGER);
+CREATE TABLE artworks_like (user_id TEXT, artwork_id TEXT, created_at INTEGER, PRIMARY KEY (user_id, artwork_id));
+CREATE TABLE artworks_favorite (user_id TEXT, artwork_id TEXT, created_at INTEGER, PRIMARY KEY (user_id, artwork_id));
 ```
 
-### Debugging Commands
+### API Endpoints
+- **Feed**: `GET /api/feed`
+- **User Artworks**: `GET /api/users/:id/artworks`
+- **User Favorites**: `GET /api/users/:id/favorites`
+- **Artwork Detail**: `GET /api/artworks/:id`
+- **Like/Favorite Actions**: `POST/DELETE /api/artworks/:id/like`, `POST/DELETE /api/artworks/:id/favorite`
+- **State Management**: `GET /api/artworks/:id/state`, `POST /api/artworks/batch/state`
+- **Hotness**: `GET /api/hotness/top?limit=20`
+- **Debug**: `GET /api/debug/hotness/:id`
+
+## Production Deployment
+
+### Cloudflare Workers
 ```bash
-# Worker logs
+# Set production secrets
+wrangler secret put UPSTASH_REDIS_REST_TOKEN
+wrangler secret put CLERK_SECRET_KEY
+wrangler secret put CLERK_SECRET_KEY
+
+# Deploy
+npm run api:deploy
+```
+
+### Cloudflare Pages (Frontend)
+```bash
+# Build and deploy
+npm run build
+wrangler pages deploy apps/web/.next/static --project-name=ai-social-web
+# Or use Vercel
+vercel --prod
+```
+
+### CI/CD Configuration
+GitHub Actions workflow at `.github/workflows/deploy.yml` automatically:
+- Builds frontend and backend
+- Deploys to Cloudflare Workers and Pages
+- Requires repository secrets:
+  - `CLOUDFLARE_API_TOKEN` (Workers Scripts:Edit & Pages:Edit permissions)
+  - `CLOUDFLARE_ACCOUNT_ID`
+
+## Debugging & Troubleshooting
+
+### Common Issues
+1. **D1 Connection**: Check `wrangler.toml` database_id and run migrations
+2. **Redis Connection**: Verify `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+3. **Clerk Auth**: Ensure `CLERK_SECRET_KEY` matches your Clerk instance
+4. **CORS Issues**: Check `ALLOWED_ORIGIN` matches your frontend domain
+5. **Build Errors**: Verify all environment variables are set in production
+
+### Debug Commands
+```bash
+# Check worker logs
 wrangler tail
 
-# Reset cache
-curl -X POST http://localhost:8787/api/debug/reset-hotness
+# Test specific endpoints
+curl http://localhost:8787/api/health
+curl http://localhost:8787/api/redis/ping
 
 # Check data consistency
 cd apps/worker-api && npm run consistency-check
+
+# Reset hotness cache
+curl -X POST http://localhost:8787/api/debug/reset-hotness
 ```
+
+### Performance Monitoring
+- **Response Times**: Target <500ms for API calls
+- **Error Rates**: Monitor for <1% error rate
+- **Cache Hit Rate**: Monitor Redis cache effectiveness
+- **Database Performance**: Use `wrangler d1 insights` for query analysis

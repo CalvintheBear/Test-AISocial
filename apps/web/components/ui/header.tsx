@@ -30,25 +30,7 @@ const Header: React.FC<HeaderProps> = ({ className, onOpenCreateModal }) => {
         </div>
 
         {/* Generate/Upload -> route to /artwork */}
-        <div className="flex items-center space-x-2">
-          <Link href="/artwork">
-            <Button 
-              variant="primary" 
-              size="sm" 
-              className="hidden md:block"
-            >
-              生成/上传
-            </Button>
-          </Link>
-          <Link href="/artwork" className="md:hidden">
-            <Button 
-              variant="primary" 
-              size="sm"
-            >
-              +
-            </Button>
-          </Link>
-        </div>
+
       </div>
     </header>
   )

@@ -106,4 +106,51 @@ const HotnessIndicator: React.FC<HotnessIndicatorProps> = ({
   );
 };
 
+export interface EmptyStateProps {
+  category: 'viral' | 'hot' | 'rising' | 'all';
+  timeWindow?: string;
+}
+
+export const EmptyState: React.FC<EmptyStateProps> = ({ category, timeWindow }) => {
+  const messages = {
+    viral: {
+      title: "还没有爆红作品",
+      description: "当作品热度超过100时会出现",
+      icon: "🔥",
+      color: "text-red-500"
+    },
+    hot: {
+      title: "还没有热门作品", 
+      description: "当作品热度超过50时会出现",
+      icon: "🔥",
+      color: "text-orange-500"
+    },
+    rising: {
+      title: "还没有上升作品",
+      description: "当作品热度超过20时会出现",
+      icon: "📈",
+      color: "text-yellow-500"
+    },
+    all: {
+      title: "暂无热点内容",
+      description: "当前时间范围内没有热点作品",
+      icon: "📊",
+      color: "text-gray-500"
+    }
+  };
+
+  const message = messages[category] || messages.all;
+
+  return (
+    <div className="text-center py-12">
+      <div className={`text-4xl mb-4 ${message.color}`}>{message.icon}</div>
+      <div className={`text-lg font-medium text-gray-900 mb-2`}>{message.title}</div>
+      <p className="text-sm text-gray-400">
+        {message.description}
+        {timeWindow && ` (时间范围: ${timeWindow})`}
+      </p>
+    </div>
+  );
+};
+
 export default HotnessIndicator;

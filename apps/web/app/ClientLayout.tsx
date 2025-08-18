@@ -43,15 +43,6 @@ export function ClientLayout({ children }: ClientLayoutProps) {
                 <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/artwork">{isSidebarCollapsed ? '🖌️' : '工作台'}</Link>
               </nav>
             </SidebarContent>
-            <SidebarFooter>
-              {!isSidebarCollapsed && (
-                <div className="w-full flex justify-between items-center px-3 py-2">
-                  <Link href="/login" className="w-full">
-                    <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
-                  </Link>
-                </div>
-              )}
-            </SidebarFooter>
           </Sidebar>
         </aside>
 

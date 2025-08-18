@@ -8,7 +8,8 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "consistency-check": "node src/scripts/consistency-check.js",
-    "consistency-check:fix": "node src/scripts/consistency-check.js --fix"
+    "consistency-check:fix": "node src/scripts/consistency-check.js --fix",
+    "hotness:recalculate-all": "node src/scripts/recalculate-hotness.js"
   },
   "dependencies": {
     "@clerk/backend": "^1.30.0",

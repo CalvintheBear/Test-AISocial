@@ -20,6 +20,8 @@ export const API = {
   
   hotness: {
     trending: '/api/hotness/trending',
+    byCategory: (category: string, limit?: number) => 
+      `/api/hotness/trending?category=${category}&limit=${limit || 20}`,
     detail: (id: string) => `/api/hotness/${id}`,
     rank: '/api/hotness/rank',
     refresh: '/api/hotness/refresh',

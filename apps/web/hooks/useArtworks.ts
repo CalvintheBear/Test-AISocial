@@ -5,7 +5,7 @@ import { fetchArtworkList } from '@/lib/apiAdapter';
 // 获取趋势作品
 export function useTrendingArtworks(timeWindow: string = '24h', category: string = 'all') {
   const { data, error, isLoading, mutate } = useSWR(
-    [`/api/hotness/trending/${timeWindow}?category=${category}`],
+    [`/api/hotness/trending?timeWindow=${timeWindow}&category=${category}`],
     ([url]) => fetchArtworkList(url),
     {
       revalidateOnFocus: false,
@@ -25,7 +25,7 @@ export function useTrendingArtworks(timeWindow: string = '24h', category: string
 // 获取热门作品
 export function useHotArtworks(limit: number = 20) {
   const { data, error, isLoading } = useSWR(
-    [`/api/hotness/hot?limit=${limit}`],
+    [`/api/hotness/trending?category=hot&limit=${limit}`],
     ([url]) => fetchArtworkList(url),
     {
       revalidateOnFocus: false,
@@ -43,7 +43,7 @@ export function useHotArtworks(limit: number = 20) {
 // 获取上升作品
 export function useRisingArtworks(limit: number = 20) {
   const { data, error, isLoading } = useSWR(
-    [`/api/hotness/rising?limit=${limit}`],
+    [`/api/hotness/trending?category=rising&limit=${limit}`],
     ([url]) => fetchArtworkList(url),
     {
       revalidateOnFocus: false,
@@ -61,7 +61,7 @@ export function useRisingArtworks(limit: number = 20) {
 // 获取爆红作品
 export function useViralArtworks(limit: number = 20) {
   const { data, error, isLoading } = useSWR(
-    [`/api/hotness/viral?limit=${limit}`],
+    [`/api/hotness/trending?category=viral&limit=${limit}`],
     ([url]) => fetchArtworkList(url),
     {
       revalidateOnFocus: false,

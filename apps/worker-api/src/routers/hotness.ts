@@ -17,6 +17,13 @@ router.get('/trending', async (c) => {
     const timeWindow = c.req.query('timeWindow') || '24h'
     const limit = Math.min(parseInt(c.req.query('limit') || '20'), 100)
     const offset = parseInt(c.req.query('offset') || '0')
+    const category = c.req.query('category') || 'all'
+    
+    // 验证分类参数
+    const validCategories = ['all', 'viral', 'hot', 'rising']
+    if (!validCategories.includes(category)) {
+      return c.json(fail('INVALID_INPUT', 'Invalid category'), 400)
+    }
     
     const redis = RedisService.fromEnv(c.env)
     const hotness = new HotnessService(redis)
@@ -52,10 +59,26 @@ router.get('/trending', async (c) => {
           }
         }
         
+        const hotLevel = HotnessCalculator.getHotnessLevel(score)
+        
+        // 根据分类过滤
+        if (category !== 'all') {
+          const categoryMap: Record<string, number> = {
+            'viral': 100,
+            'hot': 50,
+            'rising': 20
+          }
+          
+          const minScore = categoryMap[category]
+          if (minScore && score < minScore) {
+            return null
+          }
+        }
+        
         return {
           ...formatArtworkForAPI(artwork, userState),
           hot_score: score,
-          hot_level: HotnessCalculator.getHotnessLevel(score),
+          hot_level: hotLevel,
           trend: 'stable' // 可以从历史数据计算趋势
         }
       })
@@ -80,6 +103,12 @@ router.get('/trending/:timeWindow', async (c) => {
     const { timeWindow } = c.req.param()
     const limit = Math.min(parseInt(c.req.query('limit') || '20'), 100)
     const category = c.req.query('category') || 'all'
+    
+    // 验证分类参数
+    const validCategories = ['all', 'viral', 'hot', 'rising']
+    if (!validCategories.includes(category)) {
+      return c.json(fail('INVALID_INPUT', 'Invalid category'), 400)
+    }
     
     // 验证时间窗口
     const validTimeWindows = ['1h', '6h', '24h', '7d', '30d']
@@ -148,8 +177,24 @@ router.get('/trending/:timeWindow', async (c) => {
       })
     )
     
+    // 根据分类过滤
+    const filteredArtworks = enhancedArtworks.filter((artwork) => {
+      if (!artwork) return false
+      
+      if (category === 'all') return true
+      
+      const categoryMap: Record<string, number> = {
+        'viral': 100,
+        'hot': 50,
+        'rising': 20
+      }
+      
+      const minScore = categoryMap[category]
+      return minScore ? (artwork.hot_score || 0) >= minScore : true
+    })
+    
     // 按热度排序
-    const validEnhancedArtworks = enhancedArtworks.filter(Boolean)
+    const validEnhancedArtworks = filteredArtworks.filter(Boolean)
     validEnhancedArtworks.sort((a, b) => ((b?.hot_score || 0) - (a?.hot_score || 0)))
     
     return c.json(ok(validEnhancedArtworks))

@@ -129,3 +129,90 @@ describe('artworkStateManager', () => {
     expect(artworkStateManager.getUserFavoritesKey('user-id')).toBe('/api/users/user-id/favorites')
   })
 })
+
+describe('Hotness Category Filtering', () => {
+  it('should filter artworks by viral category', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ 
+        success: true, 
+        data: [
+          { id: '1', hot_score: 150, title: 'Viral Artwork' },
+          { id: '2', hot_score: 120, title: 'Another Viral' }
+        ] 
+      })
+    })
+    global.fetch = mockFetch
+
+    const { useViralArtworks } = require('@/hooks/useArtworks')
+    const { result } = renderHook(() => useViralArtworks(20))
+    
+    // Wait for SWR to fetch
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/hotness/trending?category=viral&limit=20', expect.any(Object))
+  })
+
+  it('should handle empty states', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ success: true, data: [] })
+    })
+    global.fetch = mockFetch
+
+    const { useHotArtworks } = require('@/hooks/useArtworks')
+    const { result } = renderHook(() => useHotArtworks(10))
+    
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/hotness/trending?category=hot&limit=10', expect.any(Object))
+  })
+
+  it('should test rising category filtering', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ 
+        success: true, 
+        data: [
+          { id: '3', hot_score: 25, title: 'Rising Artwork' }
+        ] 
+      })
+    })
+    global.fetch = mockFetch
+
+    const { useRisingArtworks } = require('@/hooks/useArtworks')
+    const { result } = renderHook(() => useRisingArtworks(15))
+    
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/hotness/trending?category=rising&limit=15', expect.any(Object))
+  })
+
+  it('should test general trending with category parameter', async () => {
+    const mockFetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ 
+        success: true, 
+        data: [
+          { id: '4', hot_score: 75, title: 'Hot Artwork' }
+        ] 
+      })
+    })
+    global.fetch = mockFetch
+
+    const { useTrendingArtworks } = require('@/hooks/useArtworks')
+    const { result } = renderHook(() => useTrendingArtworks('24h', 'hot'))
+    
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    })
+
+    expect(mockFetch).toHaveBeenCalledWith('/api/hotness/trending?timeWindow=24h&category=hot', expect.any(Object))
+  })
+})
