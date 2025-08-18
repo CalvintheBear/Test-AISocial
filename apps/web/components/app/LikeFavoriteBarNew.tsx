@@ -1,7 +1,7 @@
 'use client'
 
-import LikeButton from './LikeButton'
-import FavoriteButton from './FavoriteButton'
+import { LikeButtonWrapper } from '../LikeButtonWrapper'
+import { FavoriteButtonWrapper } from '../FavoriteButtonWrapper'
 
 interface LikeFavoriteBarNewProps {
   artworkId: string
@@ -26,17 +26,17 @@ export default function LikeFavoriteBarNew({
 }: LikeFavoriteBarNewProps) {
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
-      <LikeButton
+      <LikeButtonWrapper
         artworkId={artworkId}
         initialLikeCount={initialLikeCount}
         initialIsLiked={initialIsLiked}
         size={size}
         showCount={showCount}
       />
-      <FavoriteButton
+      <FavoriteButtonWrapper
         artworkId={artworkId}
-        initialFavoriteCount={initialFavoriteCount}
-        initialIsFavorite={initialIsFavorite}
+        initialFavCount={initialFavoriteCount}
+        initialIsFaved={initialIsFavorite}
         size={size}
         showCount={showCount}
       />

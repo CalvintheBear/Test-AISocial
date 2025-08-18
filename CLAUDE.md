@@ -4,239 +4,244 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Social is a full-stack AI art sharing platform with:
-- **Frontend**: Next.js 14 with Clerk auth, Tailwind CSS, TypeScript
-- **Backend**: Cloudflare Workers with Hono framework, D1 database, R2 storage, Upstash Redis
-- **Architecture**: Monorepo with workspace structure, serverless deployment
+AI Social is a full-stack AI art sharing platform built as a monorepo with serverless architecture:
+- **Frontend**: Next.js 14 App Router with Clerk authentication, Tailwind CSS, TypeScript
+- **Backend**: Cloudflare Workers with Hono framework, D1 SQLite database, R2 storage, Upstash Redis
+- **Architecture**: Monorepo with npm workspaces, optimized for serverless deployment
 
-## Quick Start Commands
+## Development Setup
 
-### Development Setup
+### Prerequisites
+- Node.js 18+
+- Cloudflare account with Workers, D1, R2 services
+- Upstash Redis instance
+- Clerk account for authentication
+
+### Quick Start
 ```bash
 # Install dependencies
 npm install
 
-# Setup environment files
+# Environment setup
 cp apps/web/.env.local.example apps/web/.env.local
 cp apps/worker-api/.dev.vars.example apps/worker-api/.dev.vars
-# Edit both files with actual values
+# Edit both files with actual credentials
 
-# Database setup
+# Database initialization
 cd apps/worker-api
 wrangler d1 migrations apply test-d1
 
 # Start development servers
-npm run api:dev    # Backend on http://localhost:8787
-npm run dev        # Frontend on http://localhost:3000
+npm run api:dev    # Backend: http://localhost:8787
+npm run dev        # Frontend: http://localhost:3000
 ```
 
-### Available Scripts
+## Architecture Patterns
+
+### Data Flow Architecture
+```
+Frontend (Next.js) -> Cloudflare Workers -> D1/SQLite + Redis Cache -> R2 Storage
+                    ↓
+              Response Aggregation -> Frontend State Management (SWR)
+```
+
+### Core Service Layers
+- **API Layer**: Hono routers with middleware pipeline (auth, error, cors, logging)
+- **Service Layer**: D1Service, RedisService, R2Service for data operations
+- **Cache Strategy**: Redis for hot data (likes, favorites, user states), D1 for persistent storage
+- **Image Pipeline**: Original uploads to R2_UPLOAD, thumbnails to R2_AFTER via cron jobs
+
+### Authentication Flow
+- **Frontend**: Clerk Next.js integration with JWT tokens
+- **Backend**: Clerk backend validation (skippable with DEV_MODE=1)
+- **Token Handling**: Runtime token provider in authFetch with Clerk fallback
+
+## Development Commands
+
+### Frontend (Next.js)
 ```bash
-# Frontend (Next.js)
 cd apps/web
-npm run dev        # Start Next.js dev server
-npm run build      # Build for production
-npm run start      # Start production server
-
-# Backend (Cloudflare Workers)
-cd apps/worker-api
-npm run dev        # Start worker dev server
-npm run deploy     # Deploy to Cloudflare Workers
-npm run typecheck  # Type checking with TypeScript
-
-# Consistency checks
-cd apps/worker-api
-npm run consistency-check      # Check data consistency
-npm run consistency-check:fix  # Fix data consistency issues
+npm run dev           # Development server
+npm run build         # Production build
+npm run start         # Production server
+npm run typecheck     # TypeScript checking
 ```
 
-### Production Deployment
+### Backend (Cloudflare Workers)
 ```bash
-# Backend deployment
 cd apps/worker-api
-wrangler secret put UPSTASH_REDIS_REST_TOKEN
-wrangler secret put CLERK_SECRET_KEY
-npm run api:deploy
-
-# Frontend deployment
-npm run build
-vercel --prod
+npm run dev           # Local development with wrangler
+npm run deploy        # Deploy to Cloudflare Workers
+npm run typecheck     # TypeScript checking
+npm run consistency-check      # Data consistency validation
+npm run consistency-check:fix  # Auto-fix consistency issues
 ```
 
-## Architecture Details
-
-### Tech Stack
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS, Radix UI
-- **Authentication**: Clerk (Next.js integration)
-- **Backend**: Cloudflare Workers, Hono framework, TypeScript
-- **Database**: Cloudflare D1 (SQLite)
-- **Storage**: Cloudflare R2 (S3-compatible)
-- **Cache**: Upstash Redis (REST API)
-- **Deployment**: Serverless (Workers + Cloudflare Pages)
-- **Package Manager**: npm workspaces (monorepo)
-
-### Key Features
-- AI artwork generation and sharing
-- User authentication and profiles
-- Like/favorite system
-- Feed/recommendation engine
-- Image upload and storage
-- SEO-optimized pages with SSR
-
-### API Structure
-```
-├── /api/health           # Health check
-├── /api/redis/ping       # Redis connectivity test
-├── /api/feed             # Recommendation feed
-├── /api/artworks/
-│   ├── GET /:id          # Single artwork details
-│   ├── POST /upload      # Upload artwork
-│   ├── POST /:id/like    # Like/unlike artwork
-│   ├── POST /:id/favorite # Favorite/unfavorite
-│   └── POST /:id/publish # Publish draft artwork
-└── /api/users/
-    ├── GET /:id/artworks # User's artworks
-    └── GET /:id/favorites # User's favorites
-```
-
-### Database Schema (D1)
-- **users**: id, name, email, profile_pic
-- **artworks**: id, user_id, title, url, thumb_url, slug, status (draft/published), created_at
-- **artworks_like**: user_id, artwork_id, created_at (composite PK)
-- **artworks_favorite**: user_id, artwork_id, created_at (composite PK)
-
-### Environment Variables
-
-#### Frontend (.env.local)
-```
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
-NEXT_PUBLIC_USE_MOCK=0                    # 0=real API, 1=mock data
-NEXT_PUBLIC_DEV_JWT=dev-jwt-token         # Development JWT
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
-```
-
-#### Backend (.dev.vars)
-```
-# Clerk
-CLERK_SECRET_KEY=sk_test_...
-CLERK_ISSUER=https://your-instance.clerk.accounts.dev
-CLERK_JWKS_URL=https://your-instance.clerk.accounts.dev/.well-known/jwks.json
-
-# Upstash Redis
-UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your-token
-
-# Development
-DEV_MODE=1
-```
-
-#### Backend (wrangler.toml)
-```toml
-name = "ai-social-api"
-main = "src/index.ts"
-compatibility_date = "2024-06-01"
-compatibility_flags = ["nodejs_compat"]
-
-[vars]
-R2_PUBLIC_UPLOAD_BASE = "https://your-r2-domain.r2.dev"
-R2_PUBLIC_AFTER_BASE = "https://your-r2-domain.r2.dev"
-ALLOWED_ORIGIN = "https://your-frontend-domain.com"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "your-d1-database"
-database_id = "your-database-id"
-
-[[r2_buckets]]
-binding = "R2_UPLOAD"
-bucket_name = "your-upload-bucket"
-
-[[r2_buckets]]
-binding = "R2_AFTER"
-bucket_name = "your-after-bucket"
-
-[triggers]
-crons = ["*/15 * * * *"]
-
-[observability.logs]
-enabled = true
-```
-
-## Development Workflow
-
-### Testing Endpoints
+### Testing & Debugging
 ```bash
 # Health checks
 curl http://localhost:8787/api/health
 curl http://localhost:8787/api/redis/ping
 
-# Test feed
+# Feed testing
 curl http://localhost:8787/api/feed
 
-# Test with JWT (when DEV_MODE=0)
-curl -H "Authorization: Bearer your-jwt" http://localhost:8787/api/feed
+# With authentication
+curl -H "Authorization: Bearer YOUR_JWT" http://localhost:8787/api/feed
+
+# Worker logs
+wrangler tail
 ```
 
-### Frontend Pages
-- `/` - Marketing landing page
-- `/features` - Feature showcase
-- `/feed` - Main feed/recommendations
-- `/user/[username]` - User profile with artworks
-- `/artwork/[id]/[slug]` - Individual artwork detail
+## Key Architecture Details
 
-### Key Directories
-```
-apps/
-├── web/                    # Next.js frontend
-│   ├── app/               # App router pages
-│   ├── components/        # UI components
-│   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Utilities and API client
-│   └── styles/           # Global styles and tokens
-└── worker-api/           # Cloudflare Workers backend
-    ├── src/
-    │   ├── routers/      # API route handlers
-    │   ├── services/     # Business logic services
-    │   ├── middlewares/  # Auth, error handling, logging
-    │   ├── schemas/      # Validation schemas
-    │   └── utils/        # Helper utilities
-    └── migrations/       # Database migrations
+### Database Schema (D1)
+```sql
+-- Core tables with optimized indexes
+users (id, name, email, profile_pic, created_at)
+artworks (id, user_id, title, url, thumb_url, slug, status, created_at, 
+          like_count, favorite_count, hot_base, engagement_weight)
+artworks_like (user_id, artwork_id, created_at) -- Composite PK
+artworks_favorite (user_id, artwork_id, created_at) -- Composite PK
+
+-- Performance indexes
+idx_artworks_status_created ON artworks(status, created_at DESC)
+idx_artworks_slug ON artworks(slug)
 ```
 
-### Redis Cache Keys
-- `user:{user_id}:artworks` - User's artwork list
-- `user:{user_id}:favorites` - User's favorite artworks
-- `hot_rank` - Global hot ranking (sorted set)
-- `feed_queue` - Feed generation queue
-- `artwork:{id}:likes` - Like count per artwork
+### Redis Cache Strategy
+- **User State**: `user:{user_id}:artworks`, `user:{user_id}:favorites`
+- **Interaction State**: `artwork:{id}:likes`, `artwork:{id}:favorites`
+- **Ranking**: `hot_rank` (sorted set with engagement scores)
+- **Feed Queue**: `feed_queue` for background processing
 
 ### R2 Storage Structure
-- `/artworks/original/{uuid}` - Original uploaded files
-- `/artworks/thumb/{uuid}` - Generated thumbnails
-- Public URLs via `R2_PUBLIC_UPLOAD_BASE` and `R2_PUBLIC_AFTER_BASE`
+- **Original Files**: `/artworks/original/{uuid}` in R2_UPLOAD bucket
+- **Thumbnails**: `/artworks/thumb/{uuid}` in R2_AFTER bucket
+- **Public URLs**: Configured via R2_PUBLIC_* environment variables
 
-## Common Tasks
+### API Response Patterns
+- **Unified Format**: `{ success: boolean, data: T, code?: string }`
+- **Error Handling**: Centralized middleware with structured error responses
+- **Caching**: Redis-first with D1 fallback for user interaction states
 
-### Adding New API Endpoint
-1. Create route in `apps/worker-api/src/routers/`
-2. Add validation schema in `apps/worker-api/src/schemas/`
-3. Update frontend API client in `apps/web/lib/api/`
-4. Add corresponding hook in `apps/web/hooks/`
+## Development Workflow
+
+### Adding New Features
+1. **Backend**: Create route in `apps/worker-api/src/routers/`
+   - Add validation schema in `apps/worker-api/src/schemas/`
+   - Update D1Service methods in `apps/worker-api/src/services/d1.ts`
+   - Add Redis cache keys and TTL strategies
+
+2. **Frontend**: Create hook in `apps/web/hooks/`
+   - Update API client in `apps/web/lib/api/endpoints.ts`
+   - Add component integration with SWR for real-time updates
 
 ### Database Changes
-1. Create migration file in `apps/worker-api/migrations/`
-2. Run: `wrangler d1 migrations apply test-d1`
-3. Update types in `apps/worker-api/src/types.ts`
-4. Update frontend types in `apps/web/lib/types.ts`
+1. Create migration: `apps/worker-api/migrations/NNN_description.sql`
+2. Apply migration: `wrangler d1 migrations apply test-d1`
+3. Update types: `apps/worker-api/src/types.ts` and `apps/web/lib/types.ts`
+4. Update service methods and validation schemas
 
-### Debugging
-- **D1 issues**: Check `wrangler.toml` database_id
-- **Redis issues**: Verify `UPSTASH_REDIS_REST_TOKEN`
-- **Clerk auth**: Check `CLERK_SECRET_KEY` and issuer config
-- **R2 upload**: Check bucket names and permissions
-- **Logs**: Use `wrangler tail` for Worker logs
+### Production Deployment
+```bash
+# Backend secrets (production)
+cd apps/worker-api
+wrangler secret put CLERK_SECRET_KEY
+wrangler secret put UPSTASH_REDIS_REST_TOKEN
+wrangler secret put UPSTASH_REDIS_REST_URL
+npm run deploy
 
-### Development Mode Features
-- `DEV_MODE=1`: Skip Clerk validation
-- `NEXT_PUBLIC_USE_MOCK=1`: Use frontend mock data
-- Hot reload for both frontend and backend
+# Frontend deployment
+npm run build
+# Deploy to Cloudflare Pages or Vercel
+```
+
+## Environment Configuration
+
+### Frontend (.env.local)
+```bash
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+NEXT_PUBLIC_API_BASE_URL=https://your-worker.workers.dev
+NEXT_PUBLIC_DEV_JWT=dev-token-for-testing
+NEXT_PUBLIC_USE_MOCK=0  # 0=real API, 1=mock data
+```
+
+### Backend (.dev.vars)
+```bash
+# Clerk configuration
+CLERK_SECRET_KEY=sk_live_...
+CLERK_ISSUER=https://your-instance.clerk.accounts.dev
+CLERK_JWKS_URL=https://your-instance.clerk.accounts.dev/.well-known/jwks.json
+
+# Redis configuration
+UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your-token
+
+# R2 public URLs
+R2_PUBLIC_UPLOAD_BASE=https://your-r2-domain.r2.dev
+R2_PUBLIC_AFTER_BASE=https://your-r2-domain.r2.dev
+
+# CORS
+ALLOWED_ORIGIN=https://your-frontend-domain.com
+
+# Development
+DEV_MODE=1  # Skip Clerk validation for local development
+```
+
+## Key Directories
+
+```
+apps/
+├── web/                    # Next.js frontend (App Router)
+│   ├── app/               # App directory with route segments
+│   │   ├── feed/          # Main feed page
+│   │   ├── artwork/[id]/[slug]/  # Artwork detail pages
+│   │   └── user/[username]/      # User profile pages
+│   ├── components/        # Reusable UI components
+│   ├── hooks/            # Custom React hooks with SWR
+│   ├── lib/              # API client, types, utilities
+│   └── styles/           # Tailwind CSS and design tokens
+└── worker-api/           # Cloudflare Workers backend
+    ├── src/
+    │   ├── routers/      # API route handlers (artworks, users, feed)
+    │   ├── services/     # Data services (D1, Redis, R2)
+    │   ├── middlewares/  # Auth, error, cors, logging
+    │   ├── schemas/      # Zod validation schemas
+    │   ├── utils/        # Formatters, response helpers
+    │   └── scheduled.ts  # Cron jobs for thumbnails, cleanup
+    └── migrations/       # D1 database migrations
+```
+
+## Performance Optimizations
+
+### Frontend
+- **SWR Integration**: Intelligent caching and revalidation
+- **Dynamic Rendering**: Force-dynamic pages for real-time data
+- **Image Optimization**: Next.js Image component with remote patterns
+
+### Backend
+- **Redis Caching**: Hot data cached with TTL strategies
+- **Query Optimization**: Indexed composite keys, batch operations
+- **Cron Jobs**: Background thumbnail generation and cleanup
+- **Connection Pooling**: Efficient D1 and Redis connections
+
+### Caching Strategy
+- **Feed Data**: 5-minute TTL with background refresh
+- **User States**: Session-based with immediate invalidation on actions
+- **Artwork Metadata**: 1-hour TTL with manual invalidation on updates
+- **Hot Rankings**: 15-minute recalculation via cron jobs
+
+## Common Issues & Solutions
+
+### Development
+- **D1 Connection**: Ensure `wrangler.toml` database_id matches your instance
+- **Redis Connection**: Verify UPSTASH credentials in .dev.vars
+- **CORS Issues**: Check ALLOWED_ORIGIN matches your frontend domain
+- **Type Errors**: Run `npm run typecheck` in both frontend and backend
+
+### Production
+- **Clerk Auth**: Ensure production keys are set via wrangler secrets
+- **R2 Permissions**: Verify bucket bindings and public URL configurations
+- **Deployment**: Use `wrangler tail` for real-time Worker logs
+- **Cache Consistency**: Run consistency-check periodically for data integrity

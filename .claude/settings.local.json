@@ -18,7 +18,9 @@
       "Bash(cd:*)",
       "Bash(find:*)",
       "Bash(wrangler secret put:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(chmod:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": []
   }
