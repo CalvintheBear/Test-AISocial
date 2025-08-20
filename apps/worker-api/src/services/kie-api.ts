@@ -9,17 +9,26 @@ export class KIEService {
   }
 
   async generateImage(prompt: string, options: Partial<KIEGenerateRequest> = {}): Promise<string> {
-    const payload = {
+    // 组装 Flux Kontext 请求体（严格遵循官方文档）
+    const requestBody: Record<string, any> = {
       prompt,
       aspectRatio: options.aspectRatio || '1:1',
       model: options.model || 'flux-kontext-pro',
       enableTranslation: options.enableTranslation !== false,
-      promptUpsampling: options.promptUpsampling || false, // 默认关闭，避免额外费用
-      safetyTolerance: options.safetyTolerance || 2,
-      outputFormat: 'png', // 默认使用PNG格式，质量更好
-      ...(options.inputImage && { inputImage: options.inputImage }),
-      ...(options.callBackUrl && { callBackUrl: options.callBackUrl })
+      outputFormat: options.outputFormat || 'png',
+      promptUpsampling: options.promptUpsampling || false,
     }
+    
+    if (options.inputImage && typeof options.inputImage === 'string' && options.inputImage.trim() !== '') {
+      requestBody.inputImage = options.inputImage
+    }
+
+    // 注入回调（统一由服务端设置，避免前端拼接）
+    if (options.callBackUrl) {
+      requestBody.callBackUrl = options.callBackUrl
+    }
+
+    console.log('📤 发送请求到 Flux Kontext API:', JSON.stringify(requestBody, null, 2))
 
     const response = await fetch(`${this.baseUrl}/generate`, {
       method: 'POST',
@@ -27,20 +36,28 @@ export class KIEService {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(requestBody)
     })
 
     if (!response.ok) {
-      throw new Error(`KIE API HTTP Error: ${response.status}`)
+      const errorText = await response.text()
+      throw new Error(`Flux Kontext API HTTP Error: ${response.status} - ${errorText}`)
     }
 
     const result: KIEGenerateResponse = await response.json()
+    console.log('✅ Flux Kontext API 响应:', result)
     
     if (result.code !== 200) {
-      throw new Error(`KIE API Error: ${result.msg}`)
+      throw new Error(`Flux Kontext API Error: ${result.msg}`)
     }
 
-    return result.data.taskId
+    // 官方响应：{ code: 200, msg: 'success', data: { taskId: '...' } }
+    const taskId = result?.data?.taskId || result?.taskId
+    if (!taskId) {
+      throw new Error('未获取到任务ID')
+    }
+
+    return taskId
   }
 
   async getTaskStatus(taskId: string): Promise<KIEStatusResponse['data']> {
@@ -51,7 +68,7 @@ export class KIEService {
     })
 
     if (!response.ok) {
-      throw new Error(`KIE API HTTP Error: ${response.status}`)
+      throw new Error(`Flux Kontext API HTTP Error: ${response.status}`)
     }
 
     const result: KIEStatusResponse = await response.json()
@@ -67,29 +84,29 @@ export class KIEService {
     const data = await this.getTaskStatus(taskId)
     
     let status: GenerationStatus['status']
-    // 根据KIE API文档，successFlag含义：
-    // 0: pending, 1: generating, 2: completed, 3: failed
+    // 根据官方文档，successFlag含义：
+    // 0: GENERATING (正在生成), 1: SUCCESS (成功), 2: CREATE_TASK_FAILED (创建任务失败), 3: GENERATE_FAILED (生成失败)
     switch (data.successFlag) {
       case 0:
-        status = 'pending'
-        break
-      case 1:
         status = 'generating'
         break
-      case 2:
+      case 1:
         status = 'completed'
         break
+      case 2:
       case 3:
         status = 'failed'
         break
       default:
-        status = 'pending'
+        status = 'generating'
     }
 
     return {
       taskId,
       status,
+      successFlag: data.successFlag,
       resultImageUrl: data.response?.resultImageUrl,
+      originImageUrl: data.response?.originImageUrl,
       errorMessage: data.errorMessage
     }
   }
@@ -104,17 +121,9 @@ export class KIEService {
         return status
       }
       
-      if (status.status === 'timeout') {
-        return { ...status, status: 'timeout' }
-      }
-      
       await new Promise(resolve => setTimeout(resolve, checkInterval))
     }
     
-    return {
-      taskId,
-      status: 'timeout',
-      errorMessage: 'Generation timeout'
-    }
+    throw new Error('Generation timeout')
   }
 }

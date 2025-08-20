@@ -2,107 +2,109 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { KIECallbackResponse } from '../types/kie'
-import { ok, fail } from '../utils/response'
 
 const router = new Hono()
 
-// KIE API 回调处理
+// Flux Kontext 回调处理 - 完全基于 furycode 实现
 router.post('/kie-callback', async (c) => {
   try {
-    const body = await c.req.json() as KIECallbackResponse
+    const body = await c.req.json()
+    console.log('📞 收到Flux Kontext回调:', JSON.stringify(body, null, 2))
     
-    console.log('[KIE Callback] Received callback:', body)
+    // 官方：{ code, msg, data }，成功 code=200
+    const code = body?.code
+    const data = body?.data || {}
+    const msg = body?.msg || ''
+
+    if (code !== 200) {
+      console.error('❌ Flux Kontext回调失败:', msg)
+      return new Response(JSON.stringify({ error: '回调失败', code, msg }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
+
+    const taskId = data?.taskId
+    const info = data?.info || {}
     
-    // 根据KIE API文档，检查回调状态码
-    if (body.code !== 200) {
-      console.error('[KIE Callback] Generation failed:', body.msg)
+    // 根据官方文档，成功时 data.info 包含 originImageUrl 和 resultImageUrl
+    const resultImageUrl = info?.resultImageUrl
+    const originImageUrl = info?.originImageUrl
+
+    console.log(`✅ Flux Kontext回调成功 - taskId: ${taskId}, resultImageUrl: ${resultImageUrl}`)
+
+    if (resultImageUrl) {
+      // 生成成功，创建作品记录
+      const generatedImageUrl = resultImageUrl
       
-      // 即使失败也要处理，更新数据库状态
-      if (body.data?.taskId) {
+      try {
         const d1 = D1Service.fromEnv(c.env as any)
-        const artwork = await d1.getArtworkByKieTaskId(body.data.taskId)
+        const redis = RedisService.fromEnv(c.env as any)
         
-        if (artwork) {
-          await d1.updateArtworkGenerationStatus(artwork.id, {
-            status: 'failed',
-            completedAt: Date.now(),
-            errorMessage: body.msg || 'Generation failed'
+        // 从Redis中获取任务信息
+        const taskInfoStr = await redis.get(`kie_task:${taskId}`)
+        if (!taskInfoStr) {
+          console.error(`❌ 找不到任务信息: ${taskId}`)
+          return new Response(JSON.stringify({ error: '找不到任务信息' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
           })
-          
-          console.error('[KIE Callback] Updated artwork status to failed:', artwork.id)
         }
+        
+        const taskInfo = JSON.parse(taskInfoStr)
+        console.log(`📋 获取到任务信息:`, taskInfo)
+        
+        // 创建最终的作品记录，包含KIE相关信息
+        const artworkId = await d1.createKieArtwork(
+          taskInfo.userId,
+          taskInfo.title,
+          {
+            taskId: taskId,
+            prompt: taskInfo.prompt,
+            model: taskInfo.model,
+            aspectRatio: taskInfo.aspectRatio,
+            inputImage: originImageUrl, // 使用回调中的原图URL
+            status: 'published' // 直接设为已发布状态
+          }
+        )
+        
+        // 更新作品的图片URL
+        await d1.updateArtworkUrl(artworkId, generatedImageUrl, generatedImageUrl)
+        
+        console.log(`🎨 作品 ${artworkId} 创建成功，图片: ${generatedImageUrl}`)
+        
+        // 清除缓存和临时任务信息
+        await redis.del(`artwork:${artworkId}`)
+        await redis.del(`kie_task:${taskId}`)
+        
+      } catch (error) {
+        console.error(`❌ 创建作品失败:`, error)
+        return new Response(JSON.stringify({ 
+          error: '创建作品失败',
+          message: error instanceof Error ? error.message : '未知错误'
+        }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        })
       }
-      
-      return c.json(ok({ status: 'error_received', message: body.msg }))
-    }
-    
-    const { taskId, info } = body.data
-    
-    if (!taskId) {
-      console.error('[KIE Callback] Missing taskId in callback')
-      return c.json(fail('INVALID_CALLBACK', 'Missing taskId'), 400)
-    }
-    
-    const d1 = D1Service.fromEnv(c.env as any)
-    const redis = RedisService.fromEnv(c.env as any)
-    
-    // 查找对应的作品
-    const artwork = await d1.getArtworkByKieTaskId(taskId)
-    if (!artwork) {
-      console.error('[KIE Callback] Artwork not found for taskId:', taskId)
-      return c.json(fail('ARTWORK_NOT_FOUND', 'Artwork not found'), 404)
-    }
-    
-    if (body.code === 200 && info) {
-      // 生成成功 - 根据KIE API文档处理
-      const { originImageUrl, resultImageUrl } = info
-      
-      console.log(`[KIE Callback] Success - TaskId: ${taskId}`)
-      console.log(`[KIE Callback] Origin Image URL: ${originImageUrl}`)
-      console.log(`[KIE Callback] Result Image URL: ${resultImageUrl}`)
-      
-      // 更新数据库状态
-      await d1.updateArtworkGenerationStatus(artwork.id, {
-        status: 'completed',
-        completedAt: Date.now(),
-        resultImageUrl,
-        errorMessage: undefined
-      })
-      
-      // 更新作品URL - 将生成结果设置为作品的主图
-      await d1.updateArtworkUrl(artwork.id, resultImageUrl)
-      
-      console.log(`[KIE Callback] Successfully updated artwork: ${artwork.id}`)
-      
-      // 清除缓存
-      await redis.invalidateArtworkCache(artwork.id)
-      
-      // 发布完成通知到Redis
-      await redis.publish(`generation:${artwork.id}`, JSON.stringify({
-        type: 'generation_complete',
-        artworkId: artwork.id,
-        status: 'completed',
-        resultUrl: resultImageUrl,
-        originUrl: originImageUrl,
-        timestamp: Date.now()
-      }))
-      
     } else {
-      // 生成失败
-      await d1.updateArtworkGenerationStatus(artwork.id, {
-        status: 'failed',
-        completedAt: Date.now(),
-        errorMessage: body.msg || 'Generation failed'
-      })
-      
-      console.error('[KIE Callback] Generation failed for artwork:', artwork.id)
+      console.log(`ℹ️ 生成失败，没有结果图片URL`)
     }
-    
-    return c.json(ok({ status: 'callback_processed', taskId }))
+
+    return new Response(JSON.stringify({ success: true, message: '回调处理完成' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    })
     
   } catch (error) {
-    console.error('[KIE Callback] Error processing callback:', error)
-    return c.json(fail('CALLBACK_PROCESSING_ERROR', 'Failed to process callback'), 500)
+    console.error('❌ 回调处理异常:', error)
+    return new Response(JSON.stringify({ 
+      error: '回调处理异常',
+      message: error instanceof Error ? error.message : '未知错误'
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    })
   }
 })
 

@@ -44,13 +44,14 @@ export function useArtworkGeneration() {
     }
   }, [])
 
-  const pollStatus = useCallback(async (artworkId: string): Promise<{ success: boolean; artworkId: string; resultImageUrl?: string; originalImageUrl?: string }> => {
+  const pollStatus = useCallback(async (taskId: string): Promise<{ success: boolean; taskId: string; resultImageUrl?: string; originalImageUrl?: string }> => {
     const maxAttempts = 60 // 5分钟超时
     let attempts = 0
 
-    const checkStatus = async (): Promise<{ success: boolean; artworkId: string; resultImageUrl?: string; originalImageUrl?: string }> => {
+    const checkStatus = async (): Promise<{ success: boolean; taskId: string; resultImageUrl?: string; originalImageUrl?: string }> => {
       try {
-        const statusResponse = await authFetch(`/api/artworks/${artworkId}/generation-status`)
+        // 使用新的taskId状态查询接口
+        const statusResponse = await authFetch(`/api/artworks/task-status/${taskId}`)
         
         if (statusResponse.status === 'completed') {
           setStatus('生成完成！')
@@ -58,7 +59,7 @@ export function useArtworkGeneration() {
           setCurrentTask(null)
           return { 
             success: true, 
-            artworkId,
+            taskId,
             resultImageUrl: statusResponse.resultImageUrl,
             originalImageUrl: statusResponse.originalImageUrl
           }
@@ -153,7 +154,8 @@ export function useGenerationStatus(artworkId?: string) {
     setError(null)
 
     try {
-      const response = await authFetch(`/api/artworks/${id}/generation-status`)
+      // 使用新的taskId状态查询接口
+      const response = await authFetch(`/api/artworks/task-status/${id}`)
       setStatus(response)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '获取状态失败'

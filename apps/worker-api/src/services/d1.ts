@@ -840,18 +840,28 @@ export class D1Service {
   }
 
   // 新增：更新作品URL的方法
-  async updateArtworkUrl(artworkId: string, resultImageUrl: string): Promise<void> {
+  async updateArtworkUrl(artworkId: string, resultImageUrl: string, thumbUrl?: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE artworks 
       SET url = ?, thumb_url = ?, updated_at = ?
       WHERE id = ?
     `)
-    await stmt.bind(resultImageUrl, resultImageUrl, Date.now(), artworkId).run()
+    await stmt.bind(resultImageUrl, thumbUrl || resultImageUrl, Date.now(), artworkId).run()
   }
 
-  async getArtworkByKieTaskId(taskId: string): Promise<{id: string; kie_generation_status: string; kie_error_message?: string} | null> {
+  // 新增：更新作品状态的方法
+  async updateArtworkStatus(artworkId: string, status: string): Promise<void> {
     const stmt = this.db.prepare(`
-      SELECT id, kie_generation_status, kie_error_message
+      UPDATE artworks 
+      SET status = ?, updated_at = ?
+      WHERE id = ?
+    `)
+    await stmt.bind(status, Date.now(), artworkId).run()
+  }
+
+  async getArtworkByKieTaskId(taskId: string): Promise<{id: string; user_id: string; kie_generation_status: string; kie_error_message?: string} | null> {
+    const stmt = this.db.prepare(`
+      SELECT id, user_id, kie_generation_status, kie_error_message
       FROM artworks 
       WHERE kie_task_id = ?
     `)
@@ -861,6 +871,7 @@ export class D1Service {
     
     return {
       id: String(result.id),
+      user_id: String(result.user_id),
       kie_generation_status: String(result.kie_generation_status),
       kie_error_message: result.kie_error_message ? String(result.kie_error_message) : undefined
     }
@@ -953,29 +964,34 @@ export class D1Service {
       aspectRatio?: string
       status?: string
       inputImage?: string
+      taskId?: string
     }
   ): Promise<string> {
     const id = crypto.randomUUID()
     const slug = this.generateSlug(title || 'untitled')
     const now = Date.now()
     
+    // 确保url字段不为空 - 使用原图URL或默认图片
+    const imageUrl = options.inputImage || 'https://via.placeholder.com/1024x1024?text=Generating...'
+    
     const stmt = this.db.prepare(`
       INSERT INTO artworks (
         id, user_id, title, url, thumb_url, slug, status, created_at, updated_at,
-        kie_generation_status, kie_model, kie_aspect_ratio, kie_prompt, kie_original_image_url
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        kie_task_id, kie_generation_status, kie_model, kie_aspect_ratio, kie_prompt, kie_original_image_url
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     
     await stmt.bind(
       id, 
       userId, 
       title, 
-      options.inputImage || null, // url - 使用原图URL或NULL
-      options.inputImage || null, // thumb_url - 使用原图URL或NULL
+      imageUrl, // url - 使用原图URL或默认图片
+      imageUrl, // thumb_url - 使用原图URL或默认图片
       slug, 
       options.status || 'generating',
       now, // created_at
       now, // updated_at
+      options.taskId || null, // kie_task_id
       'generating', // kie_generation_status
       options.model || 'flux-kontext-pro', // kie_model
       options.aspectRatio || '1:1', // kie_aspect_ratio

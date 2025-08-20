@@ -13,26 +13,16 @@ const router = new Hono()
 router.post('/generate', async (c) => {
   const userId = (c as any).get('userId') as string
   const body = await c.req.json()
-  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro', inputImage } = body
+  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro', inputImage, title } = body
 
   if (!prompt?.trim()) {
     return c.json(fail('INVALID_INPUT', 'Prompt is required'), 400)
   }
 
   try {
-    const d1 = D1Service.fromEnv(c.env as any)
     const kie = new KIEService((c.env as any).KIE_API_KEY || '')
 
-    // 1. 创建草稿记录
-    const artworkId = await d1.createKieArtwork(userId, 'AI Generated Artwork', {
-      prompt,
-      model,
-      aspectRatio,
-      status: 'generating',
-      inputImage
-    })
-
-    // 2. 启动 KIE 生成任务
+    // 1. 启动 KIE 生成任务（不创建数据库记录）
     const callbackUrl = (c.env as any).KIE_CALLBACK_URL || ''
     const taskId = await kie.generateImage(prompt, {
       aspectRatio,
@@ -43,24 +33,30 @@ router.post('/generate', async (c) => {
       inputImage
     })
 
-    // 3. 更新数据库状态
-    await d1.updateArtworkGenerationStatus(artworkId, {
-      taskId,
-      status: 'generating',
-      startedAt: Date.now()
-    })
-
-    // 4. 启动异步监控
-    const { GenerationMonitor } = await import('../services/generation-monitor')
+    // 2. 将任务信息临时存储到Redis，供回调时使用
     const redis = RedisService.fromEnv(c.env)
-    const monitor = new GenerationMonitor(d1, kie, redis)
+    const taskInfo = {
+      userId,
+      prompt,
+      model,
+      aspectRatio,
+      inputImage,
+      title: title || 'AI Generated Artwork',
+      createdAt: Date.now()
+    }
     
-    c.executionCtx?.waitUntil?.(monitor.monitorGenerationStatus(artworkId, taskId))
+    // 设置24小时过期，避免Redis中积累太多数据
+    await redis.set(`kie_task:${taskId}`, JSON.stringify(taskInfo), 24 * 60 * 60)
+    
+    console.log(`[Generate] 任务信息已存储到Redis: ${taskId}`)
 
+    // 3. 返回前端期望的格式
+    // 前端期望 response.id 字段，我们使用 taskId 作为临时的 id
     return c.json(ok({
-      id: artworkId,
-      taskId,
-      status: 'generating'
+      id: taskId,        // 前端期望的字段名
+      taskId: taskId,    // 保持兼容性
+      status: 'generating',
+      message: 'AI生成任务已启动，请等待完成'
     }))
 
   } catch (error) {
@@ -492,19 +488,14 @@ router.post('/publish', async (c) => {
   }
 })
 
+// 上传输入图片 - 不创建作品记录，只返回URL供AI生成使用
 router.post('/upload', async (c) => {
   const userId = (c as any).get('userId') as string
   const body = await c.req.parseBody()
   const file = body.file as File
-  const title = body.title as string
-  const prompt = (body as any).prompt as string | undefined
   
   if (!file) {
     return c.json(fail('INVALID_INPUT', 'No file provided'), 400)
-  }
-  
-  if (!title) {
-    return c.json(fail('INVALID_INPUT', 'No title provided'), 400)
   }
   
   try {
@@ -515,30 +506,15 @@ router.post('/upload', async (c) => {
     const { R2Service } = await import('../services/r2')
     const r2 = R2Service.fromEnv(c.env)
     
-    // Upload to R2
+    // Upload to R2 - 只上传，不创建D1记录
     const { key, url } = await r2.putObject('upload', fileName, await file.arrayBuffer(), contentType)
     
-    // Create artwork in D1
-    const d1 = D1Service.fromEnv(c.env)
-    const artworkId = await d1.createArtwork(userId, title, url, url, {
-      mimeType: contentType,
-      // 若可获取尺寸再填；此处不传递以满足类型
-      width: undefined,
-      height: undefined,
-      prompt: prompt || undefined,
-    })
-    
+    // 返回URL，供AI生成使用，不创建作品记录
     const response = {
-      id: artworkId,
       originalUrl: url,
-      thumbUrl: url, // For now, thumbUrl equals originalUrl until cron generates thumbnails
-      status: 'draft',
-      title
+      thumbUrl: url,
+      message: '图片上传成功，可用于AI生成'
     }
-    
-    // Invalidate user cache to show new artwork
-    const redis = RedisService.fromEnv(c.env)
-    await redis.invalidateUserArtworks(userId)
     
     return c.json(ok(response))
   } catch (error) {
@@ -547,7 +523,140 @@ router.post('/upload', async (c) => {
 })
 
 
-// 获取单个作品完整状态
+// 查询KIE生成任务状态 - 专门用于taskId查询
+router.get('/task-status/:taskId', async (c) => {
+  try {
+    const taskId = c.req.param('taskId')
+    
+    if (!taskId) {
+      return c.json(fail('INVALID_INPUT', 'Task ID is required'), 400)
+    }
+    
+    // 从Redis中获取任务信息
+    const redis = RedisService.fromEnv(c.env)
+    const taskInfoStr = await redis.get(`kie_task:${taskId}`)
+    
+    if (!taskInfoStr) {
+      // 任务可能已完成，尝试查找已创建的作品
+      const d1 = D1Service.fromEnv(c.env)
+      const artwork = await d1.getArtworkByKieTaskId(taskId)
+      
+      if (artwork) {
+        // 找到了已创建的作品，获取完整信息
+        const fullArtwork = await d1.getArtwork(artwork.id)
+        const kieData = await d1.getKieArtworkData(artwork.id)
+        if (fullArtwork && kieData) {
+          return c.json(ok({
+            taskId,
+            status: 'completed',
+            resultImageUrl: fullArtwork.url,
+            originalImageUrl: kieData.kie_original_image_url,
+            artworkId: artwork.id,
+            message: '任务已完成，作品已创建'
+          }))
+        }
+      }
+      
+      // 既没有Redis信息，也没有找到作品，可能任务已过期或失败
+      return c.json(fail('TASK_NOT_FOUND', 'Task not found or expired'), 404)
+    }
+    
+    const taskInfo = JSON.parse(taskInfoStr)
+    
+    // 调用KIE API查询任务状态
+    const kie = new KIEService((c.env as any).KIE_API_KEY || '')
+    const status = await kie.getGenerationStatus(taskId)
+    
+    return c.json(ok({
+      taskId,
+      status: status.status,
+      resultImageUrl: status.resultImageUrl,
+      originalImageUrl: status.originImageUrl,
+      errorMessage: status.errorMessage,
+      prompt: taskInfo.prompt,
+      model: taskInfo.model,
+      aspectRatio: taskInfo.aspectRatio
+    }))
+    
+  } catch (error) {
+    console.error('Error querying task status:', error)
+    return c.json(fail('INTERNAL_ERROR', 'Internal server error'), 500)
+  }
+})
+
+// 兼容性接口：查询KIE生成任务状态
+router.get('/kie-status/:taskId', async (c) => {
+  // 重定向到新的task-status接口
+  const taskId = c.req.param('taskId')
+  return c.redirect(`/api/artworks/task-status/${taskId}`)
+})
+
+// 兼容性接口：旧的generation-status接口路径（针对taskId）
+router.get('/:taskId/generation-status', async (c) => {
+  const taskId = c.req.param('taskId')
+  
+  // 如果是taskId格式（fluxkontext_开头），直接转发到task-status
+  if (taskId && taskId.startsWith('fluxkontext_')) {
+    console.log(`🔀 兼容性重定向: ${taskId} -> /api/artworks/task-status/${taskId}`)
+    
+    // 直接调用task-status逻辑，而不是重定向
+    try {
+      const redis = RedisService.fromEnv(c.env)
+      const taskInfoStr = await redis.get(`kie_task:${taskId}`)
+      
+      if (!taskInfoStr) {
+        // 任务可能已完成，尝试查找已创建的作品
+        const d1 = D1Service.fromEnv(c.env)
+        const artwork = await d1.getArtworkByKieTaskId(taskId)
+        
+        if (artwork) {
+          // 找到了已创建的作品，获取完整信息
+          const fullArtwork = await d1.getArtwork(artwork.id)
+          const kieData = await d1.getKieArtworkData(artwork.id)
+          if (fullArtwork && kieData) {
+            return c.json(ok({
+              taskId,
+              status: 'completed',
+              resultImageUrl: fullArtwork.url,
+              originalImageUrl: kieData.kie_original_image_url,
+              artworkId: artwork.id,
+              message: '任务已完成，作品已创建'
+            }))
+          }
+        }
+        
+        // 既没有Redis信息，也没有找到作品，可能任务已过期或失败
+        return c.json(fail('TASK_NOT_FOUND', 'Task not found or expired'), 404)
+      }
+      
+      const taskInfo = JSON.parse(taskInfoStr)
+      
+      // 调用KIE API查询任务状态
+      const kie = new KIEService((c.env as any).KIE_API_KEY || '')
+      const status = await kie.getGenerationStatus(taskId)
+      
+      return c.json(ok({
+        taskId,
+        status: status.status,
+        resultImageUrl: status.resultImageUrl,
+        originalImageUrl: status.originImageUrl,
+        errorMessage: status.errorMessage,
+        prompt: taskInfo.prompt,
+        model: taskInfo.model,
+        aspectRatio: taskInfo.aspectRatio
+      }))
+      
+    } catch (error) {
+      console.error('Error querying task status:', error)
+      return c.json(fail('INTERNAL_ERROR', 'Internal server error'), 500)
+    }
+  }
+  
+  // 如果不是taskId格式，返回404，因为这个路由专门处理taskId
+  return c.json(fail('NOT_FOUND', 'Invalid task ID format'), 404)
+})
+
+// 查询作品生成状态（兼容现有接口）
 router.get('/:id/state', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const userId = (c as any).get('userId') as string
@@ -649,36 +758,79 @@ router.post('/batch/hot-data', async (c) => {
 
 
 
-// 新增：获取生成状态
+// 新增：获取生成状态（支持taskId查询）
 router.get('/:id/generation-status', async (c) => {
   const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
   const userId = (c as any).get('userId') as string
 
   try {
     const d1 = D1Service.fromEnv(c.env)
-    const artwork = await d1.getArtwork(id)
-
-    if (!artwork || artwork.author.id !== userId) {
-      return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
-    }
-
-    const generationData = await d1.getKieArtworkData(id)
+    const redis = RedisService.fromEnv(c.env)
     
-    return c.json(ok({
-      id,
-      status: generationData?.kie_generation_status || 'unknown',
-      taskId: generationData?.kie_task_id,
-      startedAt: generationData?.kie_generation_started_at,
-      completedAt: generationData?.kie_generation_completed_at,
-      errorMessage: generationData?.kie_error_message,
-      resultImageUrl: generationData?.kie_result_image_url,
-      originalImageUrl: generationData?.kie_original_image_url,
-      model: generationData?.kie_model,
-      aspectRatio: generationData?.kie_aspect_ratio,
-      prompt: generationData?.kie_prompt
-    }))
+    // 首先尝试作为作品ID查询
+    let artwork = await d1.getArtwork(id)
+    
+    if (artwork && artwork.author.id === userId) {
+      // 找到作品，返回KIE生成数据
+      const generationData = await d1.getKieArtworkData(id)
+      
+      return c.json(ok({
+        id,
+        status: generationData?.kie_generation_status || 'unknown',
+        taskId: generationData?.kie_task_id,
+        startedAt: generationData?.kie_generation_started_at,
+        completedAt: generationData?.kie_generation_completed_at,
+        errorMessage: generationData?.kie_error_message,
+        resultImageUrl: generationData?.kie_result_image_url,
+        originalImageUrl: generationData?.kie_original_image_url,
+        model: generationData?.kie_model,
+        aspectRatio: generationData?.kie_aspect_ratio,
+        prompt: generationData?.kie_prompt
+      }))
+    }
+    
+    // 如果作为作品ID找不到，尝试作为taskId查询
+    const taskInfoStr = await redis.get(`kie_task:${id}`)
+    if (taskInfoStr) {
+      const taskInfo = JSON.parse(taskInfoStr)
+      
+      // 验证用户权限
+      if (taskInfo.userId !== userId) {
+        return c.json(fail('FORBIDDEN', 'Access denied'), 403)
+      }
+      
+      // 调用KIE API查询任务状态
+      const kie = new KIEService((c.env as any).KIE_API_KEY || '')
+      const status = await kie.getGenerationStatus(id)
+      
+      // 根据官方文档，successFlag: 0=GENERATING, 1=SUCCESS, 2=CREATE_TASK_FAILED, 3=GENERATE_FAILED
+      let statusText = 'generating'
+      if (status.successFlag === 1) {
+        statusText = 'completed'
+      } else if (status.successFlag === 2 || status.successFlag === 3) {
+        statusText = 'failed'
+      }
+      
+      return c.json(ok({
+        id,
+        status: statusText,
+        taskId: id,
+        startedAt: taskInfo.createdAt,
+        completedAt: status.successFlag === 1 ? Date.now() : undefined,
+        errorMessage: status.errorMessage,
+        resultImageUrl: status.resultImageUrl,
+        originalImageUrl: taskInfo.inputImage,
+        model: taskInfo.model,
+        aspectRatio: taskInfo.aspectRatio,
+        prompt: taskInfo.prompt
+      }))
+    }
+    
+    // 都找不到
+    return c.json(fail('NOT_FOUND', 'Artwork or task not found'), 404)
 
   } catch (error) {
+    console.error('Failed to check generation status:', error)
     return c.json(fail('INTERNAL_ERROR', 'Failed to check status'), 500)
   }
 })

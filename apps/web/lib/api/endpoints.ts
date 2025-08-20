@@ -31,7 +31,7 @@ export const API = {
   
   // AI 生成相关API
   generate: '/api/artworks/generate',
-  generationStatus: (id: string) => `/api/artworks/${id}/generation-status`,
+  generationStatus: (id: string) => `/api/artworks/task-status/${id}`,
   regenerate: (id: string) => `/api/artworks/${id}/regenerate`,
 }
 

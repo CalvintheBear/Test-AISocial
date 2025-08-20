@@ -20,23 +20,29 @@ export interface KIEGenerateResponse {
   data: {
     taskId: string
   }
+  // 某些情况下taskId可能直接在根级别
+  taskId?: string
 }
 
 export interface KIEStatusResponse {
   code: number
   msg: string
   data: {
-    successFlag: 0 | 1 | 2 | 3
+    taskId: string
+    successFlag: 0 | 1 | 2 | 3  // 0=GENERATING, 1=SUCCESS, 2=CREATE_TASK_FAILED, 3=GENERATE_FAILED
     response?: {
       resultImageUrl: string
       originImageUrl: string
     }
     errorMessage?: string
     errorCode?: string
+    createTime?: string
+    completeTime?: string
+    paramJson?: string
   }
 }
 
-// 添加回调响应类型
+// 更新回调响应类型，使其与官方文档格式一致
 export interface KIECallbackResponse {
   code: number
   msg: string
@@ -46,6 +52,21 @@ export interface KIECallbackResponse {
       originImageUrl: string
       resultImageUrl: string
     }
+    // 兼容旧版本
+    status?: 'SUCCESS' | 'FAILED' | 'TIMEOUT' | 'PROCESSING'
+    response?: {
+      resultUrls?: string[]
+      result_urls?: string[]
+      resultImageUrl?: string
+      originImageUrl?: string
+      urls?: string[]
+      images?: string[]
+      result?: any
+    }
+    resultUrls?: string[]
+    result_urls?: string[]
+    resultImageUrl?: string
+    originImageUrl?: string
   }
 }
 
@@ -56,6 +77,9 @@ export interface GenerationStatus {
   completedAt?: number
   errorMessage?: string
   resultImageUrl?: string
+  // 添加官方文档的字段
+  successFlag?: 0 | 1 | 2 | 3
+  originImageUrl?: string
 }
 
 export interface KIEArtworkData {
