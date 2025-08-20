@@ -71,22 +71,23 @@ router.post('/:id/like', async (c) => {
     return c.json(fail('ALREADY_LIKED', 'Artwork already liked'), 400)
   }
   
-  // 执行点赞操作
-  await Promise.all([
+  // 执行点赞操作：并行写入，使用返回的新计数直接响应
+  const [ , , newLikeCount ] = await Promise.all([
     d1.addLike(userId, id),
     redis.addUserLike(userId, id),
-    d1.incrLikeCount(id, 1) // 原子自增快照，避免COUNT
+    d1.incrLikeCount(id, 1)
   ])
-  const artAfter = await d1.getArtwork(id)
-  
-  // 更新热度并同步到数据库
+
+  // 热度更新异步处理，避免阻塞请求
   try {
-    await hotness.updateArtworkHotness(id, 'like', userId)
-    await hotness.syncHotnessToDatabase(id)
-  } catch (error) {
-    console.error('Failed to update hotness for like:', error)
-    // 热度更新失败不影响点赞操作
-  }
+    const p = (async () => {
+      try {
+        await hotness.updateArtworkHotness(id, 'like', userId)
+        await hotness.syncHotnessToDatabase(id)
+      } catch (e) { console.error('hotness like async failed:', e) }
+    })()
+    ;(c as any).executionCtx?.waitUntil?.(p)
+  } catch {}
   
   // 获取用户状态
   let userState = { liked: true, faved: false }
@@ -102,15 +103,12 @@ router.post('/:id/like', async (c) => {
   // 点赞不会影响“收藏列表”缓存；此处不清理整页Feed，依赖前端乐观更新
   try { /* no-op invalidation */ } catch {}
   
-  // 获取更新后的热度数据
-  const hotData = await d1.getArtworkHotData(id)
-  
   return c.json(ok({
-    like_count: artAfter?.likeCount || 0,
-    fav_count: artAfter?.favoriteCount || 0,
+    like_count: Number(newLikeCount) || 0,
+    // fav_count 不变，前端已做乐观更新；如需精确可轻读一次
+    fav_count: undefined as any,
     user_state: userState,
-    hot_score: hotData?.hot_score || 0,
-    hot_level: hotData?.hot_level || 'new'
+    // 热度异步更新，响应中不返回
   }))
 })
 
@@ -127,21 +125,23 @@ router.delete('/:id/like', async (c) => {
   
   // 执行取消点赞操作
   const redis = RedisService.fromEnv(c.env)
-  await Promise.all([
+  const [ , , newLikeCount2 ] = await Promise.all([
     d1.removeLike(userId, id),
     redis.removeUserLike(userId, id),
     d1.incrLikeCount(id, -1)
   ])
-  const artAfter = await d1.getArtwork(id)
-  
-  // 更新热度（减少热度）并同步到数据库
+
+  // 热度异步
   const hotness = new HotnessService(redis, d1)
   try {
-    await hotness.updateArtworkHotness(id, 'unlike', userId)
-    await hotness.syncHotnessToDatabase(id)
-  } catch (error) {
-    console.error('Failed to update hotness for unlike:', error)
-  }
+    const p = (async () => {
+      try {
+        await hotness.updateArtworkHotness(id, 'unlike', userId)
+        await hotness.syncHotnessToDatabase(id)
+      } catch (e) { console.error('hotness unlike async failed:', e) }
+    })()
+    ;(c as any).executionCtx?.waitUntil?.(p)
+  } catch {}
   
   let userState = { liked: false, faved: false }
   try {
@@ -153,15 +153,11 @@ router.delete('/:id/like', async (c) => {
   
   try { /* no-op invalidation */ } catch {}
   
-  // 获取更新后的热度数据
-  const hotData = await d1.getArtworkHotData(id)
-  
   return c.json(ok({
-    like_count: artAfter?.likeCount || 0,
-    fav_count: artAfter?.favoriteCount || 0,
+    like_count: Number(newLikeCount2) || 0,
+    fav_count: undefined as any,
     user_state: userState,
-    hot_score: hotData?.hot_score || 0,
-    hot_level: hotData?.hot_level || 'new'
+    
   }))
 })
 
@@ -184,36 +180,36 @@ router.post('/:id/favorite', async (c) => {
     return c.json(fail('ALREADY_FAVORITED', 'Artwork already favorited'), 400)
   }
   
-  // 执行收藏操作
-  await Promise.all([
+  // 执行收藏操作，直接使用自增后的计数
+  const [ , , newFavCount ] = await Promise.all([
     redis.addFavorite(userId, id),
     d1.addFavorite(userId, id),
     d1.incrFavoriteCount(id, 1)
   ])
-  const artAfter = await d1.getArtwork(id)
-  
-  // 更新热度并同步到数据库
+
+  // 热度异步
   try {
-    await hotness.updateArtworkHotness(id, 'favorite', userId)
-    await hotness.syncHotnessToDatabase(id)
-  } catch (error) {
-    console.error('Failed to update hotness for favorite:', error)
-  }
+    const p = (async () => {
+      try {
+        await hotness.updateArtworkHotness(id, 'favorite', userId)
+        await hotness.syncHotnessToDatabase(id)
+      } catch (e) { console.error('hotness favorite async failed:', e) }
+    })()
+    ;(c as any).executionCtx?.waitUntil?.(p)
+  } catch {}
   
   await Promise.all([
     redis.invalidateUserFavorites(userId)
   ])
   
-  // 获取用户状态和热度数据
+  // 获取用户状态
   const isLiked = await redis.isLiked(userId, id)
-  const hotData = await d1.getArtworkHotData(id)
   
   return c.json(ok({
-    like_count: artAfter?.likeCount || 0,
-    fav_count: artAfter?.favoriteCount || 0,
+    like_count: undefined as any,
+    fav_count: Number(newFavCount) || 0,
     user_state: { liked: isLiked, faved: true },
-    hot_score: hotData?.hot_score || 0,
-    hot_level: hotData?.hot_level || 'new'
+    
   }))
 })
 
@@ -231,36 +227,36 @@ router.delete('/:id/favorite', async (c) => {
   }
   
   // 执行取消收藏操作
-  await Promise.all([
+  const [ , , newFavCount2 ] = await Promise.all([
     redis.removeFavorite(userId, id),
     d1.removeFavorite(userId, id),
     d1.incrFavoriteCount(id, -1)
   ])
-  const artAfter = await d1.getArtwork(id)
-  
-  // 更新热度（减少热度）并同步到数据库
+
+  // 热度异步
   try {
-    await hotness.updateArtworkHotness(id, 'unfavorite', userId)
-    await hotness.syncHotnessToDatabase(id)
-  } catch (error) {
-    console.error('Failed to update hotness for unfavorite:', error)
-  }
+    const p = (async () => {
+      try {
+        await hotness.updateArtworkHotness(id, 'unfavorite', userId)
+        await hotness.syncHotnessToDatabase(id)
+      } catch (e) { console.error('hotness unfavorite async failed:', e) }
+    })()
+    ;(c as any).executionCtx?.waitUntil?.(p)
+  } catch {}
   
   await Promise.all([
     redis.invalidateUserFavorites(userId),
     
   ])
   
-  // 获取用户状态和热度数据
+  // 获取用户状态
   const isLiked = await redis.isLiked(userId, id)
-  const hotData = await d1.getArtworkHotData(id)
   
   return c.json(ok({
-    like_count: artAfter?.likeCount || 0,
-    fav_count: artAfter?.favoriteCount || 0,
+    like_count: undefined as any,
+    fav_count: Number(newFavCount2) || 0,
     user_state: { liked: isLiked, faved: false },
-    hot_score: hotData?.hot_score || 0,
-    hot_level: hotData?.hot_level || 'new'
+    
   }))
 })
 
