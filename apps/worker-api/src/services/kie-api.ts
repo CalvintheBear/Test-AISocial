@@ -44,7 +44,7 @@ export class KIEService {
   }
 
   async getTaskStatus(taskId: string): Promise<KIEStatusResponse['data']> {
-    const response = await fetch(`${this.baseUrl}/get-image-details?taskId=${taskId}`, {
+    const response = await fetch(`${this.baseUrl}/record-info?taskId=${taskId}`, {
       headers: {
         'Authorization': `Bearer ${this.apiKey}`
       }

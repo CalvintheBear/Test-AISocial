@@ -839,6 +839,16 @@ export class D1Service {
     }
   }
 
+  // 新增：更新作品URL的方法
+  async updateArtworkUrl(artworkId: string, resultImageUrl: string): Promise<void> {
+    const stmt = this.db.prepare(`
+      UPDATE artworks 
+      SET url = ?, thumb_url = ?, updated_at = ?
+      WHERE id = ?
+    `)
+    await stmt.bind(resultImageUrl, resultImageUrl, Date.now(), artworkId).run()
+  }
+
   async getArtworkByKieTaskId(taskId: string): Promise<{id: string; kie_generation_status: string; kie_error_message?: string} | null> {
     const stmt = this.db.prepare(`
       SELECT id, kie_generation_status, kie_error_message
@@ -960,8 +970,8 @@ export class D1Service {
       id, 
       userId, 
       title, 
-      '', // url (empty for AI generation)
-      '', // thumb_url (empty for AI generation)
+      options.inputImage || null, // url - 使用原图URL或NULL
+      options.inputImage || null, // thumb_url - 使用原图URL或NULL
       slug, 
       options.status || 'generating',
       now, // created_at

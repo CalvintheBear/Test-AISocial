@@ -13,8 +13,26 @@ router.post('/kie-callback', async (c) => {
     
     console.log('[KIE Callback] Received callback:', body)
     
+    // 根据KIE API文档，检查回调状态码
     if (body.code !== 200) {
       console.error('[KIE Callback] Generation failed:', body.msg)
+      
+      // 即使失败也要处理，更新数据库状态
+      if (body.data?.taskId) {
+        const d1 = D1Service.fromEnv(c.env as any)
+        const artwork = await d1.getArtworkByKieTaskId(body.data.taskId)
+        
+        if (artwork) {
+          await d1.updateArtworkGenerationStatus(artwork.id, {
+            status: 'failed',
+            completedAt: Date.now(),
+            errorMessage: body.msg || 'Generation failed'
+          })
+          
+          console.error('[KIE Callback] Updated artwork status to failed:', artwork.id)
+        }
+      }
+      
       return c.json(ok({ status: 'error_received', message: body.msg }))
     }
     
@@ -36,8 +54,12 @@ router.post('/kie-callback', async (c) => {
     }
     
     if (body.code === 200 && info) {
-      // 生成成功
+      // 生成成功 - 根据KIE API文档处理
       const { originImageUrl, resultImageUrl } = info
+      
+      console.log(`[KIE Callback] Success - TaskId: ${taskId}`)
+      console.log(`[KIE Callback] Origin Image URL: ${originImageUrl}`)
+      console.log(`[KIE Callback] Result Image URL: ${resultImageUrl}`)
       
       // 更新数据库状态
       await d1.updateArtworkGenerationStatus(artwork.id, {
@@ -47,13 +69,13 @@ router.post('/kie-callback', async (c) => {
         errorMessage: undefined
       })
       
-      // 更新作品URL - 暂时只更新生成状态，URL更新通过其他方式处理
-      console.log(`[KIE Callback] Generated image URL: ${resultImageUrl}`)
+      // 更新作品URL - 将生成结果设置为作品的主图
+      await d1.updateArtworkUrl(artwork.id, resultImageUrl)
+      
+      console.log(`[KIE Callback] Successfully updated artwork: ${artwork.id}`)
       
       // 清除缓存
       await redis.invalidateArtworkCache(artwork.id)
-      
-      console.log('[KIE Callback] Successfully updated artwork:', artwork.id)
       
       // 发布完成通知到Redis
       await redis.publish(`generation:${artwork.id}`, JSON.stringify({
@@ -61,6 +83,7 @@ router.post('/kie-callback', async (c) => {
         artworkId: artwork.id,
         status: 'completed',
         resultUrl: resultImageUrl,
+        originUrl: originImageUrl,
         timestamp: Date.now()
       }))
       
