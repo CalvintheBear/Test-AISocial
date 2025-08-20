@@ -10,13 +10,15 @@ const fetchUserArtworks = async (userId: string): Promise<ArtworkListItem[]> => 
   return adaptArtworkList(response)
 }
 
-export function useUserArtworks(userId: string) {
+export function useUserArtworks(userId: string, initialData?: ArtworkListItem[]) {
   const { data, error, isLoading, mutate } = useSWR<ArtworkListItem[]>(
     userId ? `user-artworks-${userId}` : null,
     () => fetchUserArtworks(userId),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      keepPreviousData: true,
+      fallbackData: initialData,
     }
   )
 

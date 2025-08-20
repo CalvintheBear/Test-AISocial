@@ -115,8 +115,7 @@ router.get('/:id/favorites', async (c) => {
   }
   
   const currentUserId = (c as any).get('userId') as string
-  const artworks = await Promise.all(favIds.map((id: string) => d1.getArtwork(id)))
-  const validArtworks = artworks.filter(Boolean)
+  const validArtworks = await d1.getArtworksByIds(favIds)
   
   // Get user states for all artworks
   let userStates: Array<{ liked: boolean; faved: boolean }> = []
@@ -147,19 +146,8 @@ router.get('/:id/favorites', async (c) => {
     userStates = validArtworks.map(() => ({ liked: false, faved: true }))
   }
   
-  // Sync counts for all artworks
-  const syncedArtworks = await Promise.all(
-    validArtworks.filter(art => art != null).map(async (artwork: any) => {
-      const actualCounts = await d1.syncArtworkCounts(artwork.id)
-      return {
-        ...artwork,
-        likeCount: actualCounts.likeCount,
-        favoriteCount: actualCounts.favoriteCount
-      }
-    })
-  )
-  
-  const items = formatArtworkListForAPI(syncedArtworks, userStates)
+  // 直接使用快照计数
+  const items = formatArtworkListForAPI(validArtworks as any, userStates)
   return c.json(ok(items))
 })
 
@@ -179,8 +167,7 @@ router.get('/:id/likes', async (c) => {
   }
   
   const currentUserId = (c as any).get('userId') as string
-  const artworks = await Promise.all(likeIds.map((id: string) => d1.getArtwork(id)))
-  const validArtworks = artworks.filter(Boolean)
+  const validArtworks = await d1.getArtworksByIds(likeIds)
   
   // Get user states for all artworks
   let userStates: Array<{ liked: boolean; faved: boolean }> = []
@@ -211,19 +198,8 @@ router.get('/:id/likes', async (c) => {
     userStates = validArtworks.map(() => ({ liked: true, faved: false }))
   }
   
-  // Sync counts for all artworks
-  const syncedArtworks = await Promise.all(
-    validArtworks.filter(art => art != null).map(async (artwork: any) => {
-      const actualCounts = await d1.syncArtworkCounts(artwork.id)
-      return {
-        ...artwork,
-        likeCount: actualCounts.likeCount,
-        favoriteCount: actualCounts.favoriteCount
-      }
-    })
-  )
-  
-  const items = formatArtworkListForAPI(syncedArtworks, userStates)
+  // 直接使用快照计数
+  const items = formatArtworkListForAPI(validArtworks as any, userStates)
   return c.json(ok(items))
 })
 

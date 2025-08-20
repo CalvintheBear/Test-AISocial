@@ -1,15 +1,9 @@
 import { ArtworkGrid } from '@/components/app/ArtworkGrid'
-// import { authFetch } from '@/lib/api/client'
-// import { API } from '@/lib/api/endpoints'
 import { ArtworkListItem } from '@/lib/types'
 import ClientFeedActions from './withActions'
-// import { adaptArtworkList } from '@/lib/apiAdapter'
 
-export const dynamic = 'force-dynamic'
-export const revalidate = 0
+export const revalidate = 60
 export const runtime = 'edge'
-
-// 移除 SSR 预取，改为客户端加载，避免首屏等待 Clerk token 阻塞导航
 
 export const metadata = {
   title: '发现作品 - AI 社区',
@@ -20,7 +14,16 @@ export const metadata = {
   },
 }
 
-export default function FeedPage() {
-  // 交由客户端 SWR 获取数据
-  return <ClientFeedActions initialArtworks={undefined as unknown as ArtworkListItem[]} />
+export default async function FeedPage() {
+  // 服务器侧预取公共 Feed（匿名态），首屏直接渲染，客户端再基于登录态二次刷新
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'
+  let initialArtworks: ArtworkListItem[] = []
+  try {
+    const res = await fetch(`${API_BASE}/api/feed`, { next: { revalidate: 60 } })
+    const json = await res.json().catch(() => null)
+    if (json && Array.isArray(json.data)) initialArtworks = json.data
+    else if (Array.isArray(json)) initialArtworks = json
+  } catch {}
+
+  return <ClientFeedActions initialArtworks={initialArtworks} />
 }

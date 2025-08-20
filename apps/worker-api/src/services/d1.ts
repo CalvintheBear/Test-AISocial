@@ -186,6 +186,41 @@ export class D1Service {
   }
 
   /**
+   * 批量获取指定ID的作品（含作者信息），用于 Favorites/Likes 列表，避免 N 次 getArtwork
+   */
+  async getArtworksByIds(ids: string[]): Promise<Artwork[]> {
+    if (!ids || ids.length === 0) return []
+    const placeholders = ids.map(() => '?').join(',')
+    const stmt = this.db.prepare(`
+      SELECT a.*, u.name as user_name, u.profile_pic
+      FROM artworks a
+      JOIN users u ON a.user_id = u.id
+      WHERE a.id IN (${placeholders})
+    `)
+    const rows = await stmt.bind(...ids).all() as any
+    return (rows.results || []).map((row: any) => {
+      const slug = row.slug || this.generateSlug(String(row.title) || 'untitled')
+      return {
+        id: String(row.id),
+        slug,
+        title: String(row.title || 'Untitled'),
+        url: String(row.thumb_url || row.url),
+        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        author: {
+          id: String(row.user_id),
+          name: String(row.user_name || ''),
+          profilePic: row.profile_pic ? String(row.profile_pic) : undefined
+        },
+        likeCount: Number(row.like_count || 0),
+        favoriteCount: Number(row.favorite_count || 0),
+        createdAt: Number(row.created_at),
+        publishedAt: row.published_at ? Number(row.published_at) : undefined,
+        engagementWeight: Number(row.engagement_weight || 0)
+      }
+    })
+  }
+
+  /**
    * 返回最近发布作品的原图与缩略图 URL，用于离线生成缩略图任务
    */
   async listRecentPublishedWithUrls(limit = 50): Promise<Array<{ id: string; originalUrl: string; thumbUrl: string | null }>> {

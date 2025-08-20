@@ -18,13 +18,13 @@ import { useClerkEnabled } from '@/hooks/useClerkEnabled'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 
-export default function UserProfileClient({ username }: { username: string }) {
+export default function UserProfileClient({ username, initialProfile, initialArtworks }: { username: string; initialProfile?: any; initialArtworks?: ArtworkListItem[] }) {
 	const isClerkEnabled = useClerkEnabled()
 	const { isLoaded, isSignedIn } = useAuth()
-	const [me, setMe] = useState<any>(null)
+	const [me, setMe] = useState<any>(initialProfile || null)
 	const [hideName, setHideName] = useState(false)
 	const [hideEmail, setHideEmail] = useState(false)
-	const [artworks, setArtworks] = useState<ArtworkListItem[]>([])
+	const [artworks, setArtworks] = useState<ArtworkListItem[]>(initialArtworks || [])
 	const [favorites, setFavorites] = useState<ArtworkListItem[]>([])
 	const [likes, setLikes] = useState<ArtworkListItem[]>([])
 	const [loading, setLoading] = useState(true)
@@ -66,8 +66,8 @@ export default function UserProfileClient({ username }: { username: string }) {
 
 	// 使用 SWR 驱动作品与收藏，确保上传后缓存失效能反映到页面
 	const userId = me?.id as string | undefined
-	const { artworks: swrArtworks } = useUserArtworks(userId || '')
-	const { artworks: swrFavorites } = useFavorites(userId || '')
+	const { artworks: swrArtworks } = useUserArtworks(userId || '', initialArtworks)
+	const { artworks: swrFavorites } = useFavorites(userId || '', undefined)
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
 

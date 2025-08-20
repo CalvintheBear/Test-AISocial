@@ -86,6 +86,11 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     token = isLikelyValid ? normalized : (useDevJwt ? devJwt : undefined)
   }
 
+  // 对写请求（POST/PUT/PATCH/DELETE），若仍未拿到 token，则等待一次无超时获取，避免 401
+  if (!token && typeof window !== 'undefined' && !isGet) {
+    token = await getClerkTokenNoTimeout()
+  }
+
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'
   const SITE_BASE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   let url: RequestInfo
@@ -109,8 +114,8 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   try {
     let res = await fetch(url, { ...init, headers, cache: 'no-store', credentials: 'include' })
 
-    // 如果是 GET 且未携带 token 或 token 可能失效，遇到 401 时尝试获取 token 后重试一次
-    if (isGet && res.status === 401) {
+    // 若遇到 401（任意方法），再尝试获取一次 token 并重试一次
+    if (res.status === 401) {
       const haveAuthHeader = !!(headers as any).Authorization
       if (!haveAuthHeader) {
         const retryToken = await getClerkTokenNoTimeout()

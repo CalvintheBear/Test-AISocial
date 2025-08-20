@@ -10,13 +10,15 @@ const fetchUserFavorites = async (userId: string): Promise<ArtworkListItem[]> =>
   return adaptArtworkList(response)
 }
 
-export function useFavorites(userId: string) {
+export function useFavorites(userId: string, initialData?: ArtworkListItem[]) {
   const { data, error, isLoading, mutate } = useSWR<ArtworkListItem[]>(
     userId ? `user-favorites-${userId}` : null,
     () => fetchUserFavorites(userId),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      keepPreviousData: true,
+      fallbackData: initialData,
     }
   )
 
