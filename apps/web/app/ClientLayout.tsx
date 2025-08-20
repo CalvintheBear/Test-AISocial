@@ -3,7 +3,7 @@
 import { ReactNode, useState } from 'react'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar'
 import { Header } from '@/components/ui/header'
 import { Button } from '@/components/ui/button'
@@ -23,13 +23,21 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
   const onNav = (href: string, closeMobile = false) => (e: React.MouseEvent) => {
     e.preventDefault()
     if (closeMobile) setIsSidebarOpen(false)
+    const from = pathname
     router.push(href)
+    // Fallback: 如果 500ms 内路由未变化，则强制跳转，规避个别页面阻断
+    setTimeout(() => {
+      if (from === pathname) {
+        window.location.href = href
+      }
+    }, 500)
   }
 
   return (
