@@ -3,6 +3,7 @@
 import { ReactNode, useState } from 'react'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar'
 import { Header } from '@/components/ui/header'
 import { Button } from '@/components/ui/button'
@@ -21,8 +22,15 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const router = useRouter()
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+
+  const onNav = (href: string, closeMobile = false) => (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (closeMobile) setIsSidebarOpen(false)
+    router.push(href)
+  }
 
   return (
     <div className="min-h-screen font-sans antialiased bg-bg">
@@ -36,11 +44,11 @@ export function ClientLayout({ children }: ClientLayoutProps) {
             <SidebarHeader className="hidden" />
             <SidebarContent className="p-2">
               <nav className="flex flex-col space-y-1">
-                <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/">{isSidebarCollapsed ? '🏠' : '首页 / Landing'}</Link>
-                <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/features">{isSidebarCollapsed ? '📘' : '功能介绍'}</Link>
-                <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/feed">{isSidebarCollapsed ? '🖼️' : '推荐 Feed'}</Link>
-                <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/me">{isSidebarCollapsed ? '👤' : '我的主页'}</Link>
-                <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/artwork">{isSidebarCollapsed ? '🖌️' : '工作台'}</Link>
+                <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/" onClick={onNav('/')}>{isSidebarCollapsed ? '🏠' : '首页 / Landing'}</Link>
+                <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/features" onClick={onNav('/features')}>{isSidebarCollapsed ? '📘' : '功能介绍'}</Link>
+                <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/feed" onClick={onNav('/feed')}>{isSidebarCollapsed ? '🖼️' : '推荐 Feed'}</Link>
+                <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/me" onClick={onNav('/user/me')}>{isSidebarCollapsed ? '👤' : '我的主页'}</Link>
+                <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/artwork" onClick={onNav('/artwork')}>{isSidebarCollapsed ? '🖌️' : '工作台'}</Link>
               </nav>
             </SidebarContent>
           </Sidebar>
@@ -51,11 +59,11 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           <SidebarHeader className="hidden" />
           <SidebarContent className="p-2">
             <nav className="flex flex-col space-y-1">
-              <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/" onClick={() => setIsSidebarOpen(false)}>首页 / Landing</Link>
-              <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/features" onClick={() => setIsSidebarOpen(false)}>功能介绍</Link>
-              <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/feed" onClick={() => setIsSidebarOpen(false)}>推荐 Feed</Link>
-              <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/me" onClick={() => setIsSidebarOpen(false)}>我的主页</Link>
-              <Link className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/artwork" onClick={() => setIsSidebarOpen(false)}>工作台</Link>
+              <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/" onClick={onNav('/', true)}>首页 / Landing</Link>
+              <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/features" onClick={onNav('/features', true)}>功能介绍</Link>
+              <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/feed" onClick={onNav('/feed', true)}>推荐 Feed</Link>
+              <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/user/me" onClick={onNav('/user/me', true)}>我的主页</Link>
+              <Link prefetch={false} className="px-3 py-2 rounded-md hover:bg-line text-sm" href="/artwork" onClick={onNav('/artwork', true)}>工作台</Link>
             </nav>
           </SidebarContent>
           <SidebarFooter>
