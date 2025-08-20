@@ -29,8 +29,14 @@ router.get('/trending', async (c) => {
     const d1 = D1Service.fromEnv(c.env)
     const hotness = new HotnessService(redis, d1)
     
-    // 获取热门作品ID列表
-    const hotArtworks = await hotness.getTopHotArtworks(limit + offset)
+    // 获取热门作品ID列表（防御性处理）
+    let hotArtworks: Array<{ artworkId: string; score: number }> = []
+    try {
+      hotArtworks = await hotness.getTopHotArtworks(limit + offset)
+    } catch (e) {
+      console.error('getTopHotArtworks failed:', e)
+      hotArtworks = []
+    }
     const paginatedArtworks = hotArtworks.slice(offset, offset + limit)
     
     if (paginatedArtworks.length === 0) {

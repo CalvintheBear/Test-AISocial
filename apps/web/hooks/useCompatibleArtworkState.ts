@@ -74,12 +74,12 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
 
   // 切换点赞
   const toggleLike = useCallback(async () => {
-    if (!artworkId || !state) return
+    if (!artworkId) return
 
     setIsLoading(true)
     
     try {
-      const currentLiked = state.user_state.liked
+      const currentLiked = state?.user_state.liked ?? false
       const method = useNewSystem ? (currentLiked ? 'DELETE' : 'POST') : 'POST'
       const endpoint = useNewSystem 
         ? newEndpoints.like(artworkId)
@@ -97,7 +97,11 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
           ...prev.user_state,
           liked: !currentLiked,
         },
-      } : null)
+      } : {
+        like_count: data.like_count ?? (currentLiked ? 0 : 1),
+        fav_count: 0,
+        user_state: { liked: !currentLiked, faved: false }
+      })
       // 延迟刷新以确保一致性
       setTimeout(() => fetchState(), 500)
     } catch (error) {
@@ -110,12 +114,12 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
 
   // 切换收藏
   const toggleFavorite = useCallback(async () => {
-    if (!artworkId || !state) return
+    if (!artworkId) return
 
     setIsLoading(true)
     
     try {
-      const currentFaved = state.user_state.faved
+      const currentFaved = state?.user_state.faved ?? false
       const method = useNewSystem ? (currentFaved ? 'DELETE' : 'POST') : 'POST'
       const endpoint = useNewSystem 
         ? newEndpoints.favorite(artworkId)
@@ -133,7 +137,11 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
           ...prev.user_state,
           faved: !currentFaved,
         },
-      } : null)
+      } : {
+        like_count: 0,
+        fav_count: data.fav_count ?? (currentFaved ? 0 : 1),
+        user_state: { liked: false, faved: !currentFaved }
+      })
       // 延迟刷新以确保一致性
       setTimeout(() => fetchState(), 500)
     } catch (error) {

@@ -66,9 +66,9 @@ export class D1Service {
 
   async getArtwork(id: string): Promise<Artwork | null> {
     const stmt = this.db.prepare(`
-      SELECT a*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
+      SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
-      JOIN users u ON a.user_id = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       WHERE a.id = ?
     `)
     const result = await stmt.bind(id).all() as any
@@ -102,7 +102,7 @@ export class D1Service {
     const stmt = this.db.prepare(`
       SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
-      JOIN users u ON a.user_id = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       WHERE a.status = 'published'
       ORDER BY COALESCE(a.published_at, a.created_at) DESC
       LIMIT ?
@@ -145,7 +145,7 @@ export class D1Service {
         CASE WHEN al.user_id IS NULL THEN 0 ELSE 1 END AS isLiked,
         CASE WHEN af.user_id IS NULL THEN 0 ELSE 1 END AS isFavorited
       FROM artworks a
-      JOIN users u ON a.user_id = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       LEFT JOIN artworks_like al ON al.artwork_id = a.id AND al.user_id = ?
       LEFT JOIN artworks_favorite af ON af.artwork_id = a.id AND af.user_id = ?
       WHERE a.status = 'published'
@@ -194,7 +194,7 @@ export class D1Service {
     const stmt = this.db.prepare(`
       SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
-      JOIN users u ON a.user_id = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       WHERE a.id IN (${placeholders})
     `)
     const rows = await stmt.bind(...ids).all() as any
@@ -243,7 +243,7 @@ export class D1Service {
     const stmt = this.db.prepare(`
       SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
-      JOIN users u ON a.user_id = u.id
+      LEFT JOIN users u ON a.user_id = u.id
       WHERE a.user_id = ?
       ORDER BY COALESCE(a.published_at, a.created_at) DESC
     `)

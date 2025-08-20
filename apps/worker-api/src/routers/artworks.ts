@@ -379,10 +379,8 @@ router.get('/:id/state', async (c) => {
   const d1 = D1Service.fromEnv(c.env)
   
   try {
-    const [artwork, likeCount, favCount, userState] = await Promise.all([
+    const [artwork, userState] = await Promise.all([
       d1.getArtwork(id),
-      d1.getLikeCount(id),
-      d1.getFavoriteCount(id),
       userId ? d1.getUserArtworkState(userId, id) : { liked: false, faved: false }
     ])
 
@@ -391,8 +389,8 @@ router.get('/:id/state', async (c) => {
     }
 
     return c.json(ok({
-      like_count: likeCount,
-      fav_count: favCount,
+      like_count: artwork.likeCount,
+      fav_count: artwork.favoriteCount,
       user_state: userState
     }))
   } catch (error) {
