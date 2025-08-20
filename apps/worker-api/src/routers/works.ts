@@ -89,6 +89,7 @@ router.get('/', async (c) => {
     }
     
     // Format response
+    // 直接使用快照计数渲染
     const formattedArtworks = formatArtworkListForAPI(artworks, userStates)
     
     // Pagination info

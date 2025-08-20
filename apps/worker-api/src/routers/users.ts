@@ -93,16 +93,8 @@ router.get('/:id/artworks', async (c) => {
   }
   
   // Sync counts for all artworks
-  const syncedArtworks = await Promise.all(
-    visibleList.map(async (artwork: any) => {
-      const actualCounts = await d1.syncArtworkCounts(artwork.id)
-      return {
-        ...artwork,
-        likeCount: actualCounts.likeCount,
-        favoriteCount: actualCounts.favoriteCount
-      }
-    })
-  )
+  // 直接使用快照计数，避免N次COUNT
+  const syncedArtworks = visibleList
   
   const items = formatArtworkListForAPI(syncedArtworks, userStates)
   return c.json(ok(items))

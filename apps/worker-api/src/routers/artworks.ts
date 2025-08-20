@@ -17,8 +17,7 @@ router.get('/:id', async (c) => {
     const art = await d1.getArtwork(id)
     if (!art) return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
     
-    // Sync actual counts from relation tables
-    const actualCounts = await d1.syncArtworkCounts(id)
+    // 直接使用快照计数，避免每次请求进行 COUNT
     
     // Get user state (liked/faved) from Redis or D1
     let userState = { liked: false, faved: false }
@@ -42,8 +41,8 @@ router.get('/:id', async (c) => {
     // Create response with actual counts
     const response = {
       ...formatArtworkForAPI(art, userState),
-      like_count: actualCounts.likeCount,
-      fav_count: actualCounts.favoriteCount
+      like_count: art.likeCount,
+      fav_count: art.favoriteCount
     }
     return c.json(ok(response))
   } catch (error) {
@@ -75,9 +74,10 @@ router.post('/:id/like', async (c) => {
   // 执行点赞操作
   await Promise.all([
     d1.addLike(userId, id),
-    redis.addUserLike(userId, id)
+    redis.addUserLike(userId, id),
+    d1.incrLikeCount(id, 1) // 原子自增快照，避免COUNT
   ])
-  const actualCounts = await d1.syncArtworkCounts(id)
+  const artAfter = await d1.getArtwork(id)
   
   // 更新热度并同步到数据库
   try {
@@ -105,8 +105,8 @@ router.post('/:id/like', async (c) => {
   const hotData = await d1.getArtworkHotData(id)
   
   return c.json(ok({
-    like_count: actualCounts.likeCount,
-    fav_count: actualCounts.favoriteCount,
+    like_count: artAfter?.likeCount || 0,
+    fav_count: artAfter?.favoriteCount || 0,
     user_state: userState,
     hot_score: hotData?.hot_score || 0,
     hot_level: hotData?.hot_level || 'new'
@@ -128,9 +128,10 @@ router.delete('/:id/like', async (c) => {
   const redis = RedisService.fromEnv(c.env)
   await Promise.all([
     d1.removeLike(userId, id),
-    redis.removeUserLike(userId, id)
+    redis.removeUserLike(userId, id),
+    d1.incrLikeCount(id, -1)
   ])
-  const actualCounts = await d1.syncArtworkCounts(id)
+  const artAfter = await d1.getArtwork(id)
   
   // 更新热度（减少热度）并同步到数据库
   const hotness = new HotnessService(redis, d1)
@@ -155,8 +156,8 @@ router.delete('/:id/like', async (c) => {
   const hotData = await d1.getArtworkHotData(id)
   
   return c.json(ok({
-    like_count: actualCounts.likeCount,
-    fav_count: actualCounts.favoriteCount,
+    like_count: artAfter?.likeCount || 0,
+    fav_count: artAfter?.favoriteCount || 0,
     user_state: userState,
     hot_score: hotData?.hot_score || 0,
     hot_level: hotData?.hot_level || 'new'
@@ -185,9 +186,10 @@ router.post('/:id/favorite', async (c) => {
   // 执行收藏操作
   await Promise.all([
     redis.addFavorite(userId, id),
-    d1.addFavorite(userId, id)
+    d1.addFavorite(userId, id),
+    d1.incrFavoriteCount(id, 1)
   ])
-  const actualCounts = await d1.syncArtworkCounts(id)
+  const artAfter = await d1.getArtwork(id)
   
   // 更新热度并同步到数据库
   try {
@@ -207,8 +209,8 @@ router.post('/:id/favorite', async (c) => {
   const hotData = await d1.getArtworkHotData(id)
   
   return c.json(ok({
-    like_count: actualCounts.likeCount,
-    fav_count: actualCounts.favoriteCount,
+    like_count: artAfter?.likeCount || 0,
+    fav_count: artAfter?.favoriteCount || 0,
     user_state: { liked: isLiked, faved: true },
     hot_score: hotData?.hot_score || 0,
     hot_level: hotData?.hot_level || 'new'
@@ -231,9 +233,10 @@ router.delete('/:id/favorite', async (c) => {
   // 执行取消收藏操作
   await Promise.all([
     redis.removeFavorite(userId, id),
-    d1.removeFavorite(userId, id)
+    d1.removeFavorite(userId, id),
+    d1.incrFavoriteCount(id, -1)
   ])
-  const actualCounts = await d1.syncArtworkCounts(id)
+  const artAfter = await d1.getArtwork(id)
   
   // 更新热度（减少热度）并同步到数据库
   try {
@@ -253,8 +256,8 @@ router.delete('/:id/favorite', async (c) => {
   const hotData = await d1.getArtworkHotData(id)
   
   return c.json(ok({
-    like_count: actualCounts.likeCount,
-    fav_count: actualCounts.favoriteCount,
+    like_count: artAfter?.likeCount || 0,
+    fav_count: artAfter?.favoriteCount || 0,
     user_state: { liked: isLiked, faved: false },
     hot_score: hotData?.hot_score || 0,
     hot_level: hotData?.hot_level || 'new'
