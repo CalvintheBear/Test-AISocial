@@ -1,352 +1,186 @@
-# AI Social - 开发运行说明（生产化验证版）
+# AI Social - Monorepo 指南（2025）
 
-## ✅ 已完成功能
-- [x] **点赞收藏系统升级**：一次性全量切换到新系统，Redis优先缓存，状态同步一致性
-- [x] **数据一致性**：点赞/收藏计数同步机制，无回滚现象
-- [x] **性能优化**：响应时间<500ms，错误率<1%
-- [x] **兼容性升级**：无缝切换，保持API兼容性
-- [ ] 接入 Clerk（前后端联通）：前端获取 JWT 注入 `authFetch`；后端使用 `@clerk/backend` 校验并关闭生产 DEV_MODE
-- [ ] 缩略图生成链路：Cron 任务 + Image Resizing，生成写入 R2_AFTER，并回填 D1 `thumb_url`，刷新缓存
-- [ ] 统一响应格式与错误码：采用 `{ success, data, code }`，并在中间件中统一错误体、结构化日志
-- [ ] 缓存策略调优：Feed 与用户列表 TTL 策略细化、按 Key 失效与批量清理，完善一致性检查脚本
-- [ ] 监控与告警：请求耗时、错误率、R2/Redis/D1 可用性与配额；关键操作审计日志
-- [ ] 前端体验优化：骨架屏/占位图、错误边界、移动端适配、i18n（可选）
+面向开发与部署的最新说明，覆盖本地运行、环境变量、API 列表与上线流程。
 
-## 目录
-- 前端：`apps/web`（Next.js 14 + Clerk）
+## 目录结构
+- 前端：`apps/web`（Next.js 14）
 - 后端：`apps/worker-api`（Cloudflare Workers + Hono + D1 + Upstash Redis + R2）
 
-## 快速开始
+## 先决条件
+- Node.js 18+（建议 20+）
+- npm 9+
+- Cloudflare 账号（Workers、D1、R2 权限）
+- Upstash Redis 实例
+- 可选：Clerk（用户鉴权）
 
-### 1. 环境准备
-
-#### 前端环境
-复制环境变量示例并配置：
+## 快速开始（本地）
 ```bash
-cp apps/web/.env.local.example apps/web/.env.local
-# 编辑 apps/web/.env.local 填入实际值
-```
+# 安装依赖（在仓库根目录）
+npm install
 
-#### 后端环境
-复制开发环境变量：
-```bash
-cp apps/worker-api/.dev.vars.example apps/worker-api/.dev.vars
-# 编辑 apps/worker-api/.dev.vars 填入实际值
-```
-
-#### 数据库迁移
-```bash
-# 创建D1数据库（首次）
-cd apps/worker-api
-wrangler d1 migrations apply test-d1
-
-# 验证表结构
-wrangler d1 execute test-d1 --command "SELECT * FROM sqlite_master WHERE type='table'"
-```
-
-### 2. 本地开发
-
-#### 启动后端（Cloudflare Workers）
-```bash
-# 安装Worker依赖（首次）
-npm --workspace apps/worker-api install
-
-# 启动开发服务器
+# 启动后端（Cloudflare Workers，本地端口默认 8787）
 npm run api:dev
-# 或：npm --workspace apps/worker-api run dev
-```
 
-#### 启动前端（Next.js）
-```bash
-# 启动前端开发服务器
+# 启动前端（Next.js，默认 3000）
 npm run dev
-# 或：npm --workspace apps/web run dev
 ```
 
-### 3. 点赞收藏系统部署（已完成 ✅）
+前端默认通过 `process.env.NEXT_PUBLIC_API_BASE_URL` 指向后端；未设置时回退到 `http://127.0.0.1:8787`。
 
-#### 一次性部署流程（已执行）
-```bash
-# 部署后端
-npm run api:deploy
+## 环境变量
 
-# 部署前端  
-npm run build
-npm run deploy:frontend  # 或 vercel --prod
-```
+### 前端（`apps/web/.env.local`）
+```env
+# 站点基础地址（用于 SEO、URL 拼接）
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
-**部署成果：**
-- ✅ 后端已部署：https://ai-social-api.y2983236233.workers.dev
-- ✅ 前端构建完成，准备部署到Vercel
-- ✅ 点赞/收藏系统一次性全量切换成功
-- ✅ 数据一致性机制已就绪
-- ✅ 回滚脚本已创建：`rollback.sh`
+# API 基础地址（Cloudflare Worker 或本地 wrangler dev）
+NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8787
 
-#### 回滚方案
-```bash
-# 一键回滚到旧系统
-./rollback.sh
-```
+# 可选：Clerk 浏览器端 PUBLISHABLE KEY（存在则启用 `ClientProviders`）
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
 
-### 4. 生产部署（其他功能）
+# 可选：Clerk 自定义 JWT 模板名（用于获取 session token）
+NEXT_PUBLIC_CLERK_JWT_TEMPLATE=jwt-template
 
-#### Cloudflare Workers部署
-```bash
-cd apps/worker-api
-
-# 设置生产环境密钥
-wrangler secret put UPSTASH_REDIS_REST_TOKEN
-wrangler secret put CLERK_SECRET_KEY
-
-# 部署到Cloudflare
-npm run api:deploy
-```
-
-#### Next.js部署到Vercel/Cloudflare Pages
-```bash
-# 构建应用
-npm run build
-
-# Vercel部署
-vercel --prod
-
-# 或Cloudflare Pages部署
-wrangler pages deploy apps/web/.next/static --project-name=ai-social-web
-```
-
-### CI/CD（GitHub Actions）
-
-已新增工作流：`.github/workflows/deploy.yml`，自动构建并部署。
-
-- 必需仓库 Secrets：
-  - `CLOUDFLARE_API_TOKEN`（含 Workers Scripts:Edit 与 Pages:Edit 权限）
-  - `CLOUDFLARE_ACCOUNT_ID`
-  - `GITHUB_TOKEN`（默认内置）。若出现 403 `Resource not accessible by integration`，需在 workflow 顶部声明：
-
-```
-permissions:
-  contents: read
-  deployments: write
-```
-
-- 流程：
-  - 构建 `apps/web` → 运行 `@cloudflare/next-on-pages` 预构建 → 使用 `cloudflare/pages-action@v1` 部署到 Pages
-  - 使用 `cloudflare/wrangler-action@v3` 在 `apps/worker-api` 中执行 `wrangler deploy`
-
-### Cloudflare Pages（前端）与 Workers（后端）联动部署指南
-
-> 已将以下页面改为动态渲染并使用 Node.js 运行时，适配 Cloudflare 平台：`/feed`、`/artwork/[id]/[slug]`、`/user/[username]`。
-
-#### 1) 前端（Cloudflare Pages）环境变量（apps/web）
-
-在 Cloudflare Pages 项目的 Settings → Environment Variables 中配置：
-
-```
-NEXT_PUBLIC_SITE_URL=https://your-frontend-domain.com
-NEXT_PUBLIC_API_BASE_URL=https://your-worker-subdomain.workers.dev
-# 可选：开发/预发时用于后端鉴权的临时 Token（若未集成 Clerk 时）
+# 开发期的后端鉴权 Token 回退（无 Clerk 时）
 NEXT_PUBLIC_DEV_JWT=dev-token
-# 可选：使用前端静态 mock 数据（本地调试或 API 未就绪时）
-NEXT_PUBLIC_USE_MOCK=0
 ```
 
-注意：
-- 这些变量在 `apps/web/lib/api/client.ts` 中用于将 `API.feed` 等相对路径拼接为完整后端地址；`/mocks/` 则使用 `NEXT_PUBLIC_SITE_URL`.
-- `app/layout.tsx` 中的 `metadataBase` 也使用 `NEXT_PUBLIC_SITE_URL`，建议配置为你的正式域名。
+前端代码中相关位置：
+- `apps/web/app/layout.tsx` 读取 `NEXT_PUBLIC_SITE_URL`、`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `apps/web/lib/api/client.ts` 读取 `NEXT_PUBLIC_API_BASE_URL`、`NEXT_PUBLIC_DEV_JWT`、`NEXT_PUBLIC_CLERK_JWT_TEMPLATE`
 
-#### 2) 后端（Cloudflare Workers）部署与变量（apps/worker-api）
+### 后端（`apps/worker-api/.dev.vars` 本地；生产请用 Secrets）
+```env
+# 开发模式：为本地与公共 GET 放宽校验（仅开发环境）
+DEV_MODE=1
 
-在 `apps/worker-api` 目录下：
+# 允许的前端域（CORS）
+ALLOWED_ORIGIN=http://localhost:3000
 
-```bash
-# 本地开发
-npm --workspace apps/worker-api run dev
-
-# 部署
-npm --workspace apps/worker-api run deploy
-```
-
-必须配置的 Secrets/Vars（可在 Cloudflare Dashboard → Workers → your worker → Settings 中设置）：
-
-```
-CLERK_SECRET_KEY=sk_live_...
-UPSTASH_REDIS_REST_URL=...
-UPSTASH_REDIS_REST_TOKEN=...
-# 如需 R2，按需配置以下变量
-R2_PUBLIC_UPLOAD_BASE=...
-R2_PUBLIC_AFTER_BASE=...
-```
-
-#### 3) CORS 与网络
-
-- 若前端域与 Worker 子域不同，请在 Worker 侧确保响应头包含允许的 CORS 头（如 `Access-Control-Allow-Origin: https://your-frontend-domain.com`）。
-- 推荐将前端与后端放在同一主域/子域下，以减少跨域复杂度。
-
-#### 4) 运行时与页面策略
-
-- 已为以下页面设置：
-  - `apps/web/app/feed/page.tsx`: `dynamic = 'force-dynamic'`, `revalidate = 0`, `runtime = 'nodejs'`
-  - `apps/web/app/artwork/[id]/[slug]/page.tsx`: 同上
-  - `apps/web/app/user/[username]/page.tsx`: 同上
-- 目的：避免在构建阶段预取 API，改为在运行时（Node.js）服务端拉取，兼容 Clerk 在 Node 环境对 `fs/path` 的依赖。
-
-注意：如果后续切回 Edge 运行时，需要移除对 `@clerk/nextjs` 的直接依赖或使用专为 Edge 环境的 Clerk 变体，并确保任何 Node 内置模块（如 `fs`/`path`）不被引入到 Edge 构建。
-
-#### 5) 常见问题排查（Cloudflare）
-
-- 构建时报 `Invalid URL`：请确认未在构建期使用 `new URL('/api/...')`，并确保上述页面为动态渲染；前端通过 `authFetch(API.xxx)` 发起请求。
-- Edge 运行时报 `fs/path` 模块找不到：将页面 `runtime` 设为 `nodejs`（已处理）。
-- 请求 4xx/5xx：检查 `NEXT_PUBLIC_API_BASE_URL` 是否正确指向 Worker，检查 Worker 日志 `wrangler tail`。
-
-
-## 环境配置
-
-### 必需服务
-1. **Cloudflare账户**：Workers、D1、R2服务
-2. **Upstash Redis**：缓存和计数器
-3. **Clerk**：用户鉴权服务
-
-### 环境变量说明
-
-#### 前端变量 (`apps/web/.env.local`)
-```
-NEXT_PUBLIC_SITE_URL=https://cuttingasmr.org
-NEXT_PUBLIC_USE_MOCK=0           # 0=真实API，1=mock数据
-NEXT_PUBLIC_DEV_JWT=dev-token    # 开发环境JWT（未接 Clerk 前）
-NEXT_PUBLIC_API_BASE_URL=https://your-worker-subdomain.workers.dev
-```
-
-#### 后端变量 (`apps/worker-api/.dev.vars`)
-```
-# Clerk配置
-CLERK_SECRET_KEY=sk_live_...
+# Clerk（任选其一：Issuer/JWKS 或 Secret Key）
 CLERK_ISSUER=https://<your>.clerk.accounts.dev
 CLERK_JWKS_URL=https://<your>.clerk.accounts.dev/.well-known/jwks.json
+# 或
+CLERK_SECRET_KEY=sk_test_xxx
 
 # Upstash Redis
-UPSTASH_REDIS_REST_URL=https://your-endpoint.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your-upstash-token
+UPSTASH_REDIS_REST_URL=https://<id>.upstash.io
+UPSTASH_REDIS_REST_TOKEN=<token>
 
 # R2 公网访问（可选）
 R2_PUBLIC_UPLOAD_BASE=https://...
 R2_PUBLIC_AFTER_BASE=https://...
-
-# 允许的前端域（CORS）
-ALLOWED_ORIGIN=https://cuttingasmr.org
-
-# 开发模式
-DEV_MODE=1
 ```
 
-### 数据库结构
-```sql
--- 用户表
-CREATE TABLE users (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  email TEXT NOT NULL,
-  profile_pic TEXT,
-  created_at INTEGER,
-  updated_at INTEGER
-);
+wrangler 绑定与 D1 配置见 `apps/worker-api/wrangler.toml`。
 
--- 作品表（包含完整元数据字段）
-CREATE TABLE artworks (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  title TEXT,
-  url TEXT NOT NULL,
-  thumb_url TEXT,
-  slug TEXT,
-  status TEXT NOT NULL CHECK (status IN ('draft','published')),
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER,
-  published_at INTEGER,
-  mime_type TEXT,
-  width INTEGER,
-  height INTEGER,
-  prompt TEXT,
-  model TEXT,
-  seed INTEGER
-);
-
--- 点赞表
-CREATE TABLE artworks_like (
-  user_id TEXT NOT NULL,
-  artwork_id TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  PRIMARY KEY (user_id, artwork_id)
-);
-
--- 收藏表
-CREATE TABLE artworks_favorite (
-  user_id TEXT NOT NULL,
-  artwork_id TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  PRIMARY KEY (user_id, artwork_id)
-);
-```
-
-## API接口
-
-### 认证接口
-- `GET /api/health` - 健康检查
-- `GET /api/redis/ping` - Redis连接测试
-
-### 核心接口
-- `GET /api/feed` - 获取推荐流
-- `GET /api/users/:id/artworks` - 获取用户作品
-- `GET /api/users/:id/favorites` - 获取用户收藏
-- `GET /api/artworks/:id` - 获取作品详情
-- `POST /api/artworks/upload` - 上传作品
-- `POST /api/artworks/:id/like` - 点赞作品
-- `DELETE /api/artworks/:id/like` - 取消点赞
-- `POST /api/artworks/:id/favorite` - 收藏作品
-- `DELETE /api/artworks/:id/favorite` - 取消收藏
-- `POST /api/artworks/:id/publish` - 发布作品
-- `GET /api/artworks/:id/state` - 获取点赞收藏状态（新增）
-- `POST /api/artworks/batch/state` - 批量获取状态（新增）
-
-## 开发测试
-
-### 后端测试
+## 数据库（D1）迁移
 ```bash
-# 健康检查
-curl http://localhost:8787/api/health
+cd apps/worker-api
 
-# 获取推荐流
-curl http://localhost:8787/api/feed
+# 关联 wrangler.toml 中的 D1 数据库后执行（首次/变更时）
+wrangler d1 migrations apply test-d1
 
-# 上传测试（需要JWT令牌）
-curl -H "Authorization: Bearer your-jwt-token" \
-     -F "file=@test.jpg" \
-     -F "title=测试作品" \
-     http://localhost:8787/api/artworks/upload
+# 验证
+wrangler d1 execute test-d1 --command "SELECT name FROM sqlite_master WHERE type='table'"
 ```
 
-### 前端测试
+## 本地开发命令
+根目录脚本（来自 `package.json`）：
+- `npm run dev`：启动前端（`apps/web`）
+- `npm run build`：构建前端
+- `npm run start`：生产模式启动前端
+- `npm run api:dev`：启动 Worker 本地开发（`apps/worker-api`）
+- `npm run api:deploy`：部署 Worker（wrangler deploy）
+
+## API 一览
+
+### 健康与工具
+- `GET /api/health`：健康检查
+- `GET /api/redis/ping`：Redis 连接测试
+
+### Feed 与用户内容
+- `GET /api/feed`：获取推荐流（支持 `limit`）
+- `GET /api/users/:id/profile`：用户资料
+- `GET /api/users/:id/artworks`：用户作品列表（本人含草稿）
+- `GET /api/users/:id/favorites`：用户收藏列表
+- `GET /api/users/:id/likes`：用户点赞列表
+- `GET /api/users/me`、`POST /api/users/me/privacy`：当前用户信息与隐私设置
+
+### 作品与互动
+- `GET /api/artworks/:id`：作品详情
+- `POST /api/artworks/upload`：上传作品（R2）
+- `POST /api/artworks/:id/like` / `DELETE /api/artworks/:id/like`
+- `POST /api/artworks/:id/favorite` / `DELETE /api/artworks/:id/favorite`
+- `POST /api/artworks/:id/publish` / `POST /api/artworks/:id/unpublish`
+- `GET /api/artworks/:id/state`、`POST /api/artworks/batch/state`
+- `GET /api/artworks/:id/hot-data`、`POST /api/artworks/batch/hot-data`
+
+### 热度（Hotness）
+- `GET /api/hotness/trending`（支持 `category`, `limit`, `offset`）
+- `GET /api/hotness/trending/:timeWindow`（`1h|6h|24h|7d|30d`）
+- `GET /api/hotness/:id`（含详情与分解）
+- `GET /api/hotness/rank`、`POST /api/hotness/refresh`
+- `POST /api/hotness/sync/:id`、`POST /api/hotness/sync-batch`
+
+统一响应：大多数接口返回 `{ success, data }`，过渡期仍兼容裸 `data`。
+
+## 部署
+
+### 后端（Cloudflare Workers）
 ```bash
-# 启动开发服务器
-npm run dev
+cd apps/worker-api
 
-# 访问测试页面
-open http://localhost:3000/feed
-open http://localhost:3000/user/demo-user
-open http://localhost:3000/artwork/test-id/test-slug
+# 设置生产 Secrets（Cloudflare Dashboard 或 CLI）
+wrangler secret put CLERK_SECRET_KEY
+wrangler secret put UPSTASH_REDIS_REST_TOKEN
+
+# 如使用 Issuer/JWKS：
+wrangler secret put CLERK_ISSUER
+wrangler secret put CLERK_JWKS_URL
+
+# 部署
+npm run api:deploy
 ```
+
+`wrangler.toml` 中已启用 `compatibility_flags = ["nodejs_compat"]`，并配置了 D1、R2 绑定与可选路由。
+
+### 前端（Next.js）
+```bash
+cd apps/web
+npm run build
+
+# 选项 A：Vercel（推荐 Next.js 原生）
+vercel --prod
+
+# 选项 B：Cloudflare Pages（需按官方指引接入 Next-on-Pages）
+# 本仓库未内置 CI；如需 Pages，请在项目设置中：
+# - 构建命令：npm --workspace apps/web run build
+# - 输出目录：.next（或按 next-on-pages 要求配置）
+```
+
+提示：当前仓库未包含 GitHub Actions 工作流文件，若需 CI/CD 请自行添加。
 
 ## 故障排查
+- 4xx/5xx：确认 `NEXT_PUBLIC_API_BASE_URL` 指向正确的 Worker；查看 `wrangler tail` 日志
+- 鉴权失败：本地可将 `DEV_MODE=1`；生产务必关闭，并配置 Clerk（Issuer/JWKS 或 Secret Key）
+- CORS：确认 Worker 返回的 `Access-Control-Allow-Origin` 包含前端域（参考 `ALLOWED_ORIGIN`）
+- R2 上传失败：检查绑定名与权限；确认 `R2_PUBLIC_UPLOAD_BASE` 正确
+- D1 连接：核对 `wrangler.toml` 的 `database_id` 并完成 migrations
 
-### 常见问题
-1. **D1连接失败**：检查wrangler.toml中的database_id
-2. **Redis连接失败**：验证UPSTASH_REDIS_REST_TOKEN
-3. **Clerk认证失败**：检查CLERK_SECRET_KEY和issuer配置
-4. **R2上传失败**：检查R2 bucket名称和权限
+## 常用脚本（workspace 根目录）
+```bash
+npm run dev          # 前端开发
+npm run build        # 前端构建
+npm run start        # 前端生产启动
+npm run api:dev      # 后端本地（wrangler dev）
+npm run api:deploy   # 后端部署（wrangler deploy）
+```
 
-### 调试模式
-- 设置`DEV_MODE=1`可跳过Clerk验证
-- 设置`NEXT_PUBLIC_USE_MOCK=1`使用前端mock数据
-- 查看Worker日志：`wrangler tail`
-- 数据一致性检查：`npm run consistency-check`
-- 回滚到旧版本：`./rollback.sh`
+## 备注
+- 页面运行时：部分页面在 Node.js 运行时下服务端拉取数据以兼容鉴权与构建限制
+- 未来计划：缩略图生成 cron、监控与告警、缓存策略细化等（以代码为准）
+
 

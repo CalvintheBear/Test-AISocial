@@ -110,6 +110,9 @@ export default function UserProfileClient({ username }: { username: string }) {
 		} catch {}
 	}, [addFavorite, removeFavorite])
 
+	// 仅当本人访问自己的主页时，才允许显示“隐藏名称/邮箱”按钮
+	const isOwner = username === 'me' || !!(me?.id && username === me.id)
+
 	// 当 Clerk 已加载且未登录时，显示登录提示
 	if (isLoaded && !isSignedIn) {
 		return (
@@ -134,15 +137,19 @@ export default function UserProfileClient({ username }: { username: string }) {
 					<div className="text-white">
 						<div className="flex items-center space-x-3">
 							<h1 className="text-3xl font-bold">{hideName ? '匿名用户' : (me?.name || '未登录用户')}</h1>
-							<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideName: !hideName })}>
-								{hideName ? '显示名称' : '隐藏名称'}
-							</Button>
+							{isOwner && (
+								<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideName: !hideName })}>
+									{hideName ? '显示名称' : '隐藏名称'}
+								</Button>
+							)}
 						</div>
 						<div className="flex items-center space-x-3">
 							<p className="text-lg opacity-90">{hideEmail ? '暂不可见' : (me?.email || '未绑定邮箱')}</p>
-							<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideEmail: !hideEmail })}>
-								{hideEmail ? '显示邮箱' : '隐藏邮箱'}
-							</Button>
+							{isOwner && (
+								<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideEmail: !hideEmail })}>
+									{hideEmail ? '显示邮箱' : '隐藏邮箱'}
+								</Button>
+							)}
 						</div>
 					</div>
 				</div>
