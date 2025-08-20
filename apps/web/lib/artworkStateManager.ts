@@ -33,6 +33,7 @@ class ArtworkStateManager {
   // 刷新feed
   async refreshFeed() {
     mutate('/api/feed', undefined, { revalidate: true })
+    mutate('feed', undefined, { revalidate: true })
   }
 
   // 刷新用户收藏

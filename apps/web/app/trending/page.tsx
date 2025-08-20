@@ -7,7 +7,7 @@ import { useTrendingArtworks } from '@/hooks/useArtworks';
 import HotnessFilter from '@/components/HotnessFilter';
 import HotnessIndicator, { EmptyState } from '@/components/HotnessIndicator';
 import { ArtworkCard } from '@/components/app/ArtworkCard';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ArtworkGrid } from '@/components/app/ArtworkGrid';
 
 function TrendingPageContent() {
   const router = useRouter();
@@ -81,15 +81,7 @@ function TrendingPageContent() {
 
         {/* 加载状态 */}
         {isLoading && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[...Array(12)].map((_, i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="aspect-square w-full" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
-              </div>
-            ))}
-          </div>
+          <ArtworkGrid artworks={[]} loading />
         )}
 
         {/* 空状态 */}

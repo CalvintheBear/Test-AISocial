@@ -6,15 +6,17 @@ import { ArtworkGrid } from '@/components/app/ArtworkGrid'
 import { useLike } from '@/hooks/useLike'
 import { useFavorite } from '@/hooks/useFavorite'
 import TrendingTab from '@/components/TrendingTab'
+import { useFeed } from '@/hooks/useFeed'
 
 export default function ClientFeedActions({ initialArtworks }: { initialArtworks: ArtworkListItem[] }) {
   const [activeTab, setActiveTab] = useState<'feed' | 'trending'>('feed')
-  const [artworks, setArtworks] = useState<ArtworkListItem[]>(initialArtworks || [])
+  const { artworks, isLoading, mutate } = useFeed(initialArtworks)
+  const [clientArtworks, setClientArtworks] = useState<ArtworkListItem[]>(artworks || [])
   const { like } = useLike()
   const { addFavorite, removeFavorite } = useFavorite()
 
   const onLike = useCallback(async (id: string) => {
-    setArtworks(prev => prev.map(a => a.id === id && !a.user_state.liked ? { 
+    setClientArtworks(prev => prev.map(a => a.id === id && !a.user_state.liked ? { 
       ...a, 
       like_count: a.like_count + 1, 
       user_state: { ...a.user_state, liked: true }
@@ -24,7 +26,7 @@ export default function ClientFeedActions({ initialArtworks }: { initialArtworks
 
   const onFavorite = useCallback(async (id: string) => {
     let nextIsFav: boolean | undefined
-    setArtworks(prev => prev.map(a => {
+    setClientArtworks(prev => prev.map(a => {
       if (a.id !== id) return a
       nextIsFav = !a.user_state.faved
       return { 
@@ -74,7 +76,7 @@ export default function ClientFeedActions({ initialArtworks }: { initialArtworks
 
       {/* 内容区域 */}
       {activeTab === 'feed' ? (
-        <ArtworkGrid artworks={artworks} onLike={onLike} onFavorite={onFavorite} />
+        <ArtworkGrid artworks={clientArtworks} onLike={onLike} onFavorite={onFavorite} loading={isLoading} />
       ) : (
         <TrendingTab />
       )}

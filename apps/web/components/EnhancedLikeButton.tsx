@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { Heart } from 'lucide-react'
 import { useCompatibleArtworkState } from '@/hooks/useCompatibleArtworkState'
 import { cn } from '@/lib/utils'
+import { useClerkEnabled } from '@/hooks/useClerkEnabled'
+import { useAuth } from '@clerk/nextjs'
 
 interface EnhancedLikeButtonProps {
   artworkId: string
@@ -25,6 +27,8 @@ export function EnhancedLikeButton({
 }: EnhancedLikeButtonProps) {
   const { state, toggleLike, isLoading, isError } = useCompatibleArtworkState(artworkId)
   const [isAnimating, setIsAnimating] = useState(false)
+  const isClerkEnabled = useClerkEnabled()
+  const { isLoaded, isSignedIn } = useAuth()
 
   // 使用初始状态或从全局状态获取
   const liked = state?.user_state.liked ?? initialState?.liked ?? false
@@ -35,6 +39,12 @@ export function EnhancedLikeButton({
     e.stopPropagation()
 
     if (isLoading) return
+
+    if (isClerkEnabled && isLoaded && !isSignedIn) {
+      const current = typeof window !== 'undefined' ? window.location.href : '/'
+      window.location.href = `/login?redirect=${encodeURIComponent(current)}`
+      return
+    }
 
     setIsAnimating(true)
     

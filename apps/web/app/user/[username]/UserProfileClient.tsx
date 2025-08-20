@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button'
 import { useLike } from '@/hooks/useLike'
 import { useFavorite } from '@/hooks/useFavorite'
 import { useClerkEnabled } from '@/hooks/useClerkEnabled'
+import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
 
 export default function UserProfileClient({ username }: { username: string }) {
 	const isClerkEnabled = useClerkEnabled()
@@ -115,12 +117,35 @@ export default function UserProfileClient({ username }: { username: string }) {
 	// 仅当本人访问自己的主页时，才允许显示“隐藏名称/邮箱”按钮
 	const isOwner = username === 'me' || !!(me?.id && username === me.id)
 
-	// 当 Clerk 已加载且未登录时，显示登录提示
+	// Tab 与 URL 同步
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const tabParam = searchParams.get('tab') || 'works'
+	const setTab = (tab: string) => {
+		const params = new URLSearchParams(searchParams.toString())
+		params.set('tab', tab)
+		router.replace(`?${params.toString()}`)
+	}
+
+	// 当 Clerk 已加载且未登录时，展示营销态（英雄区+CTA+示例卡）
 	if (isClerkEnabled && isLoaded && !isSignedIn) {
 		return (
-			<div className="py-16 text-center">
-				<p className="mb-4 text-gray-600">您尚未登录，请先登录以查看个人主页。</p>
-				<SignInButton mode="modal"/>
+			<div>
+				<div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg mb-8 px-8 py-12 text-white">
+					<h1 className="text-3xl font-bold mb-2">创建并展示你的 AI 艺术主页</h1>
+					<p className="opacity-90 mb-6">登录后可发布作品、收藏/点赞、个性化你的主页。</p>
+					<div className="flex gap-3">
+						<SignInButton mode="modal">
+							<Button variant="primary">登录 / 注册</Button>
+						</SignInButton>
+						<Link href="/feed"><Button variant="outline" className="bg-white/10 border-white/30 text-white">先逛逛</Button></Link>
+					</div>
+				</div>
+
+				<div className="space-y-6">
+					<h2 className="text-xl font-semibold">你可能会喜欢</h2>
+					<ArtworkGrid artworks={artworks} loading locked onLockedClick={() => window.location.href = `/login?redirect=${encodeURIComponent(window.location.href)}`} />
+				</div>
 			</div>
 		)
 	}
@@ -167,12 +192,26 @@ export default function UserProfileClient({ username }: { username: string }) {
 				</div>
 			</div>
 
-			<div className="mb-6 text-sm text-gray-600">
-				<SignedOut>您当前以游客身份浏览。登录后可查看草稿与个性化数据。</SignedOut>
-				<SignedIn>您已登录，可查看私有数据与交互能力。</SignedIn>
+			<div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+				<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="text-xs text-gray-500">作品</div>
+					<div className="text-2xl font-bold">{artworks.length}</div>
+				</div>
+				<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="text-xs text-gray-500">收藏</div>
+					<div className="text-2xl font-bold">{favorites.length}</div>
+				</div>
+				<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="text-xs text-gray-500">点赞</div>
+					<div className="text-2xl font-bold">{likes.length}</div>
+				</div>
+				<div className="bg-white rounded-lg p-4 shadow-sm">
+					<div className="text-xs text-gray-500">隐私</div>
+					<div className="text-sm">{hideName ? '名称隐藏' : '名称可见'} / {hideEmail ? '邮箱隐藏' : '邮箱可见'}</div>
+				</div>
 			</div>
 
-			<Tabs defaultValue="works" className="w-full">
+			<Tabs value={tabParam} onValueChange={setTab} className="w-full">
 				<TabsList className="grid w-full grid-cols-3 max-w-lg mb-8">
 					<TabsTrigger value="works">我的作品</TabsTrigger>
 					<TabsTrigger value="favorites">我的收藏</TabsTrigger>
@@ -180,13 +219,43 @@ export default function UserProfileClient({ username }: { username: string }) {
 				</TabsList>
 
 				<TabsContent value="works">
-					<ArtworkGrid artworks={artworks} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
+					{!loading && artworks.length === 0 ? (
+						<div className="text-center py-16 bg-white rounded-lg border">
+							<h3 className="text-lg font-semibold mb-2">发布你的第一件作品</h3>
+							<p className="text-gray-500 mb-4">在社区中展示你的灵感与创作</p>
+							<Link href="/artwork"><Button variant="primary" size="sm">前往创作</Button></Link>
+						</div>
+					) : (
+						<ArtworkGrid artworks={artworks} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
+					)}
 				</TabsContent>
 				<TabsContent value="favorites">
-					<ArtworkGrid artworks={favorites} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
+					{!loading && favorites.length === 0 ? (
+						<div className="text-center py-16 bg-white rounded-lg border">
+							<h3 className="text-lg font-semibold mb-2">还没有收藏</h3>
+							<p className="text-gray-500 mb-4">去看看社区里正在流行的精彩作品</p>
+							<div className="flex items-center justify-center gap-3">
+								<Link href="/feed"><Button variant="primary" size="sm">推荐 Feed</Button></Link>
+								<Link href="/trending"><Button variant="outline" size="sm">热点推荐</Button></Link>
+							</div>
+						</div>
+					) : (
+						<ArtworkGrid artworks={favorites} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
+					)}
 				</TabsContent>
 				<TabsContent value="likes">
-					<ArtworkGrid artworks={likes} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
+					{!loading && likes.length === 0 ? (
+						<div className="text-center py-16 bg-white rounded-lg border">
+							<h3 className="text-lg font-semibold mb-2">还没有点赞</h3>
+							<p className="text-gray-500 mb-4">发现并点赞你喜欢的作品</p>
+							<div className="flex items-center justify-center gap-3">
+								<Link href="/feed"><Button variant="primary" size="sm">去发现</Button></Link>
+								<Link href="/trending"><Button variant="outline" size="sm">看看热门</Button></Link>
+							</div>
+						</div>
+					) : (
+						<ArtworkGrid artworks={likes} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
+					)}
 				</TabsContent>
 			</Tabs>
 		</div>

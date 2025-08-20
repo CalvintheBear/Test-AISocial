@@ -1,42 +1,29 @@
 'use client'
 
-import useSWR from 'swr'
 import { ArtworkGrid } from '@/components/app/ArtworkGrid'
-import { API } from '@/lib/api/endpoints'
 import { ArtworkListItem } from '@/lib/types'
 import { useLike } from '@/hooks/useLike'
 import { useFavorite } from '@/hooks/useFavorite'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useTrendingArtworks } from '@/hooks/useArtworks'
 
 interface TrendingTabProps {
   timeWindow?: '24h' | '7d' | '30d'
 }
 
 export default function TrendingTab({ timeWindow = '24h' }: TrendingTabProps) {
-  const { data: trendingData, error, isLoading } = useSWR(
-    `${API.trending}?timeWindow=${timeWindow}&limit=50`,
-    async (url: string) => {
-      const res = await fetch(url)
-      if (!res.ok) throw new Error('Failed to fetch trending')
-      const json = await res.json()
-      return json.data as ArtworkListItem[]
-    },
-    {
-      refreshInterval: 300000, // 5分钟刷新一次
-      revalidateOnFocus: false,
-    }
-  )
+  const { data: trendingData, error, isLoading } = useTrendingArtworks(timeWindow, 'all')
 
   const { like } = useLike()
   const { addFavorite, removeFavorite } = useFavorite()
   const [artworks, setArtworks] = useState<ArtworkListItem[]>(trendingData || [])
 
   // 当数据加载完成后更新本地状态
-  useState(() => {
+  useEffect(() => {
     if (trendingData) {
       setArtworks(trendingData)
     }
-  })
+  }, [trendingData])
 
   const onLike = useCallback(async (id: string) => {
     setArtworks(prev => prev.map(a => a.id === id && !a.user_state.liked ? { 
@@ -76,15 +63,7 @@ export default function TrendingTab({ timeWindow = '24h' }: TrendingTabProps) {
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className="animate-pulse">
-              <div className="bg-gray-200 rounded-lg aspect-square mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-            </div>
-          ))}
-        </div>
+        <ArtworkGrid artworks={[]} loading showHotness />
       </div>
     )
   }

@@ -13,13 +13,15 @@ interface ArtworkCardProps {
   onLike?: (artworkId: string) => Promise<void>
   onFavorite?: (artworkId: string) => Promise<void>
   showHotness?: boolean
+  locked?: boolean
+  onLockedClick?: () => void
 }
 
-export function ArtworkCard({ artwork, showHotness }: ArtworkCardProps) {
+export function ArtworkCard({ artwork, showHotness, locked, onLockedClick }: ArtworkCardProps) {
 
   return (
     <Card className="overflow-hidden transition-transform hover:scale-105">
-      <Link href={`/artwork/${artwork.id}/${artwork.slug}`}>
+      <Link href={locked ? '#' : `/artwork/${artwork.id}/${artwork.slug}`} onClick={e => { if (locked) { e.preventDefault(); onLockedClick?.() } }}>
         <div className="relative aspect-square">
           <Image
             src={artwork.thumb_url}
@@ -29,6 +31,11 @@ export function ArtworkCard({ artwork, showHotness }: ArtworkCardProps) {
             className="object-cover"
             quality={85}
           />
+          {locked && (
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-sm">
+              登录后解锁查看
+            </div>
+          )}
           {artwork.status === 'draft' && (
             <div className="absolute top-2 right-2 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-semibold">
               草稿
@@ -50,7 +57,7 @@ export function ArtworkCard({ artwork, showHotness }: ArtworkCardProps) {
       <CardHeader className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Link href={`/user/${artwork.author.id}`}>
+            <Link href={locked ? '#' : `/user/${artwork.author.id}`} onClick={e => { if (locked) { e.preventDefault(); onLockedClick?.() } }}>
               <Image
                 src={artwork.author.profile_pic || '/images/default-avatar.jpg'}
                 alt={artwork.author.name}
@@ -59,12 +66,12 @@ export function ArtworkCard({ artwork, showHotness }: ArtworkCardProps) {
                 className="rounded-full"
               />
             </Link>
-            <Link href={`/user/${artwork.author.id}`} className="text-sm font-medium hover:underline">
+            <Link href={locked ? '#' : `/user/${artwork.author.id}`} className="text-sm font-medium hover:underline" onClick={e => { if (locked) { e.preventDefault(); onLockedClick?.() } }}>
               {artwork.author.name}
             </Link>
           </div>
         </div>
-        <Link href={`/artwork/${artwork.id}/${artwork.slug}`}>
+        <Link href={locked ? '#' : `/artwork/${artwork.id}/${artwork.slug}`} onClick={e => { if (locked) { e.preventDefault(); onLockedClick?.() } }}>
           <h3 className="text-lg font-semibold mt-2 hover:underline">{artwork.title}</h3>
         </Link>
       </CardHeader>

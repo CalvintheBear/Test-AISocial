@@ -1,5 +1,7 @@
 import { useState, useCallback } from 'react'
 import { artworkStateManager } from '@/lib/artworkStateManager'
+import { authFetch } from '@/lib/api/client'
+import { API } from '@/lib/api/endpoints'
 
 export function useCompatibleArtworkActions(artworkId: string, initialData?: any) {
   const [localState, setLocalState] = useState({
@@ -15,13 +17,12 @@ export function useCompatibleArtworkActions(artworkId: string, initialData?: any
   const syncWithGlobalState = useCallback(async () => {
     // 与新系统同步
     try {
-      const response = await fetch(`/api/artworks/${artworkId}/state`)
-      const data = await response.json()
+      const data = await authFetch(API.base(`/api/artworks/${artworkId}/state`))
       setLocalState({
-        liked: data.user_state.liked,
-        faved: data.user_state.faved,
-        like_count: data.like_count,
-        fav_count: data.fav_count,
+        liked: data.user_state?.liked ?? false,
+        faved: data.user_state?.faved ?? false,
+        like_count: data.like_count ?? 0,
+        fav_count: data.fav_count ?? 0,
       })
     } catch (e) {
       console.error('Failed to sync state:', e)
@@ -33,22 +34,14 @@ export function useCompatibleArtworkActions(artworkId: string, initialData?: any
     setError(null)
 
     try {
-      const response = await fetch(`/api/artworks/${artworkId}/like`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const result = await response.json()
-
-      if (result.success) {
-        setLocalState(prev => ({
-          ...prev,
-          liked: result.data.user_state.liked,
-          like_count: result.data.like_count,
-        }))
-        
-        // 同步到全局状态
-        artworkStateManager.updateArtworkState(artworkId, result.data)
-      }
+      const result = await authFetch(API.like(artworkId), { method: 'POST' })
+      setLocalState(prev => ({
+        ...prev,
+        liked: result.user_state?.liked ?? true,
+        like_count: result.like_count ?? prev.like_count + 1,
+      }))
+      // 同步到全局状态
+      artworkStateManager.updateArtworkState(artworkId, result)
     } catch (e) {
       setError(e as Error)
     } finally {
@@ -61,21 +54,13 @@ export function useCompatibleArtworkActions(artworkId: string, initialData?: any
     setError(null)
 
     try {
-      const response = await fetch(`/api/artworks/${artworkId}/favorite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const result = await response.json()
-
-      if (result.success) {
-        setLocalState(prev => ({
-          ...prev,
-          faved: result.data.user_state.faved,
-          fav_count: result.data.fav_count,
-        }))
-        
-        artworkStateManager.updateArtworkState(artworkId, result.data)
-      }
+      const result = await authFetch(API.favorite(artworkId), { method: 'POST' })
+      setLocalState(prev => ({
+        ...prev,
+        faved: result.user_state?.faved ?? true,
+        fav_count: result.fav_count ?? prev.fav_count + 1,
+      }))
+      artworkStateManager.updateArtworkState(artworkId, result)
     } catch (e) {
       setError(e as Error)
     } finally {

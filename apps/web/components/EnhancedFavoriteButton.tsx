@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { Bookmark } from 'lucide-react'
 import { useCompatibleArtworkState } from '@/hooks/useCompatibleArtworkState'
 import { cn } from '@/lib/utils'
+import { useClerkEnabled } from '@/hooks/useClerkEnabled'
+import { useAuth } from '@clerk/nextjs'
 
 interface EnhancedFavoriteButtonProps {
   artworkId: string
@@ -25,6 +27,8 @@ export function EnhancedFavoriteButton({
 }: EnhancedFavoriteButtonProps) {
   const { state, toggleFavorite, isLoading, isError } = useCompatibleArtworkState(artworkId)
   const [isAnimating, setIsAnimating] = useState(false)
+  const isClerkEnabled = useClerkEnabled()
+  const { isLoaded, isSignedIn } = useAuth()
 
   const faved = state?.user_state.faved ?? initialState?.faved ?? false
   const favCount = state?.fav_count ?? initialState?.favCount ?? 0
@@ -34,6 +38,12 @@ export function EnhancedFavoriteButton({
     e.stopPropagation()
 
     if (isLoading) return
+
+    if (isClerkEnabled && isLoaded && !isSignedIn) {
+      const current = typeof window !== 'undefined' ? window.location.href : '/'
+      window.location.href = `/login?redirect=${encodeURIComponent(current)}`
+      return
+    }
 
     setIsAnimating(true)
     

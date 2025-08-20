@@ -3,7 +3,6 @@ import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 import { ArtworkListItem } from '@/lib/types'
 import ClientFeedActions from './withActions'
-import { PageRefreshWrapper } from '@/components/PageRefreshWrapper'
 import { adaptArtworkList } from '@/lib/apiAdapter'
 
 export const dynamic = 'force-dynamic'
@@ -28,8 +27,6 @@ export const metadata = {
 export default async function FeedPage() {
   const artworks = await getFeedData()
   return (
-    <PageRefreshWrapper pageType="feed">
-      <ClientFeedActions initialArtworks={artworks} />
-    </PageRefreshWrapper>
+    <ClientFeedActions initialArtworks={artworks} />
   )
 }

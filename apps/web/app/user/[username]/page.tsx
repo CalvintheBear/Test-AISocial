@@ -1,5 +1,4 @@
 import UserProfileClient from './UserProfileClient'
-import { PageRefreshWrapper } from '@/components/PageRefreshWrapper'
 
 export const metadata = {
   title: '用户主页 - AI 社区',
@@ -12,11 +11,9 @@ export const metadata = {
 
 export default async function UserPage({ params }: { params: { username: string } }) {
   return (
-    <PageRefreshWrapper pageType="user">
-      <div className="container mx-auto px-4 py-8">
-        <UserProfileClient username={params.username} />
-      </div>
-    </PageRefreshWrapper>
+    <div className="container mx-auto px-4 py-8">
+      <UserProfileClient username={params.username} />
+    </div>
   )
 }
 

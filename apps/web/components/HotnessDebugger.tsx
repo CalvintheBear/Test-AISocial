@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import useSWR from 'swr'
 import { API } from '@/lib/api/endpoints'
+import { authFetch } from '@/lib/api/client'
 
 interface HotnessDetails {
   artwork: {
@@ -33,12 +34,7 @@ export default function HotnessDebugger() {
 
   const { data, error, isLoading } = useSWR(
     artworkId ? API.hotness.detail(artworkId) : null,
-    async (url: string) => {
-      const res = await fetch(url)
-      if (!res.ok) throw new Error('Failed to fetch hotness details')
-      const json = await res.json()
-      return json.data as HotnessDetails
-    }
+    (url: string) => authFetch(url)
   )
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -1,6 +1,8 @@
 import useSWR from 'swr'
 import { useCallback } from 'react'
 import { artworkStateManager } from '@/lib/artworkStateManager'
+import { authFetch } from '@/lib/api/client'
+import { API } from '@/lib/api/endpoints'
 
 interface ArtworkState {
   like_count: number
@@ -20,12 +22,7 @@ interface ArtworkStateManager {
 }
 
 const fetcher = async (url: string) => {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error('Failed to fetch artwork state')
-  }
-  const data = await response.json()
-  return data.data
+  return authFetch(url)
 }
 
 export function useArtworkState(artworkId: string) {
@@ -72,18 +69,11 @@ export function useArtworkState(artworkId: string) {
     )
 
     try {
-      const response = await fetch(`/api/artworks/${artworkId}/like`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const result = await response.json()
-      
-      if (result.success) {
-        mutate(result.data, false)
-        // Broadcast update to all related caches
-        artworkStateManager.updateArtworkState(artworkId, result.data)
-        artworkStateManager.refreshFeed()
-      }
+      const result = await authFetch(API.like(artworkId), { method: 'POST' })
+      mutate(result, false)
+      // Broadcast update to all related caches
+      artworkStateManager.updateArtworkState(artworkId, result)
+      artworkStateManager.refreshFeed()
     } catch (error) {
       console.error('Failed to toggle like:', error)
       // Rollback to previous state
@@ -112,18 +102,11 @@ export function useArtworkState(artworkId: string) {
     )
 
     try {
-      const response = await fetch(`/api/artworks/${artworkId}/favorite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const result = await response.json()
-      
-      if (result.success) {
-        mutate(result.data, false)
-        artworkStateManager.updateArtworkState(artworkId, result.data)
-        artworkStateManager.refreshFeed()
-        artworkStateManager.refreshUserFavorites()
-      }
+      const result = await authFetch(API.favorite(artworkId), { method: 'POST' })
+      mutate(result, false)
+      artworkStateManager.updateArtworkState(artworkId, result)
+      artworkStateManager.refreshFeed()
+      artworkStateManager.refreshUserFavorites()
     } catch (error) {
       console.error('Failed to toggle favorite:', error)
       mutate()

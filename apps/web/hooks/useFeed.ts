@@ -7,13 +7,15 @@ const fetchFeed = async (): Promise<ArtworkListItem[]> => {
   return authFetch(API.feed)
 }
 
-export function useFeed() {
+export function useFeed(initialData?: ArtworkListItem[]) {
   const { data, error, isLoading, mutate } = useSWR<ArtworkListItem[]>(
-    'feed',
+    '/api/feed',
     fetchFeed,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      keepPreviousData: true,
+      fallbackData: initialData,
     }
   )
 

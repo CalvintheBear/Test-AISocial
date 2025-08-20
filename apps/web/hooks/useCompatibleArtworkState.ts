@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { isFeatureEnabled } from '@/lib/featureFlags'
+import { authFetch } from '@/lib/api/client'
+import { API } from '@/lib/api/endpoints'
 
 interface ArtworkState {
   like_count: number
@@ -21,14 +23,14 @@ interface ArtworkStateHook {
 
 // 新的API端点
 const newEndpoints = {
-  getState: (id: string) => `/api/artworks/${id}/state`,
-  like: (id: string) => `/api/artworks/${id}/like`,
-  favorite: (id: string) => `/api/artworks/${id}/favorite`,
+  getState: (id: string) => API.base(`/api/artworks/${id}/state`),
+  like: (id: string) => API.like(id),
+  favorite: (id: string) => API.favorite(id),
 }
 
 // 旧的API端点（兼容性）
 const oldEndpoints = {
-  getArtwork: (id: string) => `/api/artworks/${id}`,
+  getArtwork: (id: string) => API.artwork(id),
 }
 
 export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
@@ -48,39 +50,19 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
     try {
       if (useNewSystem) {
         // 使用新端点
-        const response = await fetch(newEndpoints.getState(artworkId), {
-          credentials: 'include',
-        })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        if (data.success) {
-          setState(data.data)
-        }
+        const data = await authFetch(newEndpoints.getState(artworkId))
+        setState(data)
       } else {
         // 使用旧端点进行兼容
-        const response = await fetch(oldEndpoints.getArtwork(artworkId), {
-          credentials: 'include',
+        const data = await authFetch(oldEndpoints.getArtwork(artworkId))
+        setState({
+          like_count: data.like_count || 0,
+          fav_count: data.favorite_count || data.fav_count || 0,
+          user_state: {
+            liked: data.user_liked ?? data.user_state?.liked ?? false,
+            faved: data.user_favorited ?? data.user_state?.faved ?? false,
+          },
         })
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        if (data.success) {
-          setState({
-            like_count: data.data.like_count || 0,
-            fav_count: data.data.favorite_count || 0,
-            user_state: {
-              liked: data.data.user_liked || false,
-              faved: data.data.user_favorited || false,
-            },
-          })
-        }
       }
     } catch (error) {
       console.error('Failed to fetch artwork state:', error)
@@ -103,34 +85,21 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
         ? newEndpoints.like(artworkId)
         : `/api/artworks/${artworkId}/like`
 
-      const response = await fetch(endpoint, {
+      const data = await authFetch(endpoint, {
         method: method,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: useNewSystem ? undefined : JSON.stringify({ action: currentLiked ? 'unlike' : 'like' }),
+        ...(useNewSystem ? {} : { body: JSON.stringify({ action: currentLiked ? 'unlike' : 'like' }) }),
       })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      if (data.success) {
-        // 更新本地状态
-        setState(prev => prev ? {
-          ...prev,
-          like_count: data.data.like_count || prev.like_count + (currentLiked ? -1 : 1),
-          user_state: {
-            ...prev.user_state,
-            liked: !currentLiked,
-          },
-        } : null)
-        
-        // 延迟刷新以确保一致性
-        setTimeout(() => fetchState(), 500)
-      }
+      // 更新本地状态
+      setState(prev => prev ? {
+        ...prev,
+        like_count: data.like_count ?? prev.like_count + (currentLiked ? -1 : 1),
+        user_state: {
+          ...prev.user_state,
+          liked: !currentLiked,
+        },
+      } : null)
+      // 延迟刷新以确保一致性
+      setTimeout(() => fetchState(), 500)
     } catch (error) {
       console.error('Failed to toggle like:', error)
       setIsError(true)
@@ -152,34 +121,21 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
         ? newEndpoints.favorite(artworkId)
         : `/api/artworks/${artworkId}/favorite`
 
-      const response = await fetch(endpoint, {
+      const data = await authFetch(endpoint, {
         method: method,
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: useNewSystem ? undefined : JSON.stringify({ action: currentFaved ? 'unfavorite' : 'favorite' }),
+        ...(useNewSystem ? {} : { body: JSON.stringify({ action: currentFaved ? 'unfavorite' : 'favorite' }) }),
       })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-      if (data.success) {
-        // 更新本地状态
-        setState(prev => prev ? {
-          ...prev,
-          fav_count: data.data.fav_count || prev.fav_count + (currentFaved ? -1 : 1),
-          user_state: {
-            ...prev.user_state,
-            faved: !currentFaved,
-          },
-        } : null)
-        
-        // 延迟刷新以确保一致性
-        setTimeout(() => fetchState(), 500)
-      }
+      // 更新本地状态
+      setState(prev => prev ? {
+        ...prev,
+        fav_count: data.fav_count ?? prev.fav_count + (currentFaved ? -1 : 1),
+        user_state: {
+          ...prev.user_state,
+          faved: !currentFaved,
+        },
+      } : null)
+      // 延迟刷新以确保一致性
+      setTimeout(() => fetchState(), 500)
     } catch (error) {
       console.error('Failed to toggle favorite:', error)
       setIsError(true)
