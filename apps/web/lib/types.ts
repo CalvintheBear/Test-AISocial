@@ -38,6 +38,10 @@ export type ArtworkDetail = {
   hotness?: number
   trend?: 'up' | 'down' | 'stable'
   rank?: number
+  prompt?: string
+  kie_model?: string
+  kie_aspect_ratio?: string
+  kie_output_format?: string
 }
 
 

@@ -396,15 +396,13 @@ router.post('/save-draft', async (c) => {
       height: undefined
     })
 
-    // 如果有KIE相关信息，更新KIE字段
-    if (model && aspectRatio) {
-      await d1.updateKieArtworkInfo(artworkId, {
-        model,
-        aspectRatio,
-        outputFormat,
-        originalImageUrl
-      })
-    }
+    // 总是更新KIE字段，使用传递的值或默认值
+    await d1.updateKieArtworkInfo(artworkId, {
+      model,
+      aspectRatio,
+      outputFormat,
+      originalImageUrl
+    })
 
     const response = {
       id: artworkId,
@@ -451,15 +449,13 @@ router.post('/publish', async (c) => {
       height: undefined
     })
 
-    // 如果有KIE相关信息，更新KIE字段
-    if (model && aspectRatio) {
-      await d1.updateKieArtworkInfo(artworkId, {
-        model,
-        aspectRatio,
-        outputFormat,
-        originalImageUrl
-      })
-    }
+    // 总是更新KIE字段，使用传递的值或默认值
+    await d1.updateKieArtworkInfo(artworkId, {
+      model,
+      aspectRatio,
+      outputFormat,
+      originalImageUrl
+    })
 
     // 直接发布
     await d1.publishArtwork(artworkId)

@@ -21,6 +21,10 @@ export interface UnifiedArtworkResponse {
     faved: boolean
   }
   hot_score?: number
+  prompt?: string
+  kie_model?: string
+  kie_aspect_ratio?: string
+  kie_output_format?: string
 }
 
 export function formatArtworkForAPI(
@@ -29,6 +33,10 @@ export function formatArtworkForAPI(
 ): UnifiedArtworkResponse {
   const authorName = (artwork.author?.name || '').trim() || '未命名用户'
   const authorPic = (artwork.author as any)?.profilePic || (artwork as any)?.author?.profile_pic || '/images/default-avatar.jpg'
+  
+  // 获取KIE相关字段
+  const kieData = (artwork as any).kieData || {}
+  
   return {
     id: artwork.id,
     title: artwork.title,
@@ -48,7 +56,11 @@ export function formatArtworkForAPI(
     user_state: userState,
     hot_score: artwork.engagementWeight
       ? artwork.engagementWeight * Math.pow(0.5, Math.max(0, Math.floor((Date.now() - (artwork.publishedAt || artwork.createdAt || 0)) / 86400000)))
-      : 0
+      : 0,
+    prompt: kieData.kie_prompt,
+    kie_model: kieData.kie_model,
+    kie_aspect_ratio: kieData.kie_aspect_ratio,
+    kie_output_format: kieData.kie_output_format
   }
 }
 

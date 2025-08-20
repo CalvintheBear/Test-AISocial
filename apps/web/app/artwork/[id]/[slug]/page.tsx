@@ -85,6 +85,37 @@ export default async function ArtworkPage({
               </div>
             </div>
 
+            {/* AI Generation Info */}
+            {artwork.prompt && (
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">AI 生成提示词</h3>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <p className="text-gray-700 leading-relaxed">{artwork.prompt}</p>
+                  {(artwork.kie_model || artwork.kie_aspect_ratio || artwork.kie_output_format) && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                        {artwork.kie_model && (
+                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            模型: {artwork.kie_model}
+                          </span>
+                        )}
+                        {artwork.kie_aspect_ratio && (
+                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                            宽高比: {artwork.kie_aspect_ratio}
+                          </span>
+                        )}
+                        {artwork.kie_output_format && (
+                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                            格式: {artwork.kie_output_format.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {artwork.status === 'draft' && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
                 <p className="text-yellow-800 font-medium">草稿状态</p>

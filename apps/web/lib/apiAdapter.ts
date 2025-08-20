@@ -26,6 +26,10 @@ interface BackendArtworkResponse {
   hotness?: number
   trend?: 'up' | 'down' | 'stable'
   rank?: number
+  prompt?: string
+  kie_model?: string
+  kie_aspect_ratio?: string
+  kie_output_format?: string
 }
 
 // 适配器函数 - 将后端响应转换为前端类型
@@ -71,7 +75,11 @@ export function adaptArtworkDetail(backendArtwork: BackendArtworkResponse): Artw
     hot_score: backendArtwork.hot_score ?? backendArtwork.hotness,
     hotness: backendArtwork.hotness,
     trend: backendArtwork.trend,
-    rank: backendArtwork.rank
+    rank: backendArtwork.rank,
+    prompt: backendArtwork.prompt,
+    kie_model: backendArtwork.kie_model,
+    kie_aspect_ratio: backendArtwork.kie_aspect_ratio,
+    kie_output_format: backendArtwork.kie_output_format
   }
 }
 

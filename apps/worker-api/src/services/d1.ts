@@ -13,6 +13,12 @@ export type Artwork = {
   createdAt: number
   publishedAt?: number
   engagementWeight?: number
+  kieData?: {
+    kie_prompt?: string
+    kie_model?: string
+    kie_aspect_ratio?: string
+    kie_output_format?: string
+  }
 }
 
 export class D1Service {
@@ -94,7 +100,13 @@ export class D1Service {
       },
       likeCount: Number(row.like_count || 0),
       favoriteCount: Number(row.favorite_count || 0),
-      createdAt: Number(row.created_at)
+      createdAt: Number(row.created_at),
+      kieData: {
+        kie_prompt: row.kie_prompt ? String(row.kie_prompt) : undefined,
+        kie_model: row.kie_model ? String(row.kie_model) : undefined,
+        kie_aspect_ratio: row.kie_aspect_ratio ? String(row.kie_aspect_ratio) : undefined,
+        kie_output_format: row.kie_output_format ? String(row.kie_output_format) : undefined,
+      }
     }
   }
 
@@ -808,34 +820,48 @@ export class D1Service {
     const updates = []
     const values = []
     
-    if (info.model) {
+    // 验证并设置kie_model，确保符合CHECK约束
+    if (info.model && typeof info.model === 'string' && info.model.trim() && ['flux-kontext-pro', 'flux-kontext-max'].includes(info.model.trim())) {
       updates.push('kie_model = ?')
-      values.push(info.model)
+      values.push(info.model.trim())
+    } else {
+      // 如果model无效或未提供，使用默认值
+      updates.push('kie_model = ?')
+      values.push('flux-kontext-pro')
     }
     
-    if (info.aspectRatio) {
+    // 验证并设置kie_aspect_ratio，确保符合CHECK约束
+    if (info.aspectRatio && typeof info.aspectRatio === 'string' && info.aspectRatio.trim() && ['1:1', '16:9', '9:16', '4:3', '3:4'].includes(info.aspectRatio.trim())) {
       updates.push('kie_aspect_ratio = ?')
-      values.push(info.aspectRatio)
+      values.push(info.aspectRatio.trim())
+    } else {
+      // 如果aspectRatio无效或未提供，使用默认值
+      updates.push('kie_aspect_ratio = ?')
+      values.push('1:1')
     }
     
-    if (info.outputFormat) {
+    // 验证并设置kie_output_format，确保符合CHECK约束
+    if (info.outputFormat && typeof info.outputFormat === 'string' && info.outputFormat.trim() && ['png', 'jpeg'].includes(info.outputFormat.trim())) {
       updates.push('kie_output_format = ?')
-      values.push(info.outputFormat)
+      values.push(info.outputFormat.trim())
+    } else {
+      // 如果outputFormat无效或未提供，使用默认值
+      updates.push('kie_output_format = ?')
+      values.push('png')
     }
     
-    if (info.originalImageUrl) {
+    if (info.originalImageUrl && typeof info.originalImageUrl === 'string' && info.originalImageUrl.trim()) {
       updates.push('kie_original_image_url = ?')
-      values.push(info.originalImageUrl)
+      values.push(info.originalImageUrl.trim())
     }
     
     if (updates.length > 0) {
-      values.push(artworkId)
       const stmt = this.db.prepare(`
         UPDATE artworks 
         SET ${updates.join(', ')}, updated_at = ?
         WHERE id = ?
       `)
-      await stmt.bind(Date.now(), ...values).run()
+      await stmt.bind(...values, Date.now(), artworkId).run()
     }
   }
 
