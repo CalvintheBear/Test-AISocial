@@ -2,18 +2,33 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button, Card } from '@/components/ui'
-import { Upload } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Upload, Sparkles, Loader2 } from 'lucide-react'
 import { usePostPublishRedirect } from '@/hooks/usePostPublishRedirect'
 import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
 import { useUserArtworks } from '@/hooks/useUserArtworks'
+import { useArtworkGeneration } from '@/hooks/useArtworkGeneration'
+import { GenerationStatus, GenerationProgress, GenerationResult } from './GenerationStatus'
+import { AIGenerationResult } from './AIGenerationResult'
 
-export function CreateArtworkPanel() {
+interface CreateArtworkPanelProps {
+  className?: string
+}
+
+export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
+  const [activeTab, setActiveTab] = useState<'upload' | 'ai'>('upload')
   const [step, setStep] = useState<'upload' | 'publish'>('upload')
   const [prompt, setPrompt] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [aspectRatio, setAspectRatio] = useState('1:1')
+  const [model, setModel] = useState<'flux-kontext-pro' | 'flux-kontext-max'>('flux-kontext-pro')
+  const [generationId, setGenerationId] = useState<string | null>(null)
+  const [generationResult, setGenerationResult] = useState<any>(null)
+
+  const { generating, status: generationStatus, generateImage, pollStatus, regenerateImage } = useArtworkGeneration()
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null
@@ -48,8 +63,8 @@ export function CreateArtworkPanel() {
       const form = new FormData()
       form.append('file', file)
       form.append('title', title || 'untitled')
-
       form.append('prompt', prompt || '')
+      
       const payload = await authFetch('/api/artworks/upload', {
         method: 'POST',
         body: form,
@@ -79,6 +94,42 @@ export function CreateArtworkPanel() {
       alert('保存草稿失败')
     } finally {
       uploadingRef.current = false
+    }
+  }
+
+  const handleGenerateImage = async () => {
+    if (!prompt.trim()) {
+      alert('请输入生成提示词')
+      return
+    }
+
+    try {
+      const id = await generateImage(prompt, {
+        aspectRatio,
+        model
+      })
+      setGenerationId(id)
+      
+      // 开始轮询状态
+      const pollResult = await pollStatus(id)
+      if (pollResult.success) {
+        // 设置生成结果
+        setGenerationResult({
+          id: id,
+          status: 'completed',
+          resultImageUrl: pollResult.resultImageUrl || '',
+          originalImageUrl: pollResult.originalImageUrl || ''
+        })
+        setTitle(prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''))
+      }
+    } catch (err) {
+      alert('生成失败：' + (err instanceof Error ? err.message : '未知错误'))
+    }
+  }
+
+  const handleUseGeneratedImage = () => {
+    if (generationId && generationStatus === '生成完成！') {
+      setStep('publish')
     }
   }
 
@@ -138,6 +189,117 @@ export function CreateArtworkPanel() {
     </div>
   )
 
+  const renderAIStep = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-2">AI 生成提示词</h3>
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="描述你想要生成的图片内容，比如：一只可爱的猫在花园里玩耍，卡通风格..."
+          className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={generating}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium mb-2">模型选择</label>
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value as 'flux-kontext-pro' | 'flux-kontext-max')}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={generating}
+            aria-label="选择AI模型"
+            title="选择AI模型"
+          >
+            <option value="flux-kontext-pro">Flux Kontext Pro</option>
+            <option value="flux-kontext-max">Flux Kontext Max</option>
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-2">宽高比</label>
+          <select
+            value={aspectRatio}
+            onChange={(e) => setAspectRatio(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={generating}
+            aria-label="选择宽高比"
+            title="选择宽高比"
+          >
+            <option value="1:1">1:1 正方形</option>
+            <option value="16:9">16:9 横屏</option>
+            <option value="9:16">9:16 竖屏</option>
+            <option value="4:3">4:3 传统</option>
+            <option value="3:4">3:4 人像</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 生成状态显示 */}
+      {generationStatus && !generationResult && (
+        <div>
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">{generationStatus}</p>
+          </div>
+        </div>
+      )}
+
+      {/* AI生成结果展示 */}
+      {generationResult && currentUserId && (
+        <AIGenerationResult
+          status={generationResult}
+          prompt={prompt}
+          model={model}
+          aspectRatio={aspectRatio}
+          outputFormat="png" // 默认PNG格式
+          userId={currentUserId}
+          onRegenerate={() => {
+            setGenerationResult(null)
+            if (prompt.trim()) {
+              handleGenerateImage()
+            }
+          }}
+          className="mt-4"
+        />
+      )}
+
+      {(!generationStatus || generationStatus === '生成失败' || generationStatus === '生成超时') && !generationResult ? (
+        <div className="flex space-x-4">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setPrompt('')
+              setGenerationId(null)
+            }} 
+            className="flex-1"
+            disabled={generating}
+          >
+            重置
+          </Button>
+          <Button 
+            onClick={handleGenerateImage} 
+            disabled={!prompt.trim() || generating}
+            className="flex-1"
+          >
+            {generating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                生成中...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI 生成
+              </>
+            )}
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  )
+
   const renderPreviewStep = () => null
 
   const renderPublishStep = () => null
@@ -145,7 +307,26 @@ export function CreateArtworkPanel() {
   const renderStep = () => {
     switch (step) {
       case 'upload':
-        return renderUploadStep()
+        return (
+          <Tabs value={activeTab} onValueChange={(value: string) => setActiveTab(value as 'upload' | 'ai')} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="upload">
+                <Upload className="w-4 h-4 mr-2" />
+                上传图片
+              </TabsTrigger>
+              <TabsTrigger value="ai">
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI 生成
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="upload" className="mt-6">
+              {renderUploadStep()}
+            </TabsContent>
+            <TabsContent value="ai" className="mt-6">
+              {renderAIStep()}
+            </TabsContent>
+          </Tabs>
+        )
       case 'publish':
         return renderPublishStep()
       default:
@@ -154,7 +335,7 @@ export function CreateArtworkPanel() {
   }
 
   return (
-    <Card className="bg-white rounded-lg shadow-xl w-full">
+    <Card className={`bg-white rounded-lg shadow-xl w-full ${className || ''}`}>
       <div className="p-6 border-b">
         <h2 className="text-xl font-semibold">上传/草稿</h2>
       </div>

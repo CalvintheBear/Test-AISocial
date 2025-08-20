@@ -11,6 +11,7 @@ import works from './routers/works'
 import admin from './routers/admin'
 import hotness from './routers/hotness'
 import { debugRouter } from './routers/debug'
+import kieCallback from './routers/kie-callback'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -39,6 +40,7 @@ app.route('/api/feed', feed)
 app.route('/api/admin', admin)
 app.route('/api/hotness', hotness)
 app.route('/api/debug', debugRouter)
+app.route('/api/kie', kieCallback)
 
 export default app
 

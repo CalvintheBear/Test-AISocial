@@ -405,6 +405,16 @@ export class RedisService {
     const result = await this.execute('GET', key)
     return result as string | null
   }
+
+  async publish(channel: string, message: string): Promise<void> {
+    if (this.isDevMode) return
+
+    try {
+      await this.execute('PUBLISH', channel, message)
+    } catch (error) {
+      console.error('Error publishing message:', error)
+    }
+  }
 }
 
 

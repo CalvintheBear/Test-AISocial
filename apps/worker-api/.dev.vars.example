@@ -1,0 +1,18 @@
+# 开发环境变量配置示例
+# 复制此文件为 .dev.vars 并填入实际值
+
+# KIE API 配置
+KIE_API_KEY=your_kie_api_key_here
+
+# Redis 配置 (Upstash) - 可选，未配置时会使用内存实现
+UPSTASH_REDIS_REST_URL=your_redis_url_here
+UPSTASH_REDIS_REST_TOKEN=your_redis_token_here
+
+# Clerk 认证配置 - 可选
+CLERK_SECRET_KEY=your_clerk_secret_key_here
+
+# 管理员配置 - 可选
+ADMIN_TOKEN=your_admin_token_here
+
+# 开发模式
+DEV_MODE=1

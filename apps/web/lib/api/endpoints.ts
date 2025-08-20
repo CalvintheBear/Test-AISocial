@@ -28,6 +28,11 @@ export const API = {
   },
   
   base: (p: string) => p,
+  
+  // AI 生成相关API
+  generate: '/api/artworks/generate',
+  generationStatus: (id: string) => `/api/artworks/${id}/generation-status`,
+  regenerate: (id: string) => `/api/artworks/${id}/regenerate`,
 }
 
 

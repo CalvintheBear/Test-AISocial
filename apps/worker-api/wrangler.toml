@@ -14,6 +14,27 @@ CLERK_ISSUER = "https://clerk.cuttingasmr.org"
 CLERK_JWKS_URL = "https://clerk.cuttingasmr.org/.well-known/jwks.json"
 CLERK_JWT_KEY = "19940214"
 
+# KIE API 配置
+KIE_API_BASE_URL = "https://api.kie.ai/api/v1/flux/kontext"
+KIE_DEFAULT_MODEL = "flux-kontext-pro"
+KIE_DEFAULT_ASPECT_RATIO = "1:1"
+KIE_DEFAULT_OUTPUT_FORMAT = "png"
+KIE_DEFAULT_SAFETY_TOLERANCE = "2"
+KIE_CALLBACK_URL = "https://cuttingasmr.org/api/kie/kie-callback"
+# KIE_API_KEY 应该通过 wrangler secret 设置，不要在此文件中明文存储
+
+# Redis 配置 (Upstash)
+# 注意：生产环境中应该通过 wrangler secret 设置这些敏感变量
+# UPSTASH_REDIS_REST_URL = "your_redis_url_here"
+# UPSTASH_REDIS_REST_TOKEN = "your_redis_token_here"
+
+# 敏感配置 - 生产环境请使用 wrangler secret put 命令设置
+# wrangler secret put KIE_API_KEY
+# wrangler secret put UPSTASH_REDIS_REST_URL  
+# wrangler secret put UPSTASH_REDIS_REST_TOKEN
+# wrangler secret put CLERK_SECRET_KEY
+# wrangler secret put ADMIN_TOKEN
+
 [[d1_databases]]
 binding = "DB"
 database_name = "test-d1"

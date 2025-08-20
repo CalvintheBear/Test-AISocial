@@ -745,6 +745,232 @@ export class D1Service {
     // TODO: 当浏览统计功能实现后，这里需要连接到实际的浏览记录表
     return 0;
   }
+
+  // 新增：KIE 生成状态管理相关方法
+  async updateArtworkGenerationStatus(artworkId: string, status: {
+    taskId?: string
+    status?: string
+    startedAt?: number
+    completedAt?: number
+    errorMessage?: string
+    resultImageUrl?: string
+  }): Promise<void> {
+    const updates = []
+    const values = []
+    
+    if (status.taskId) {
+      updates.push('kie_task_id = ?')
+      values.push(status.taskId)
+    }
+    
+    if (status.status) {
+      updates.push('kie_generation_status = ?')
+      values.push(status.status)
+    }
+    
+    if (status.startedAt) {
+      updates.push('kie_generation_started_at = ?')
+      values.push(status.startedAt)
+    }
+    
+    if (status.completedAt) {
+      updates.push('kie_generation_completed_at = ?')
+      values.push(status.completedAt)
+    }
+    
+    if (status.errorMessage) {
+      updates.push('kie_error_message = ?')
+      values.push(status.errorMessage)
+    }
+    
+    if (status.resultImageUrl) {
+      updates.push('kie_result_image_url = ?')
+      values.push(status.resultImageUrl)
+    }
+    
+    if (updates.length > 0) {
+      values.push(artworkId)
+      const stmt = this.db.prepare(`
+        UPDATE artworks 
+        SET ${updates.join(', ')}, updated_at = ?
+        WHERE id = ?
+      `)
+      await stmt.bind(Date.now(), ...values).run()
+    }
+  }
+
+  async updateKieArtworkInfo(artworkId: string, info: {
+    model?: string
+    aspectRatio?: string
+    outputFormat?: string
+    originalImageUrl?: string
+  }): Promise<void> {
+    const updates = []
+    const values = []
+    
+    if (info.model) {
+      updates.push('kie_model = ?')
+      values.push(info.model)
+    }
+    
+    if (info.aspectRatio) {
+      updates.push('kie_aspect_ratio = ?')
+      values.push(info.aspectRatio)
+    }
+    
+    if (info.outputFormat) {
+      updates.push('kie_output_format = ?')
+      values.push(info.outputFormat)
+    }
+    
+    if (info.originalImageUrl) {
+      updates.push('kie_original_image_url = ?')
+      values.push(info.originalImageUrl)
+    }
+    
+    if (updates.length > 0) {
+      values.push(artworkId)
+      const stmt = this.db.prepare(`
+        UPDATE artworks 
+        SET ${updates.join(', ')}, updated_at = ?
+        WHERE id = ?
+      `)
+      await stmt.bind(Date.now(), ...values).run()
+    }
+  }
+
+  async getArtworkByKieTaskId(taskId: string): Promise<{id: string; kie_generation_status: string; kie_error_message?: string} | null> {
+    const stmt = this.db.prepare(`
+      SELECT id, kie_generation_status, kie_error_message
+      FROM artworks 
+      WHERE kie_task_id = ?
+    `)
+    const result = await stmt.bind(taskId).first() as any
+    
+    if (!result) return null
+    
+    return {
+      id: String(result.id),
+      kie_generation_status: String(result.kie_generation_status),
+      kie_error_message: result.kie_error_message ? String(result.kie_error_message) : undefined
+    }
+  }
+
+  async getKieArtworkData(artworkId: string): Promise<{
+    kie_task_id?: string
+    kie_generation_status?: string
+    kie_original_image_url?: string
+    kie_result_image_url?: string
+    kie_generation_started_at?: number
+    kie_generation_completed_at?: number
+    kie_error_message?: string
+    kie_model?: string
+    kie_aspect_ratio?: string
+    kie_prompt?: string
+  } | null> {
+    const stmt = this.db.prepare(`
+      SELECT 
+        kie_task_id,
+        kie_generation_status,
+        kie_original_image_url,
+        kie_result_image_url,
+        kie_generation_started_at,
+        kie_generation_completed_at,
+        kie_error_message,
+        kie_model,
+        kie_aspect_ratio,
+        kie_prompt
+      FROM artworks 
+      WHERE id = ?
+    `)
+    const result = await stmt.bind(artworkId).first() as any
+    
+    if (!result) return null
+    
+    return {
+      kie_task_id: result.kie_task_id ? String(result.kie_task_id) : undefined,
+      kie_generation_status: result.kie_generation_status ? String(result.kie_generation_status) : undefined,
+      kie_original_image_url: result.kie_original_image_url ? String(result.kie_original_image_url) : undefined,
+      kie_result_image_url: result.kie_result_image_url ? String(result.kie_result_image_url) : undefined,
+      kie_generation_started_at: result.kie_generation_started_at ? Number(result.kie_generation_started_at) : undefined,
+      kie_generation_completed_at: result.kie_generation_completed_at ? Number(result.kie_generation_completed_at) : undefined,
+      kie_error_message: result.kie_error_message ? String(result.kie_error_message) : undefined,
+      kie_model: result.kie_model ? String(result.kie_model) : undefined,
+      kie_aspect_ratio: result.kie_aspect_ratio ? String(result.kie_aspect_ratio) : undefined,
+      kie_prompt: result.kie_prompt ? String(result.kie_prompt) : undefined
+    }
+  }
+
+  async listKieGeneratingArtworks(limit = 50): Promise<Array<{
+    id: string
+    title: string
+    user_id: string
+    kie_task_id: string
+    kie_model: string
+    kie_aspect_ratio: string
+    kie_prompt: string
+    kie_generation_started_at: number
+  }>> {
+    const stmt = this.db.prepare(`
+      SELECT 
+        id, title, user_id, kie_task_id, kie_model, 
+        kie_aspect_ratio, kie_prompt, kie_generation_started_at
+      FROM artworks 
+      WHERE kie_generation_status = 'generating'
+      ORDER BY kie_generation_started_at ASC
+      LIMIT ?
+    `)
+    const rows = await stmt.bind(limit).all() as any
+    
+    return (rows.results || []).map((row: any) => ({
+      id: String(row.id),
+      title: String(row.title || 'Untitled'),
+      user_id: String(row.user_id),
+      kie_task_id: String(row.kie_task_id),
+      kie_model: String(row.kie_model || 'flux-kontext-pro'),
+      kie_aspect_ratio: String(row.kie_aspect_ratio || '1:1'),
+      kie_prompt: String(row.kie_prompt || ''),
+      kie_generation_started_at: Number(row.kie_generation_started_at)
+    }))
+  }
+
+  async createKieArtwork(
+    userId: string,
+    title: string,
+    options: {
+      prompt: string
+      model?: string
+      aspectRatio?: string
+      status?: string
+    }
+  ): Promise<string> {
+    const id = crypto.randomUUID()
+    const slug = this.generateSlug(title || 'untitled')
+    const now = Date.now()
+    
+    const stmt = this.db.prepare(`
+      INSERT INTO artworks (
+        id, user_id, title, url, thumb_url, slug, status, created_at, updated_at,
+        kie_generation_status, kie_model, kie_aspect_ratio, kie_prompt
+      ) VALUES (?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?)
+    `)
+    
+    await stmt.bind(
+      id, 
+      userId, 
+      title, 
+      slug, 
+      options.status || 'generating',
+      now, // created_at
+      now, // updated_at
+      'generating', // kie_generation_status
+      options.model || 'flux-kontext-pro', // kie_model
+      options.aspectRatio || '1:1', // kie_aspect_ratio
+      options.prompt // kie_prompt
+    ).run()
+    
+    return id
+  }
 }
 
 

@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import { HotnessService } from '../services/hotness'
+import { KIEService } from '../services/kie-api'
 import { IdParamSchema, validateParam } from '../schemas/validation'
 import { ok, fail } from '../utils/response'
 import { formatArtworkForAPI } from '../utils/formatters'
@@ -313,6 +314,123 @@ router.delete('/:id', async (c) => {
   return c.json(ok({ deleted: true, id }))
 })
 
+// 保存AI生成的草稿
+router.post('/save-draft', async (c) => {
+  const userId = (c as any).get('userId') as string
+  const body = await c.req.json()
+  const { title, prompt, model, aspectRatio, outputFormat, imageUrl, originalImageUrl } = body
+
+  if (!title?.trim()) {
+    return c.json(fail('INVALID_INPUT', 'Title is required'), 400)
+  }
+
+  if (!imageUrl) {
+    return c.json(fail('INVALID_INPUT', 'Image URL is required'), 400)
+  }
+
+  try {
+    const d1 = D1Service.fromEnv(c.env)
+    
+    // 创建草稿作品
+    const artworkId = await d1.createArtwork(userId, title.trim(), imageUrl, imageUrl, {
+      prompt,
+      mimeType: outputFormat === 'png' ? 'image/png' : 'image/jpeg',
+      width: undefined,
+      height: undefined
+    })
+
+    // 如果有KIE相关信息，更新KIE字段
+    if (model && aspectRatio) {
+      await d1.updateKieArtworkInfo(artworkId, {
+        model,
+        aspectRatio,
+        outputFormat,
+        originalImageUrl
+      })
+    }
+
+    const response = {
+      id: artworkId,
+      originalUrl: imageUrl,
+      thumbUrl: imageUrl,
+      status: 'draft',
+      title: title.trim(),
+      userId
+    }
+
+    // 清除用户缓存
+    const redis = RedisService.fromEnv(c.env)
+    await redis.invalidateUserArtworks(userId)
+
+    return c.json(ok(response))
+  } catch (error) {
+    console.error('Save draft failed:', error)
+    return c.json(fail('SAVE_DRAFT_ERROR', 'Failed to save draft'), 500)
+  }
+})
+
+// 直接发布AI生成的作品
+router.post('/publish', async (c) => {
+  const userId = (c as any).get('userId') as string
+  const body = await c.req.json()
+  const { title, prompt, model, aspectRatio, outputFormat, imageUrl, originalImageUrl } = body
+
+  if (!title?.trim()) {
+    return c.json(fail('INVALID_INPUT', 'Title is required'), 400)
+  }
+
+  if (!imageUrl) {
+    return c.json(fail('INVALID_INPUT', 'Image URL is required'), 400)
+  }
+
+  try {
+    const d1 = D1Service.fromEnv(c.env)
+    
+    // 创建并直接发布作品
+    const artworkId = await d1.createArtwork(userId, title.trim(), imageUrl, imageUrl, {
+      prompt,
+      mimeType: outputFormat === 'png' ? 'image/png' : 'image/jpeg',
+      width: undefined,
+      height: undefined
+    })
+
+    // 如果有KIE相关信息，更新KIE字段
+    if (model && aspectRatio) {
+      await d1.updateKieArtworkInfo(artworkId, {
+        model,
+        aspectRatio,
+        outputFormat,
+        originalImageUrl
+      })
+    }
+
+    // 直接发布
+    await d1.publishArtwork(artworkId)
+
+    const response = {
+      id: artworkId,
+      originalUrl: imageUrl,
+      thumbUrl: imageUrl,
+      status: 'published',
+      title: title.trim(),
+      userId,
+      slug: `artwork-${artworkId}`
+    }
+
+    // 清除相关缓存
+    const redis = RedisService.fromEnv(c.env)
+    await Promise.all([
+      redis.invalidateUserArtworks(userId),
+      redis.invalidateFeed()
+    ])
+
+    return c.json(ok(response))
+  } catch (error) {
+    console.error('Publish failed:', error)
+    return c.json(fail('PUBLISH_ERROR', 'Failed to publish artwork'), 500)
+  }
+})
+
 router.post('/upload', async (c) => {
   const userId = (c as any).get('userId') as string
   const body = await c.req.parseBody()
@@ -465,6 +583,155 @@ router.post('/batch/hot-data', async (c) => {
   } catch (error) {
     console.error('Failed to get batch artwork hot data:', error)
     return c.json(fail('INTERNAL_ERROR', 'Internal server error'), 500)
+  }
+})
+
+// 新增：AI 生成相关路由
+router.post('/generate', async (c) => {
+  const userId = (c as any).get('userId') as string
+  const body = await c.req.json()
+  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro' } = body
+
+  if (!prompt?.trim()) {
+    return c.json(fail('INVALID_INPUT', 'Prompt is required'), 400)
+  }
+
+  try {
+    const d1 = D1Service.fromEnv(c.env as any)
+    const kie = new KIEService((c.env as any).KIE_API_KEY || '')
+
+    // 1. 创建草稿记录
+    const artworkId = await d1.createKieArtwork(userId, 'AI Generated Artwork', {
+      prompt,
+      model,
+      aspectRatio,
+      status: 'generating'
+    })
+
+    // 2. 启动 KIE 生成任务
+    const callbackUrl = (c.env as any).KIE_CALLBACK_URL || ''
+    const taskId = await kie.generateImage(prompt, {
+      aspectRatio,
+      model,
+      promptUpsampling: true,
+      outputFormat: body.outputFormat || 'png',
+      callBackUrl: callbackUrl
+    })
+
+    // 3. 更新数据库状态
+    await d1.updateArtworkGenerationStatus(artworkId, {
+      taskId,
+      status: 'generating',
+      startedAt: Date.now()
+    })
+
+    // 4. 启动异步监控
+    const { GenerationMonitor } = await import('../services/generation-monitor')
+    const redis = RedisService.fromEnv(c.env)
+    const monitor = new GenerationMonitor(d1, kie, redis)
+    
+    c.executionCtx?.waitUntil?.(monitor.monitorGenerationStatus(artworkId, taskId))
+
+    return c.json(ok({
+      id: artworkId,
+      taskId,
+      status: 'generating'
+    }))
+
+  } catch (error) {
+    console.error('Generation failed:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return c.json(fail('GENERATION_ERROR', errorMessage), 500)
+  }
+})
+
+// 新增：获取生成状态
+router.get('/:id/generation-status', async (c) => {
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
+  const userId = (c as any).get('userId') as string
+
+  try {
+    const d1 = D1Service.fromEnv(c.env)
+    const artwork = await d1.getArtwork(id)
+
+    if (!artwork || artwork.author.id !== userId) {
+      return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
+    }
+
+    const generationData = await d1.getKieArtworkData(id)
+    
+    return c.json(ok({
+      id,
+      status: generationData?.kie_generation_status || 'unknown',
+      taskId: generationData?.kie_task_id,
+      startedAt: generationData?.kie_generation_started_at,
+      completedAt: generationData?.kie_generation_completed_at,
+      errorMessage: generationData?.kie_error_message,
+      resultImageUrl: generationData?.kie_result_image_url,
+      originalImageUrl: generationData?.kie_original_image_url,
+      model: generationData?.kie_model,
+      aspectRatio: generationData?.kie_aspect_ratio,
+      prompt: generationData?.kie_prompt
+    }))
+
+  } catch (error) {
+    return c.json(fail('INTERNAL_ERROR', 'Failed to check status'), 500)
+  }
+})
+
+// 新增：重新生成
+router.post('/:id/regenerate', async (c) => {
+  const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
+  const userId = (c as any).get('userId') as string
+  const body = await c.req.json()
+  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro' } = body
+
+  try {
+    const d1 = D1Service.fromEnv(c.env as any)
+    const kie = new KIEService((c.env as any).KIE_API_KEY || '')
+
+    // 验证作品所有权
+    const artwork = await d1.getArtwork(id)
+    if (!artwork || artwork.author.id !== userId) {
+      return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
+    }
+
+    // 启动新的生成任务
+    const callbackUrl = (c.env as any).KIE_CALLBACK_URL || ''
+    const taskId = await kie.generateImage(prompt, {
+      aspectRatio,
+      model,
+      promptUpsampling: true,
+      outputFormat: body.outputFormat || 'png',
+      callBackUrl: callbackUrl
+    })
+
+    // 更新状态
+    await d1.updateArtworkGenerationStatus(id, {
+      taskId,
+      status: 'generating',
+      startedAt: Date.now(),
+      errorMessage: undefined,
+      resultImageUrl: undefined
+    })
+
+    // 启动异步监控
+    const { GenerationMonitor } = await import('../services/generation-monitor')
+    const redis = RedisService.fromEnv(c.env)
+    const monitor = new GenerationMonitor(d1, kie, redis)
+    
+    c.executionCtx?.waitUntil?.(monitor.monitorGenerationStatus(id, taskId))
+
+    return c.json(ok({
+      id,
+      taskId,
+      status: 'generating'
+    }))
+
+  } catch (error) {
+    console.error('Regeneration failed:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return c.json(fail('REGENERATION_ERROR', errorMessage), 500)
   }
 })
 

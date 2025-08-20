@@ -16,6 +16,8 @@ export type Env = {
   R2_PUBLIC_AFTER_BASE?: string
   // Admin
   ADMIN_TOKEN?: string
+  // KIE API
+  KIE_API_KEY?: string
   // Dev
   DEV_MODE?: string
 }
