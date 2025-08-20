@@ -22,7 +22,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-[9998] bg-black/50 md:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -31,7 +31,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar */}
       <nav
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-surface border-r border-line transform transition-all duration-200 ease-in-out flex flex-col',
+          'fixed inset-y-0 left-0 z-[9999] bg-surface border-r border-line transform transition-all duration-200 ease-in-out flex flex-col pointer-events-auto',
           collapsed ? 'w-16' : 'w-64',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           className
