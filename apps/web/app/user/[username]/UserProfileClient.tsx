@@ -21,13 +21,16 @@ import { useSearchParams, useRouter } from 'next/navigation'
 export default function UserProfileClient({ username, initialProfile, initialArtworks }: { username: string; initialProfile?: any; initialArtworks?: ArtworkListItem[] }) {
 	const isClerkEnabled = useClerkEnabled()
 	const { isLoaded, isSignedIn } = useAuth()
-	const [me, setMe] = useState<any>(initialProfile || null)
-	const [hideName, setHideName] = useState(false)
-	const [hideEmail, setHideEmail] = useState(false)
+	// 当前会话用户（用于权限判断）
+	const [me, setMe] = useState<any>(null)
+	// 页面主体用户资料（可能是本人，也可能是他人）
+	const [profile, setProfile] = useState<any>(initialProfile || null)
+	const [hideName, setHideName] = useState(!initialProfile?.name)
+	const [hideEmail, setHideEmail] = useState(!initialProfile?.email)
 	const [artworks, setArtworks] = useState<ArtworkListItem[]>(initialArtworks || [])
 	const [favorites, setFavorites] = useState<ArtworkListItem[]>([])
 	const [likes, setLikes] = useState<ArtworkListItem[]>([])
-	const [loading, setLoading] = useState(true)
+	const [loading, setLoading] = useState(!initialArtworks)
 
 
 	const reloadAll = useCallback(async (userId: string) => {
@@ -40,17 +43,21 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	const loadProfile = useCallback(async () => {
 		try {
 			setLoading(true)
-			const profile = await authFetch(API.me)
-			setMe(profile)
-			setHideName(!profile?.name)
-			setHideEmail(!profile?.email)
-			if (profile?.id) await reloadAll(profile.id)
+			// 仅当访问 "me" 时才请求当前用户资料
+			if (username === 'me') {
+				const current = await authFetch(API.me)
+				setMe(current)
+				setProfile(current)
+				setHideName(!current?.name)
+				setHideEmail(!current?.email)
+				if (current?.id) await reloadAll(current.id)
+			}
 		} catch {
 			// 忽略错误，不把它当作未登录；保持 UI 为已登录状态并允许稍后重试
 		} finally {
 			setLoading(false)
 		}
-	}, [reloadAll])
+	}, [reloadAll, username])
 
 	// 当认证状态变化时，重新加载资料
 	useEffect(() => {
@@ -64,10 +71,10 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 		loadProfile()
 	}, [isLoaded, isSignedIn, loadProfile])
 
-	// 使用 SWR 驱动作品与收藏，确保上传后缓存失效能反映到页面
-	const userId = me?.id as string | undefined
-	const { artworks: swrArtworks } = useUserArtworks(userId || '', initialArtworks)
-	const { artworks: swrFavorites } = useFavorites(userId || '', undefined)
+	// 目标用户ID：访问他人主页时使用 `username`，访问 "me" 时使用当前用户ID
+	const targetUserId = (username === 'me' ? profile?.id : username) as string | undefined
+	const { artworks: swrArtworks } = useUserArtworks(targetUserId || '', initialArtworks)
+	const { artworks: swrFavorites } = useFavorites(targetUserId || '', undefined)
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
 
@@ -173,15 +180,15 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 			<div className="bg-gradient-to-r from-blue-500 to-purple-600 h-64 rounded-lg mb-8 flex items-center">
 				<div className="flex items-center space-x-6 px-8">
 					<Image
-						src={me?.profilePic || 'https://via.placeholder.com/120x120/cccccc/666666?text=用户'}
-						alt={me?.name || '用户'}
+						src={profile?.profilePic || profile?.profile_pic || '/images/default-avatar.jpg'}
+						alt={profile?.name || '用户'}
 						width={120}
 						height={120}
 						className="rounded-full border-4 border-white"
 					/>
 					<div className="text-white">
 						<div className="flex items-center space-x-3">
-							<h1 className="text-3xl font-bold">{hideName ? '匿名用户' : (me?.name || '未登录用户')}</h1>
+							<h1 className="text-3xl font-bold">{hideName ? '匿名用户' : (profile?.name || '未命名用户')}</h1>
 							{isOwner && (
 								<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideName: !hideName })}>
 									{hideName ? '显示名称' : '隐藏名称'}
@@ -189,7 +196,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 							)}
 						</div>
 						<div className="flex items-center space-x-3">
-							<p className="text-lg opacity-90">{hideEmail ? '暂不可见' : (me?.email || '未绑定邮箱')}</p>
+							<p className="text-lg opacity-90">{hideEmail ? '暂不可见' : (profile?.email || '未绑定邮箱')}</p>
 							{isOwner && (
 								<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideEmail: !hideEmail })}>
 									{hideEmail ? '显示邮箱' : '隐藏邮箱'}
