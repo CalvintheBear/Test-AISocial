@@ -31,6 +31,9 @@ app.use('*', errorMiddleware)
 app.use('*', loggerMiddleware)
 app.use('*', corsMiddleware)
 
+// KIE 回调路由不需要认证，放在认证中间件之前
+app.route('/api/kie', kieCallback)
+
 // 将 auth 放在业务路由前，并为健康检查保留匿名访问
 app.use('/api/*', authMiddleware)
 app.route('/api/artworks', artworks)
@@ -40,7 +43,6 @@ app.route('/api/feed', feed)
 app.route('/api/admin', admin)
 app.route('/api/hotness', hotness)
 app.route('/api/debug', debugRouter)
-app.route('/api/kie', kieCallback)
 
 export default app
 
