@@ -2,15 +2,13 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Quick Start
+## Quick Start (Monorepo)
 
 ```bash
 # Install dependencies
 npm install
 
-# Setup environment
-npm run setup
-# Or manually: 
+# Setup environment files (create from examples)
 cp apps/web/.env.local.example apps/web/.env.local
 cp apps/worker-api/.dev.vars.example apps/worker-api/.dev.vars
 
@@ -22,15 +20,20 @@ npm run api:dev    # Backend: http://localhost:8787
 npm run dev        # Frontend: http://localhost:3000
 ```
 
-## Essential Commands
+## Development Workflow
 
-### Development
+### Core Commands
 ```bash
-npm run dev          # Frontend only (Next.js 14)
-npm run api:dev      # Backend only (Cloudflare Workers)
+# Root workspace commands
+npm run dev          # Frontend Next.js
 npm run build        # Build frontend
-npm run api:deploy   # Deploy backend to Cloudflare
-npm test            # Run integration tests
+npm run start        # Production frontend
+npm run api:dev      # Backend Cloudflare Workers
+npm run api:deploy   # Deploy backend
+
+# Individual workspace commands
+cd apps/web && npm run dev     # Frontend only
+cd apps/worker-api && npm run dev  # Backend only
 ```
 
 ### Testing & Validation
@@ -39,41 +42,19 @@ npm test            # Run integration tests
 cd apps/web && npm run typecheck
 cd apps/worker-api && npm run typecheck
 
-# Data integrity
+# Data integrity checks
+cd apps/worker-api && npm run consistency-check
 cd apps/worker-api && npm run consistency-check:fix
+
+# Hotness system validation
+cd apps/worker-api && npm run hotness:validate
+cd apps/worker-api && npm run hotness:recalculate-all
 
 # Health checks
 curl http://localhost:8787/api/health
 curl http://localhost:8787/api/redis/ping
 ```
 
-### Hotness System Operations
-```bash
-# Recalculate all hotness scores
-cd apps/worker-api && npm run hotness:recalculate-all
-
-# Debug specific artwork
-curl http://localhost:8787/api/debug/hotness/{artwork_id}
-
-# View rankings
-curl http://localhost:8787/api/hotness/top?limit=20
-
-# Reset cache
-curl -X POST http://localhost:8787/api/debug/reset-hotness
-```
-
-### Production Operations
-```bash
-# Deploy to production
-npm run api:deploy
-npm run build && vercel --prod
-
-# Monitor logs
-wrangler tail
-
-# Rollback to previous version
-./rollback.sh
-```
 
 ## Architecture Overview
 

@@ -31,7 +31,9 @@
       "Bash(wrangler dev:*)",
       "Bash(DEV_MODE=1 npm run api:dev)",
       "Bash(wrangler deploy:*)",
-      "Bash(rg:*)"
+      "Bash(rg:*)",
+      "WebFetch(domain:docs.kie.ai)",
+      "WebFetch(domain:old-docs.kie.ai)"
     ],
     "deny": []
   }
