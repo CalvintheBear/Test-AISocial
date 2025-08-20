@@ -86,8 +86,18 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     token = isLikelyValid ? normalized : (useDevJwt ? devJwt : undefined)
   }
 
-  // 对写请求（POST/PUT/PATCH/DELETE），若仍未拿到 token，则等待一次无超时获取，避免 401
-  if (!token && typeof window !== 'undefined' && !isGet) {
+  // 对写请求或强鉴权的 GET，若仍未拿到 token，则等待一次无超时获取，避免首个 401 噪声
+  const API_BASE_TMP = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'
+  const urlStr = typeof input === 'string' ? input : (input as any)?.toString?.() || ''
+  const path = (() => {
+    try {
+      const u = new URL(typeof input === 'string' ? input : (input as any), API_BASE_TMP)
+      return u.pathname
+    } catch { return '' }
+  })()
+
+  const forceAuthGet = isGet && /\/api\/users\/(me|[^/]+\/(likes|favorites|artworks))$/.test(path)
+  if (!token && typeof window !== 'undefined' && (!isGet || forceAuthGet)) {
     token = await getClerkTokenNoTimeout()
   }
 
