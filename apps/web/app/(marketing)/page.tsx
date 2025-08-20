@@ -52,7 +52,7 @@ export default function MarketingHomePage() {
             加入AI创作社区，与全球创作者一起探索人工智能艺术的无限可能。
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login">
+            <Link href="#">
               <Button size="lg" className="text-lg px-8 bg-primary-500 hover:bg-primary-600"
               >
                 立即免费生成 →
@@ -173,7 +173,7 @@ export default function MarketingHomePage() {
           <p className="text-lg mb-8 opacity-90">
             立即开始你的AI创作之旅，无限可能等你探索
           </p>
-          <Link href="/login">
+          <Link href="#">
             <Button 
               size="lg" 
               className="text-lg px-8 bg-white text-primary-600 hover:bg-gray-100"

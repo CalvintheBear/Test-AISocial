@@ -67,18 +67,9 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
         err = { message: res.statusText } 
       }
       
-      // 处理认证相关错误
+      // 处理认证相关错误（仅记录，交由调用方决定是否触发登录）
       if (res.status === 401) {
         console.warn('Authentication failed:', err)
-        // 简单前端重定向登录（保留回跳）
-        if (typeof window !== 'undefined') {
-          const current = window.location.href
-          const loginUrl = `/login?redirect=${encodeURIComponent(current)}`
-          // 避免重复跳转
-          if (!current.includes('/login')) {
-            window.location.href = loginUrl
-          }
-        }
       }
       
       throw err

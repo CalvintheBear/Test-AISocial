@@ -60,9 +60,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
           </SidebarContent>
           <SidebarFooter>
             <div className="w-full px-3 py-2">
-              <Link href="/login" className="w-full">
-                <Button variant="outline" size="sm" className="w-full">登录 / 注册</Button>
-              </Link>
+              <Button variant="outline" size="sm" className="w-full" data-open-signin>登录 / 注册</Button>
             </div>
           </SidebarFooter>
         </Sidebar>

@@ -32,7 +32,18 @@ export default async function ArtworkPage({
   params: { id: string; slug: string } 
 }) {
   const { id } = params
-  const artwork = await getArtworkDetail(id)
+  let artwork: ArtworkDetail | null = null
+  try {
+    artwork = await getArtworkDetail(id)
+  } catch (e) {
+    // 友好处理：不抛出 404，返回可见错误状态
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <h1 className="text-2xl font-semibold mb-2">作品不存在或无访问权限</h1>
+        <p className="text-gray-600 mb-6">可能已被删除、未发布或你没有权限查看。</p>
+      </div>
+    )
+  }
   // SSR 场景下已无法直接拿到前端 Clerk 的 token，这里保持按钮展示的最小权限：
   // 仅当后端返回的详情中作者与会话匹配才渲染（未来可改为客户端小部件）。
   let isAuthor = false

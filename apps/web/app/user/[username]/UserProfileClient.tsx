@@ -144,7 +144,10 @@ export default function UserProfileClient({ username }: { username: string }) {
 
 				<div className="space-y-6">
 					<h2 className="text-xl font-semibold">你可能会喜欢</h2>
-					<ArtworkGrid artworks={artworks} loading locked onLockedClick={() => window.location.href = `/login?redirect=${encodeURIComponent(window.location.href)}`} />
+					<ArtworkGrid artworks={artworks} loading locked onLockedClick={() => {
+						const btn = document.querySelector('[data-open-signin]') as HTMLElement | null
+						btn?.click()
+					}} />
 				</div>
 			</div>
 		)

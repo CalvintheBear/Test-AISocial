@@ -66,7 +66,7 @@ export default function FeaturesPage() {
                   <span>实时生成预览，所见即所得</span>
                 </li>
               </ul>
-              <Link href="/login"
+              <Link href="#"
               >
                 <Button className="bg-primary-500 hover:bg-primary-600"
                 >
@@ -122,7 +122,7 @@ export default function FeaturesPage() {
                   <span>图像放大和清晰度增强</span>
                 </li>
               </ul>
-              <Link href="/login"
+              <Link href="#"
               >
                 <Button className="bg-primary-500 hover:bg-primary-600"
                 >
@@ -232,7 +232,7 @@ export default function FeaturesPage() {
           <p className="text-xl mb-8 opacity-90">
             与数千名创作者一起，将你的想象力变为现实
           </p>
-          <Link href="/login">
+          <Link href="#">
             <Button 
               size="lg" 
               variant="outline" 

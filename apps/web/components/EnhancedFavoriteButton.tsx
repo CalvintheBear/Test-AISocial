@@ -40,8 +40,8 @@ export function EnhancedFavoriteButton({
     if (isLoading) return
 
     if (isClerkEnabled && isLoaded && !isSignedIn) {
-      const current = typeof window !== 'undefined' ? window.location.href : '/'
-      window.location.href = `/login?redirect=${encodeURIComponent(current)}`
+      const signInButton = document.querySelector('[data-open-signin]') as HTMLElement | null
+      if (signInButton) signInButton.click()
       return
     }
 

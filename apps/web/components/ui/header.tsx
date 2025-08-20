@@ -34,9 +34,7 @@ const Header: React.FC<HeaderProps> = ({ className, onOpenCreateModal }) => {
               </SignedIn>
             </>
           ) : (
-            <Link href="/login">
-              <Button variant="primary" size="sm">登录 / 注册</Button>
-            </Link>
+            <Button variant="primary" size="sm" data-open-signin>登录 / 注册</Button>
           )}
         </div>
 
