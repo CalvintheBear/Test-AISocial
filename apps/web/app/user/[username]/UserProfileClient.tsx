@@ -14,8 +14,10 @@ import { useFavorites } from '@/hooks/useFavorites'
 import { Button } from '@/components/ui/button'
 import { useLike } from '@/hooks/useLike'
 import { useFavorite } from '@/hooks/useFavorite'
+import { useClerkEnabled } from '@/hooks/useClerkEnabled'
 
 export default function UserProfileClient({ username }: { username: string }) {
+	const isClerkEnabled = useClerkEnabled()
 	const { isLoaded, isSignedIn } = useAuth()
 	const [me, setMe] = useState<any>(null)
 	const [hideName, setHideName] = useState(false)
@@ -114,11 +116,21 @@ export default function UserProfileClient({ username }: { username: string }) {
 	const isOwner = username === 'me' || !!(me?.id && username === me.id)
 
 	// 当 Clerk 已加载且未登录时，显示登录提示
-	if (isLoaded && !isSignedIn) {
+	if (isClerkEnabled && isLoaded && !isSignedIn) {
 		return (
 			<div className="py-16 text-center">
 				<p className="mb-4 text-gray-600">您尚未登录，请先登录以查看个人主页。</p>
 				<SignInButton mode="modal"/>
+			</div>
+		)
+	}
+
+	// 当 Clerk 未启用时，显示提示信息
+	if (!isClerkEnabled) {
+		return (
+			<div className="py-16 text-center">
+				<p className="mb-4 text-gray-600">认证功能未启用，无法查看个人主页。</p>
+				<p className="text-sm text-gray-500">请联系管理员启用用户认证功能。</p>
 			</div>
 		)
 	}

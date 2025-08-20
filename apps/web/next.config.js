@@ -12,6 +12,10 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'clerk.cuttingasmr.org',
+      },
+      {
+        protocol: 'https',
         hostname: 'pub-59ae9a96b6614a9db89af40b2970d3ab.r2.dev',
       },
       {

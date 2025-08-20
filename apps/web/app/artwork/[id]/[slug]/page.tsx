@@ -5,9 +5,11 @@ import Image from 'next/image'
 import { Button, Card } from '@/components/ui'
 import LikeFavoriteBarNew from '@/components/app/LikeFavoriteBarNew'
 import { ArtworkActions } from '@/components/app/ArtworkActions'
+import { fetchArtworkDetail } from '@/lib/apiAdapter'
 
 async function getArtworkDetail(artworkId: string): Promise<ArtworkDetail> {
-  return authFetch(API.artwork(artworkId))
+  // 使用统一适配器，保证与列表页字段一致（author.profile_pic/name 等）
+  return fetchArtworkDetail(API.artwork(artworkId))
 }
 
 export const dynamic = 'force-dynamic'
@@ -65,7 +67,7 @@ export default async function ArtworkPage({
                 className="rounded-full"
               />
               <div>
-                <p className="font-semibold">{artwork.author.name}</p>
+                <p className="font-semibold">{artwork.author.name || '未命名用户'}</p>
                 <p className="text-sm text-gray-600">
                   创建于 {new Date(artwork.created_at).toLocaleDateString('zh-CN')}
                 </p>

@@ -26,7 +26,8 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
         token = await clerk?.session?.getToken?.({ skipCache: true })
         if (!token) token = await clerk?.session?.getToken?.()
       }
-    } catch {
+    } catch (error) {
+      console.warn('Failed to get Clerk token:', error)
       token = undefined
     }
   }
@@ -55,15 +56,32 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     ...(init.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }
-  const res = await fetch(url, { ...init, headers, cache: 'no-store', credentials: 'include' })
-  if (!res.ok) {
-    let err: any
-    try { err = await res.json() } catch { err = { message: res.statusText } }
-    throw err
+  
+  try {
+    const res = await fetch(url, { ...init, headers, cache: 'no-store', credentials: 'include' })
+    if (!res.ok) {
+      let err: any
+      try { 
+        err = await res.json() 
+      } catch { 
+        err = { message: res.statusText } 
+      }
+      
+      // 处理认证相关错误
+      if (res.status === 401) {
+        console.warn('Authentication failed:', err)
+        // 可以在这里触发重新登录逻辑
+      }
+      
+      throw err
+    }
+    const data = await res.json()
+    // Handle unified response format (envelope pattern)
+    return data?.data !== undefined ? data.data : data
+  } catch (error) {
+    console.error('API request failed:', { url, error })
+    throw error
   }
-  const data = await res.json()
-  // Handle unified response format (envelope pattern)
-  return data?.success ? data.data : data // Compatibility for transition period
 }
 
 // Server-safe mock flag

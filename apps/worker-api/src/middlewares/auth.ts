@@ -142,7 +142,12 @@ export async function authMiddleware(c: Context, next: Next) {
     } else if ((c.env as any).CLERK_SECRET_KEY) {
       payload = await verifyToken(token, { secretKey: (c.env as any).CLERK_SECRET_KEY } as any)
     }
-    console.log('JWT payload:', JSON.stringify(payload, null, 2))
+    
+    if (!payload) {
+      throw new Error('Token verification failed - no payload returned')
+    }
+    
+    console.log('JWT payload verified successfully')
     const userId = (payload as any)?.sub as string
     if (!userId) throw new Error('NO_SUB')
     ;(c as any).set('userId', userId)
@@ -164,42 +169,38 @@ export async function authMiddleware(c: Context, next: Next) {
     return next()
   } catch (error) {
     console.error('JWT verification failed:', error)
-    console.error('Token:', token?.substring(0, 50) + '...')
     
-    // Fallback: non-crypto validation（仅为当前联调使用）
-    console.log('Attempting fallback JWT decode...')
-    const payload = decodeJwtPayload(token)
-    console.log('Decoded payload:', JSON.stringify(payload, null, 2))
-    
-    const iss = payload?.iss
-    const sub = payload?.sub
-    const exp = Number(payload?.exp || 0) * 1000
-    const now = Date.now()
-    
-    console.log('Fallback check - sub:', sub, 'iss:', iss, 'exp:', exp, 'now:', now)
-    console.log('Issuer match:', iss === (c.env as any).CLERK_ISSUER)
-    
-    if (sub && iss && exp > now && (!((c.env as any).CLERK_ISSUER) || iss === (c.env as any).CLERK_ISSUER)) {
-      console.log('Fallback validation passed for user:', sub)
-      ;(c as any).set('userId', sub as string)
-      const claims = {
-        name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
-        email: (payload as any)?.email ?? (payload as any)?.email_address ?? null,
-        picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? (payload as any)?.profile_image_url ?? null,
-        username: (payload as any)?.username ?? (payload as any)?.preferred_username ?? null,
-        email_verified: (payload as any)?.email_verified ?? (payload as any)?.email_verified ?? null,
-        updated_at: (payload as any)?.updated_at ?? null,
+    // 仅在 DEV_MODE 下允许 fallback 解码（仅用于开发调试）
+    if (c.env?.DEV_MODE === '1' || c.env?.DEV_MODE === 1) {
+      console.log('DEV_MODE: Attempting fallback JWT decode...')
+      const payload = decodeJwtPayload(token)
+      if (payload?.sub && payload?.exp && Number(payload.exp) * 1000 > Date.now()) {
+        console.log('DEV_MODE: Fallback validation passed for user:', payload.sub)
+        ;(c as any).set('userId', payload.sub as string)
+        const claims = {
+          name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
+          email: (payload as any)?.email ?? (payload as any)?.email_address ?? null,
+          picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? (payload as any)?.profile_image_url ?? null,
+          username: (payload as any)?.username ?? (payload as any)?.preferred_username ?? null,
+          email_verified: (payload as any)?.email_verified ?? (payload as any)?.email_verified ?? null,
+          updated_at: (payload as any)?.updated_at ?? null,
+        }
+        ;(c as any).set('claims', claims)
+        try {
+          const d1 = D1Service.fromEnv(c.env)
+          await d1.upsertUser({ id: payload.sub as string, name: claims.name, email: claims.email, profilePic: claims.picture })
+        } catch (e) {
+          console.error('Failed to upsert user in DEV_MODE fallback:', e)
+        }
+        return next()
       }
-      ;(c as any).set('claims', claims)
-      try {
-        const d1 = D1Service.fromEnv(c.env)
-        await d1.upsertUser({ id: sub as string, name: claims.name, email: claims.email, profilePic: claims.picture })
-      } catch (e) {
-        console.error('Failed to upsert user in fallback:', e)
-      }
-      return next()
     }
-    return c.json({ code: 'INVALID_TOKEN', message: 'Invalid or expired token', details: error && typeof error === 'object' && 'message' in error ? String(error.message) : 'Unknown error' }, 401)
+    
+    return c.json({ 
+      code: 'INVALID_TOKEN', 
+      message: 'Invalid or expired token',
+      details: error && typeof error === 'object' && 'message' in error ? String(error.message) : 'Unknown error' 
+    }, 401)
   }
 }
 
