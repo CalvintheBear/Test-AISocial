@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { ArtworkListItem } from '@/lib/types'
 import { ArtworkGrid } from '@/components/app/ArtworkGrid'
 import { useLike } from '@/hooks/useLike'
@@ -12,6 +12,11 @@ export default function ClientFeedActions({ initialArtworks }: { initialArtworks
   const [activeTab, setActiveTab] = useState<'feed' | 'trending'>('feed')
   const { artworks, isLoading, mutate } = useFeed(initialArtworks)
   const [clientArtworks, setClientArtworks] = useState<ArtworkListItem[]>(artworks || [])
+
+  // 同步 SWR 返回的数据到本地可变列表，避免初次加载后仍显示空
+  useEffect(() => {
+    setClientArtworks(artworks || [])
+  }, [artworks])
   const { like } = useLike()
   const { addFavorite, removeFavorite } = useFavorite()
 
