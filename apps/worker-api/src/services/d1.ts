@@ -953,13 +953,15 @@ export class D1Service {
       INSERT INTO artworks (
         id, user_id, title, url, thumb_url, slug, status, created_at, updated_at,
         kie_generation_status, kie_model, kie_aspect_ratio, kie_prompt, kie_original_image_url
-      ) VALUES (?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     
     await stmt.bind(
       id, 
       userId, 
       title, 
+      '', // url (empty for AI generation)
+      '', // thumb_url (empty for AI generation)
       slug, 
       options.status || 'generating',
       now, // created_at

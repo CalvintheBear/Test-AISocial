@@ -9,6 +9,67 @@ import { formatArtworkForAPI } from '../utils/formatters'
 
 const router = new Hono()
 
+// 新增：AI 生成相关路由 - 必须在 /:id 路由之前定义
+router.post('/generate', async (c) => {
+  const userId = (c as any).get('userId') as string
+  const body = await c.req.json()
+  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro', inputImage } = body
+
+  if (!prompt?.trim()) {
+    return c.json(fail('INVALID_INPUT', 'Prompt is required'), 400)
+  }
+
+  try {
+    const d1 = D1Service.fromEnv(c.env as any)
+    const kie = new KIEService((c.env as any).KIE_API_KEY || '')
+
+    // 1. 创建草稿记录
+    const artworkId = await d1.createKieArtwork(userId, 'AI Generated Artwork', {
+      prompt,
+      model,
+      aspectRatio,
+      status: 'generating',
+      inputImage
+    })
+
+    // 2. 启动 KIE 生成任务
+    const callbackUrl = (c.env as any).KIE_CALLBACK_URL || ''
+    const taskId = await kie.generateImage(prompt, {
+      aspectRatio,
+      model,
+      promptUpsampling: true,
+      outputFormat: body.outputFormat || 'png',
+      callBackUrl: callbackUrl,
+      inputImage
+    })
+
+    // 3. 更新数据库状态
+    await d1.updateArtworkGenerationStatus(artworkId, {
+      taskId,
+      status: 'generating',
+      startedAt: Date.now()
+    })
+
+    // 4. 启动异步监控
+    const { GenerationMonitor } = await import('../services/generation-monitor')
+    const redis = RedisService.fromEnv(c.env)
+    const monitor = new GenerationMonitor(d1, kie, redis)
+    
+    c.executionCtx?.waitUntil?.(monitor.monitorGenerationStatus(artworkId, taskId))
+
+    return c.json(ok({
+      id: artworkId,
+      taskId,
+      status: 'generating'
+    }))
+
+  } catch (error) {
+    console.error('Generation failed:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return c.json(fail('GENERATION_ERROR', errorMessage), 500)
+  }
+})
+
 router.get('/:id', async (c) => {
   try {
     const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
@@ -586,66 +647,7 @@ router.post('/batch/hot-data', async (c) => {
   }
 })
 
-// 新增：AI 生成相关路由
-router.post('/generate', async (c) => {
-  const userId = (c as any).get('userId') as string
-  const body = await c.req.json()
-  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro', inputImage } = body
 
-  if (!prompt?.trim()) {
-    return c.json(fail('INVALID_INPUT', 'Prompt is required'), 400)
-  }
-
-  try {
-    const d1 = D1Service.fromEnv(c.env as any)
-    const kie = new KIEService((c.env as any).KIE_API_KEY || '')
-
-    // 1. 创建草稿记录
-    const artworkId = await d1.createKieArtwork(userId, 'AI Generated Artwork', {
-      prompt,
-      model,
-      aspectRatio,
-      status: 'generating',
-      inputImage
-    })
-
-    // 2. 启动 KIE 生成任务
-    const callbackUrl = (c.env as any).KIE_CALLBACK_URL || ''
-    const taskId = await kie.generateImage(prompt, {
-      aspectRatio,
-      model,
-      promptUpsampling: true,
-      outputFormat: body.outputFormat || 'png',
-      callBackUrl: callbackUrl,
-      inputImage
-    })
-
-    // 3. 更新数据库状态
-    await d1.updateArtworkGenerationStatus(artworkId, {
-      taskId,
-      status: 'generating',
-      startedAt: Date.now()
-    })
-
-    // 4. 启动异步监控
-    const { GenerationMonitor } = await import('../services/generation-monitor')
-    const redis = RedisService.fromEnv(c.env)
-    const monitor = new GenerationMonitor(d1, kie, redis)
-    
-    c.executionCtx?.waitUntil?.(monitor.monitorGenerationStatus(artworkId, taskId))
-
-    return c.json(ok({
-      id: artworkId,
-      taskId,
-      status: 'generating'
-    }))
-
-  } catch (error) {
-    console.error('Generation failed:', error)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    return c.json(fail('GENERATION_ERROR', errorMessage), 500)
-  }
-})
 
 // 新增：获取生成状态
 router.get('/:id/generation-status', async (c) => {
