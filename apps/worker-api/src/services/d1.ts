@@ -40,19 +40,19 @@ export class D1Service {
   }
 
   async upsertUser(user: { id: string; name?: string | null; email?: string | null; profilePic?: string | null }): Promise<void> {
-    // D1 schema requires users.name/email NOT NULL in initial migration; use empty string when missing
+    // 仅在提供了非空值时才更新字段，避免用空值覆盖已保存的资料
     const name = (user.name ?? '').trim()
     const email = (user.email ?? '').trim()
-    const profilePic = user.profilePic ?? null
+    const profilePic = (user.profilePic ?? '').trim()
     const now = Date.now()
     const stmt = this.db.prepare(`
       INSERT INTO users (id, name, email, profile_pic, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
-        name=excluded.name,
-        email=excluded.email,
-        profile_pic=excluded.profile_pic,
-        updated_at=excluded.updated_at
+        name = CASE WHEN length(excluded.name) > 0 THEN excluded.name ELSE users.name END,
+        email = CASE WHEN length(excluded.email) > 0 THEN excluded.email ELSE users.email END,
+        profile_pic = CASE WHEN length(excluded.profile_pic) > 0 THEN excluded.profile_pic ELSE users.profile_pic END,
+        updated_at = excluded.updated_at
     `)
     await stmt.bind(user.id, name, email, profilePic, now, now).run()
   }
@@ -66,7 +66,7 @@ export class D1Service {
 
   async getArtwork(id: string): Promise<Artwork | null> {
     const stmt = this.db.prepare(`
-      SELECT a.*, u.name as user_name, u.profile_pic
+      SELECT a*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
       JOIN users u ON a.user_id = u.id
       WHERE a.id = ?
@@ -100,7 +100,7 @@ export class D1Service {
 
   async listFeed(limit = 20): Promise<Artwork[]> {
     const stmt = this.db.prepare(`
-      SELECT a.*, u.name as user_name, u.profile_pic
+      SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
       JOIN users u ON a.user_id = u.id
       WHERE a.status = 'published'
@@ -140,7 +140,7 @@ export class D1Service {
     const stmt = this.db.prepare(`
       SELECT 
         a.*, 
-        u.name as user_name, 
+        CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, 
         u.profile_pic,
         CASE WHEN al.user_id IS NULL THEN 0 ELSE 1 END AS isLiked,
         CASE WHEN af.user_id IS NULL THEN 0 ELSE 1 END AS isFavorited
@@ -192,7 +192,7 @@ export class D1Service {
     if (!ids || ids.length === 0) return []
     const placeholders = ids.map(() => '?').join(',')
     const stmt = this.db.prepare(`
-      SELECT a.*, u.name as user_name, u.profile_pic
+      SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
       JOIN users u ON a.user_id = u.id
       WHERE a.id IN (${placeholders})
@@ -241,7 +241,7 @@ export class D1Service {
 
   async listUserArtworks(userId: string): Promise<Artwork[]> {
     const stmt = this.db.prepare(`
-      SELECT a.*, u.name as user_name, u.profile_pic
+      SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic
       FROM artworks a
       JOIN users u ON a.user_id = u.id
       WHERE a.user_id = ?
