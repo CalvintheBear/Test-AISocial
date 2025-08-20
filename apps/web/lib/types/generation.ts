@@ -23,6 +23,7 @@ export interface GenerationStatus {
   errorMessage?: string
   resultImageUrl?: string
   originalImageUrl?: string
+  inputImageUrl?: string
   model?: string
   aspectRatio?: string
   prompt?: string

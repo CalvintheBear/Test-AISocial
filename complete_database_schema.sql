@@ -1,6 +1,7 @@
 -- ========================================
--- AI Social 完整数据库结构
+-- AI Social 完整数据库结构 (2025版)
 -- 基于真实代码扫描和实际使用情况重写
+-- 适用于新库的一次性初始化或换壳操作
 -- ========================================
 
 -- ===============================
@@ -39,6 +40,20 @@ CREATE TABLE IF NOT EXISTS artworks (
   width INTEGER,                -- 图片宽度
   height INTEGER,               -- 图片高度
   mime_type TEXT,               -- MIME类型
+
+  -- KIE AI生成相关字段
+  kie_task_id TEXT,             -- KIE任务ID
+  kie_generation_status TEXT DEFAULT 'pending' CHECK (kie_generation_status IN ('pending', 'generating', 'completed', 'failed', 'timeout')),
+  kie_original_image_url TEXT,  -- KIE原始图片URL
+  kie_result_image_url TEXT,    -- KIE生成结果图片URL
+  kie_generation_started_at INTEGER,    -- KIE生成开始时间
+  kie_generation_completed_at INTEGER,  -- KIE生成完成时间
+  kie_error_message TEXT,       -- KIE错误信息
+  kie_model TEXT DEFAULT 'flux-kontext-pro' CHECK (kie_model IN ('flux-kontext-pro', 'flux-kontext-max')),
+  kie_aspect_ratio TEXT DEFAULT '1:1' CHECK (kie_aspect_ratio IN ('1:1', '16:9', '9:16', '4:3', '3:4')),
+  kie_prompt TEXT,              -- KIE生成提示词
+  kie_output_format TEXT DEFAULT 'png' CHECK (kie_output_format IN ('png', 'jpeg')),
+  kie_safety_tolerance INTEGER DEFAULT 2 CHECK (kie_safety_tolerance BETWEEN 0 AND 6),
 
   -- 互动计数快照（与关系表保持同步）
   like_count INTEGER DEFAULT 0,      -- 点赞数量
@@ -107,6 +122,12 @@ CREATE INDEX IF NOT EXISTS idx_artworks_comment_count ON artworks(comment_count)
 CREATE INDEX IF NOT EXISTS idx_artworks_hot_score ON artworks(hot_score);
 CREATE INDEX IF NOT EXISTS idx_artworks_last_hot_update ON artworks(last_hot_update);
 
+-- KIE相关索引
+CREATE INDEX IF NOT EXISTS idx_artworks_kie_task_id ON artworks(kie_task_id);
+CREATE INDEX IF NOT EXISTS idx_artworks_kie_status ON artworks(kie_generation_status);
+CREATE INDEX IF NOT EXISTS idx_artworks_kie_started_at ON artworks(kie_generation_started_at);
+CREATE INDEX IF NOT EXISTS idx_artworks_kie_completed_at ON artworks(kie_generation_completed_at);
+
 -- 点赞表索引
 CREATE INDEX IF NOT EXISTS idx_like_user ON artworks_like(user_id);
 CREATE INDEX IF NOT EXISTS idx_like_artwork ON artworks_like(artwork_id);
@@ -134,6 +155,13 @@ UPDATE artworks SET hot_score = COALESCE(hot_score, 0);
 UPDATE artworks SET hot_level = COALESCE(hot_level, 'new');
 UPDATE artworks SET last_hot_update = COALESCE(last_hot_update, 0);
 
+-- KIE字段默认值设置
+UPDATE artworks SET kie_generation_status = COALESCE(kie_generation_status, 'pending');
+UPDATE artworks SET kie_aspect_ratio = COALESCE(kie_aspect_ratio, '1:1');
+UPDATE artworks SET kie_model = COALESCE(kie_model, 'flux-kontext-pro');
+UPDATE artworks SET kie_output_format = COALESCE(kie_output_format, 'png');
+UPDATE artworks SET kie_safety_tolerance = COALESCE(kie_safety_tolerance, 2);
+
 -- ===============================
 -- 表结构说明
 -- ===============================
@@ -144,28 +172,53 @@ UPDATE artworks SET last_hot_update = COALESCE(last_hot_update, 0);
 1. 用户表 (users)：
    - 支持隐私控制（hide_name, hide_email）
    - 时间戳使用毫秒级精度
+   - 头像URL支持
 
 2. 作品表 (artworks)：
-   - 包含完整的AI生成参数
+   - 包含完整的AI生成参数（prompt, model, seed, width, height, mime_type）
+   - 包含完整的KIE AI生成字段（kie_* 系列字段）
    - 统计字段作为快照，与关系表同步
    - 热度系统支持实时计算和历史记录
    - 支持草稿和发布两种状态
+   - SEO友好的slug支持
 
 3. 关系表 (artworks_like, artworks_favorite)：
    - 使用复合主键防止重复操作
    - 级联删除确保数据一致性
+   - 支持批量查询优化
 
 4. 热度历史表 (artworks_hot_history)：
    - 记录每次热度计算的快照
    - 支持审计和趋势分析
+   - 包含计算方法和元数据
 
 5. 索引优化：
-   - 覆盖常用查询场景
+   - 覆盖常用查询场景（用户作品、状态筛选、热度排序）
    - 支持分页和排序
    - 优化关联查询性能
+   - KIE相关查询优化
 
 6. 数据完整性：
    - 外键约束确保引用完整性
+   - CHECK约束限制状态值和范围
    - 默认值处理避免NULL值问题
-   - CHECK约束限制状态值范围
+   - 级联删除维护数据一致性
+
+7. 性能考虑：
+   - 复合索引支持多字段查询
+   - 覆盖索引减少回表查询
+   - 统计字段作为快照避免实时计算
+   - 批量操作支持
+
+8. 扩展性：
+   - 预留字段支持未来功能
+   - 灵活的元数据结构
+   - 支持多种AI模型和参数
+   - 热度系统可配置权重和算法
+
+使用说明：
+1. 新库初始化：直接执行此SQL文件
+2. 现有库升级：按顺序执行迁移文件（001_init.sql, 002_performance.sql, 003_add_kie_fields.sql）
+3. 换壳操作：备份数据后执行此完整SQL文件
+4. 数据验证：使用 checkDataConsistency 函数验证数据一致性
 */

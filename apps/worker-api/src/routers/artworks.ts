@@ -590,7 +590,7 @@ router.post('/batch/hot-data', async (c) => {
 router.post('/generate', async (c) => {
   const userId = (c as any).get('userId') as string
   const body = await c.req.json()
-  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro' } = body
+  const { prompt, aspectRatio = '1:1', model = 'flux-kontext-pro', inputImage } = body
 
   if (!prompt?.trim()) {
     return c.json(fail('INVALID_INPUT', 'Prompt is required'), 400)
@@ -605,7 +605,8 @@ router.post('/generate', async (c) => {
       prompt,
       model,
       aspectRatio,
-      status: 'generating'
+      status: 'generating',
+      inputImage
     })
 
     // 2. 启动 KIE 生成任务
@@ -615,7 +616,8 @@ router.post('/generate', async (c) => {
       model,
       promptUpsampling: true,
       outputFormat: body.outputFormat || 'png',
-      callBackUrl: callbackUrl
+      callBackUrl: callbackUrl,
+      inputImage
     })
 
     // 3. 更新数据库状态

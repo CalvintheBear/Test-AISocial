@@ -16,7 +16,9 @@ interface AIGenerationResultProps {
   aspectRatio: string
   outputFormat: string
   userId: string
+  initialTitle?: string
   onRegenerate?: () => void
+  onTitleChange?: (title: string) => void
   className?: string
 }
 
@@ -27,12 +29,14 @@ export function AIGenerationResult({
   aspectRatio, 
   outputFormat,
   userId,
+  initialTitle,
   onRegenerate,
+  onTitleChange,
   className 
 }: AIGenerationResultProps) {
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
-  const [title, setTitle] = useState(prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''))
+  const [title, setTitle] = useState(initialTitle || prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''))
   const [showActions, setShowActions] = useState(false)
   
   const { optimisticAddDraft } = useUserArtworks(userId)
@@ -59,7 +63,7 @@ export function AIGenerationResult({
           aspectRatio,
           outputFormat,
           imageUrl: status.resultImageUrl,
-          originalImageUrl: status.originalImageUrl
+          originalImageUrl: status.originalImageUrl || status.inputImageUrl
         })
       })
 
@@ -109,7 +113,7 @@ export function AIGenerationResult({
           aspectRatio,
           outputFormat,
           imageUrl: status.resultImageUrl,
-          originalImageUrl: status.originalImageUrl
+          originalImageUrl: status.originalImageUrl || status.inputImageUrl
         })
       })
 
@@ -172,7 +176,11 @@ export function AIGenerationResult({
             <input
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => {
+                const newTitle = e.target.value
+                setTitle(newTitle)
+                onTitleChange?.(newTitle)
+              }}
               placeholder="给你的作品起个名字..."
               className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

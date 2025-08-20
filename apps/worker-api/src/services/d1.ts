@@ -942,6 +942,7 @@ export class D1Service {
       model?: string
       aspectRatio?: string
       status?: string
+      inputImage?: string
     }
   ): Promise<string> {
     const id = crypto.randomUUID()
@@ -951,8 +952,8 @@ export class D1Service {
     const stmt = this.db.prepare(`
       INSERT INTO artworks (
         id, user_id, title, url, thumb_url, slug, status, created_at, updated_at,
-        kie_generation_status, kie_model, kie_aspect_ratio, kie_prompt
-      ) VALUES (?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?)
+        kie_generation_status, kie_model, kie_aspect_ratio, kie_prompt, kie_original_image_url
+      ) VALUES (?, ?, ?, '', '', ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     
     await stmt.bind(
@@ -966,7 +967,8 @@ export class D1Service {
       'generating', // kie_generation_status
       options.model || 'flux-kontext-pro', // kie_model
       options.aspectRatio || '1:1', // kie_aspect_ratio
-      options.prompt // kie_prompt
+      options.prompt, // kie_prompt
+      options.inputImage || null // kie_original_image_url
     ).run()
     
     return id

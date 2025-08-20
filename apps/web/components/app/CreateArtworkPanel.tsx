@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Button, Card } from '@/components/ui'
-import { Upload, Sparkles, Loader2, Image, Wand2 } from 'lucide-react'
+import { Sparkles, Loader2, Wand2, Upload, X } from 'lucide-react'
 import { usePostPublishRedirect } from '@/hooks/usePostPublishRedirect'
 import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
@@ -15,33 +15,36 @@ interface CreateArtworkPanelProps {
 }
 
 export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
-  const [creationMode, setCreationMode] = useState<'upload' | 'ai'>('upload')
   const [prompt, setPrompt] = useState('')
-  const [file, setFile] = useState<File | null>(null)
+  const [inputImage, setInputImage] = useState<File | null>(null)
+  const [inputImageUrl, setInputImageUrl] = useState<string | null>(null)
   const [title, setTitle] = useState('')
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [aspectRatio, setAspectRatio] = useState('1:1')
   const [model, setModel] = useState<'flux-kontext-pro' | 'flux-kontext-max'>('flux-kontext-pro')
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [generationResult, setGenerationResult] = useState<any>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const { generating, status: generationStatus, generateImage, pollStatus, regenerateImage } = useArtworkGeneration()
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] || null
-    setFile(f)
-    setPreviewUrl(f ? URL.createObjectURL(f) : null)
-    // 如果切换到上传模式，清空AI生成相关状态
-    if (creationMode === 'ai') {
-      setCreationMode('upload')
-      setPrompt('')
-      setGenerationResult(null)
+    if (f) {
+      setInputImage(f)
+      setInputImageUrl(URL.createObjectURL(f))
+    }
+  }
+
+  const removeInputImage = () => {
+    setInputImage(null)
+    if (inputImageUrl) {
+      URL.revokeObjectURL(inputImageUrl)
+      setInputImageUrl(null)
     }
   }
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const { optimisticAddDraft } = useUserArtworks(currentUserId || '')
-  const uploadingRef = useRef(false)
 
   useEffect(() => {
     ;(async () => {
@@ -54,49 +57,29 @@ export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
     })()
   }, [])
 
-  const handleSaveDraft = async () => {
-    if (!file || !title.trim()) {
-      alert('请先选择图片并填写标题')
-      return
-    }
-    try {
-      if (uploadingRef.current) return
-      uploadingRef.current = true
+  const uploadInputImage = async (): Promise<string | null> => {
+    if (!inputImage) return null
 
+    try {
+      setIsUploading(true)
       const form = new FormData()
-      form.append('file', file)
-      form.append('title', title || 'untitled')
-      form.append('prompt', prompt || '')
+      form.append('file', inputImage)
+      form.append('title', 'input_image_' + Date.now())
       
       const payload = await authFetch('/api/artworks/upload', {
         method: 'POST',
         body: form,
       })
 
-      // 本地预插草稿卡片
-      if (currentUserId && payload?.id) {
-        optimisticAddDraft({
-          id: String(payload.id),
-          slug: 'draft',
-          title: title || 'Untitled',
-          thumb_url: String(payload.thumbUrl || payload.originalUrl || ''),
-          author: { id: currentUserId, name: '' },
-          like_count: 0,
-          fav_count: 0,
-          user_state: {
-            liked: false,
-            faved: false,
-          },
-          status: 'draft',
-        })
+      if (payload?.originalUrl) {
+        return String(payload.originalUrl)
       }
-
-      alert('草稿已保存！')
-      resetPanel()
-    } catch (e) {
-      alert('保存草稿失败')
+      return null
+    } catch (error) {
+      console.error('上传输入图片失败:', error)
+      return null
     } finally {
-      uploadingRef.current = false
+      setIsUploading(false)
     }
   }
 
@@ -107,9 +90,21 @@ export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
     }
 
     try {
+      let uploadedImageUrl: string | null = null
+      
+      // 如果有输入图片，先上传到R2
+      if (inputImage) {
+        uploadedImageUrl = await uploadInputImage()
+        if (!uploadedImageUrl) {
+          alert('上传输入图片失败，请重试')
+          return
+        }
+      }
+
       const id = await generateImage(prompt, {
         aspectRatio,
-        model
+        model,
+        inputImage: uploadedImageUrl || undefined
       })
       setGenerationId(id)
       
@@ -121,9 +116,13 @@ export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
           id: id,
           status: 'completed',
           resultImageUrl: pollResult.resultImageUrl || '',
-          originalImageUrl: pollResult.originalImageUrl || ''
+          originalImageUrl: pollResult.originalImageUrl || '',
+          inputImageUrl: uploadedImageUrl
         })
-        setTitle(prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''))
+        // 设置默认标题
+        if (!title.trim()) {
+          setTitle(prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''))
+        }
       }
     } catch (err) {
       alert('生成失败：' + (err instanceof Error ? err.message : '未知错误'))
@@ -131,26 +130,9 @@ export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
   }
 
   const resetPanel = () => {
-    setCreationMode('upload')
     setPrompt('')
-    setFile(null)
-    setPreviewUrl(null)
+    removeInputImage()
     setTitle('')
-    setGenerationResult(null)
-    setGenerationId(null)
-  }
-
-  const switchToAIMode = () => {
-    setCreationMode('ai')
-    setFile(null)
-    setPreviewUrl(null)
-    setPrompt('')
-    setGenerationResult(null)
-  }
-
-  const switchToUploadMode = () => {
-    setCreationMode('upload')
-    setPrompt('')
     setGenerationResult(null)
     setGenerationId(null)
   }
@@ -158,135 +140,108 @@ export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
   return (
     <Card className={`bg-white rounded-lg shadow-xl w-full ${className || ''}`}>
       <div className="p-6 border-b">
-        <h2 className="text-xl font-semibold">创建作品</h2>
-        <p className="text-sm text-gray-600 mt-1">上传图片或使用AI生成，创建你的艺术作品</p>
+        <h2 className="text-xl font-semibold">AI 图像生成</h2>
+        <p className="text-sm text-gray-600 mt-1">使用AI生成全新图像或基于现有图片进行创作</p>
       </div>
       
       <div className="p-6">
-        {/* 创作模式选择 */}
-        <div className="mb-6">
-          <div className="flex space-x-2 p-1 bg-gray-100 rounded-lg">
-            <button
-              onClick={switchToUploadMode}
-              className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all ${
-                creationMode === 'upload'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Image className="w-4 h-4 mr-2" />
-              上传图片
-            </button>
-            <button
-              onClick={switchToAIMode}
-              className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md transition-all ${
-                creationMode === 'ai'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-            >
-              <Wand2 className="w-4 h-4 mr-2" />
-              AI 生成
-            </button>
-          </div>
-        </div>
-
-        {/* 统一的内容区域 */}
         <div className="space-y-6">
-          {/* 提示词输入 - 两种模式都需要 */}
+          {/* 输入图片上传 - 可选 */}
           <div>
             <label className="block text-sm font-medium mb-2">
-              {creationMode === 'upload' ? '作品描述（可选）' : 'AI 生成提示词'}
+              输入图片（可选）
+              <span className="text-xs text-gray-500 ml-2">用于图生图模式</span>
             </label>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={
-                creationMode === 'upload' 
-                  ? '描述你的作品风格、内容或创作灵感...' 
-                  : '描述你想要生成的图片内容，比如：一只可爱的猫在花园里玩耍，卡通风格...'
-              }
-              className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={generating}
-            />
-          </div>
-
-          {/* 上传模式特有内容 */}
-          {creationMode === 'upload' && (
-            <div>
-              <label className="block text-sm font-medium mb-2">选择图片</label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
-                <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-600 mb-2">选择一张要上传的图片</p>
+            {!inputImageUrl ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <Upload className="w-8 h-8 mx-auto mb-3 text-gray-400" />
+                <p className="text-gray-600 mb-2">选择一张图片作为AI生成的参考</p>
+                <p className="text-xs text-gray-500 mb-3">支持JPG、PNG格式，最大10MB</p>
                 <label className="block">
-                  <span className="sr-only">选择图片文件</span>
+                  <span className="sr-only">选择输入图片</span>
                   <input 
-                    aria-label="选择图片文件" 
-                    title="选择图片文件" 
+                    aria-label="选择输入图片" 
+                    title="选择输入图片" 
                     type="file" 
                     accept="image/*" 
                     onChange={onFileChange} 
                     className="block mx-auto" 
                   />
                 </label>
-                {previewUrl && (
-                  <div className="mt-4">
-                    <img src={previewUrl} alt="预览" className="mx-auto rounded max-w-[256px] shadow-lg" />
-                  </div>
-                )}
               </div>
-            </div>
-          )}
-
-          {/* AI模式特有内容 */}
-          {creationMode === 'ai' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">AI模型</label>
-                <select
-                  value={model}
-                  onChange={(e) => setModel(e.target.value as 'flux-kontext-pro' | 'flux-kontext-max')}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={generating}
-                  aria-label="选择AI模型"
-                  title="选择AI模型"
+            ) : (
+              <div className="relative">
+                <img 
+                  src={inputImageUrl} 
+                  alt="输入图片" 
+                  className="w-full max-w-md mx-auto rounded-lg shadow-lg" 
+                />
+                <button
+                  onClick={removeInputImage}
+                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  title="移除图片"
                 >
-                  <option value="flux-kontext-pro">Flux Kontext Pro</option>
-                  <option value="flux-kontext-max">Flux Kontext Max</option>
-                </select>
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2">宽高比</label>
-                <select
-                  value={aspectRatio}
-                  onChange={(e) => setAspectRatio(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={generating}
-                  aria-label="选择宽高比"
-                  title="选择宽高比"
-                >
-                  <option value="1:1">1:1 正方形</option>
-                  <option value="16:9">16:9 横屏</option>
-                  <option value="9:16">9:16 竖屏</option>
-                  <option value="4:3">4:3 传统</option>
-                  <option value="3:4">3:4 人像</option>
-                </select>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* 作品标题 - 两种模式都需要 */}
+          {/* AI生成提示词 */}
           <div>
-            <label className="block text-sm font-medium mb-2">作品标题</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="给你的作品起个名字..."
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <label className="block text-sm font-medium mb-2">
+              {inputImageUrl ? 'AI 编辑提示词' : 'AI 生成提示词'}
+            </label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={
+                inputImageUrl 
+                  ? '描述你想要对这张图片做什么修改，比如：添加彩虹、改变风格、增加元素...' 
+                  : '描述你想要生成的图片内容，比如：一只可爱的猫在花园里玩耍，卡通风格...'
+              }
+              className="w-full h-24 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={generating || isUploading}
             />
           </div>
+
+          {/* AI模型和宽高比设置 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">AI模型</label>
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value as 'flux-kontext-pro' | 'flux-kontext-max')}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={generating || isUploading}
+                aria-label="选择AI模型"
+                title="选择AI模型"
+              >
+                <option value="flux-kontext-pro">Flux Kontext Pro</option>
+                <option value="flux-kontext-max">Flux Kontext Max</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">宽高比</label>
+              <select
+                value={aspectRatio}
+                onChange={(e) => setAspectRatio(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={generating || isUploading}
+                aria-label="选择宽高比"
+                title="选择宽高比"
+              >
+                <option value="1:1">1:1 正方形</option>
+                <option value="16:9">16:9 横屏</option>
+                <option value="9:16">9:16 竖屏</option>
+                <option value="4:3">4:3 传统</option>
+                <option value="3:4">3:4 人像</option>
+              </select>
+            </div>
+          </div>
+
+
 
           {/* 生成状态显示 */}
           {generationStatus && !generationResult && (
@@ -304,12 +259,14 @@ export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
               aspectRatio={aspectRatio}
               outputFormat="png"
               userId={currentUserId}
+              initialTitle={title}
               onRegenerate={() => {
                 setGenerationResult(null)
                 if (prompt.trim()) {
                   handleGenerateImage()
                 }
               }}
+              onTitleChange={(newTitle) => setTitle(newTitle)}
               className="mt-4"
             />
           )}
@@ -320,38 +277,46 @@ export function CreateArtworkPanel({ className }: CreateArtworkPanelProps) {
               variant="outline" 
               onClick={resetPanel} 
               className="flex-1"
-              disabled={generating}
+              disabled={generating || isUploading}
             >
               重置
             </Button>
             
-            {creationMode === 'upload' ? (
-              <Button 
-                onClick={handleSaveDraft} 
-                disabled={!file || !title.trim()} 
-                className="flex-1"
-              >
-                保存草稿
-              </Button>
-            ) : (
-              <Button 
-                onClick={handleGenerateImage} 
-                disabled={!prompt.trim() || generating}
-                className="flex-1"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    生成中...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    AI 生成
-                  </>
-                )}
-              </Button>
-            )}
+            <Button 
+              onClick={handleGenerateImage} 
+              disabled={!prompt.trim() || generating || isUploading}
+              className="flex-1"
+            >
+              {generating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  生成中...
+                </>
+              ) : isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  上传中...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  {inputImageUrl ? 'AI 编辑' : 'AI 生成'}
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* 使用提示 */}
+          <div className="p-4 bg-gray-50 rounded-lg">
+            <h4 className="text-sm font-medium text-gray-800 mb-2">💡 使用提示</h4>
+            <ul className="text-xs text-gray-600 space-y-1">
+              <li>• <strong>纯文本生成</strong>：不选择输入图片，直接输入描述生成全新图像</li>
+              <li>• <strong>图生图编辑</strong>：选择输入图片，描述修改要求进行AI编辑</li>
+              <li>• <strong>Pro模型</strong>：标准质量，性价比高，适合大多数场景</li>
+              <li>• <strong>Max模型</strong>：高质量，适合复杂场景和精细要求</li>
+              <li>• <strong>提示词技巧</strong>：详细描述风格、内容、色彩等，效果更好</li>
+              <li>• <strong>作品标题</strong>：生成完成后在结果区设置标题，然后保存或发布</li>
+            </ul>
           </div>
         </div>
       </div>
