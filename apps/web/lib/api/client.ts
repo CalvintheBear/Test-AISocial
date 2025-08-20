@@ -11,26 +11,70 @@ export async function initClerkTokenProvider(): Promise<void> {
 export async function authFetch<T = any>(input: RequestInfo, init: RequestInit = {}) {
   let token: string | undefined
 
-  // 前端（浏览器）优先使用 Clerk 注入的 token（仅客户端可用）
-  if (typeof window !== 'undefined' && (window as any)?.Clerk) {
+  // 为 GET 请求启用“快速路径”：在短超时内尝试拿 token，拿不到则先无 token 请求，必要时再重试
+  const method = (init.method || 'GET').toUpperCase()
+  const isGet = method === 'GET'
+
+  async function getClerkTokenWithTimeout(timeoutMs = 200): Promise<string | undefined> {
+    if (typeof window === 'undefined') return undefined
+    const maybeClerk = (window as any)?.Clerk
+    if (!maybeClerk) return undefined
+
+    const timeout = new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), timeoutMs))
+    try {
+      const loadPromise = (async () => {
+        try {
+          if (!maybeClerk.loaded) {
+            await maybeClerk.load?.()
+          }
+        } catch {}
+        const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE
+        try {
+          if (template) {
+            return (
+              (await maybeClerk?.session?.getToken?.({ template, skipCache: true })) ||
+              (await maybeClerk?.session?.getToken?.({ template }))
+            )
+          }
+          return (
+            (await maybeClerk?.session?.getToken?.({ skipCache: true })) ||
+            (await maybeClerk?.session?.getToken?.())
+          )
+        } catch {
+          return undefined
+        }
+      })()
+      return await Promise.race([loadPromise as Promise<string | undefined>, timeout])
+    } catch (e) {
+      console.warn('Failed to get Clerk token quickly:', e)
+      return undefined
+    }
+  }
+
+  async function getClerkTokenNoTimeout(): Promise<string | undefined> {
+    if (typeof window === 'undefined') return undefined
     try {
       const clerk = (window as any).Clerk
-      if (!(clerk as any)?.loaded) {
+      if (!clerk) return undefined
+      if (!clerk.loaded) {
         await clerk.load?.()
       }
       const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE
       if (template) {
-        token = await clerk?.session?.getToken?.({ template, skipCache: true })
-        if (!token) token = await clerk?.session?.getToken?.({ template })
-      } else {
-        token = await clerk?.session?.getToken?.({ skipCache: true })
-        if (!token) token = await clerk?.session?.getToken?.()
+        return (await clerk?.session?.getToken?.({ template, skipCache: true })) ||
+          (await clerk?.session?.getToken?.({ template }))
       }
+      return (await clerk?.session?.getToken?.({ skipCache: true })) ||
+        (await clerk?.session?.getToken?.())
     } catch (error) {
       console.warn('Failed to get Clerk token:', error)
-      token = undefined
+      return undefined
     }
   }
+
+  // 先尝试快速拿 token（仅客户端）
+  token = await getClerkTokenWithTimeout(200)
+
   // 可选回退到 DEV_JWT（需显式开启）
   if (!token) {
     await initClerkTokenProvider()
@@ -63,7 +107,23 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   }
   
   try {
-    const res = await fetch(url, { ...init, headers, cache: 'no-store', credentials: 'include' })
+    let res = await fetch(url, { ...init, headers, cache: 'no-store', credentials: 'include' })
+
+    // 如果是 GET 且未携带 token 或 token 可能失效，遇到 401 时尝试获取 token 后重试一次
+    if (isGet && res.status === 401) {
+      const haveAuthHeader = !!(headers as any).Authorization
+      if (!haveAuthHeader) {
+        const retryToken = await getClerkTokenNoTimeout()
+        if (retryToken) {
+          const retryHeaders = {
+            ...(headers || {}),
+            Authorization: `Bearer ${retryToken}`,
+          }
+          res = await fetch(url, { ...init, headers: retryHeaders, cache: 'no-store', credentials: 'include' })
+        }
+      }
+    }
+
     if (!res.ok) {
       let err: any
       try { 
@@ -71,16 +131,14 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
       } catch { 
         err = { message: res.statusText } 
       }
-      
-      // 处理认证相关错误（仅记录，交由调用方决定是否触发登录）
+
       if (res.status === 401) {
         console.warn('Authentication failed:', err)
       }
-      
+
       throw err
     }
     const data = await res.json()
-    // Handle unified response format (envelope pattern)
     return data?.data !== undefined ? data.data : data
   } catch (error) {
     console.error('API request failed:', { url, error })

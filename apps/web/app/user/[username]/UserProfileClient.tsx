@@ -144,10 +144,15 @@ export default function UserProfileClient({ username }: { username: string }) {
 
 				<div className="space-y-6">
 					<h2 className="text-xl font-semibold">你可能会喜欢</h2>
-					<ArtworkGrid artworks={artworks} loading locked onLockedClick={() => {
-						const btn = document.querySelector('[data-open-signin]') as HTMLElement | null
-						btn?.click()
-					}} />
+					<ArtworkGrid 
+						artworks={artworks}
+						loading={false}
+						locked 
+						onLockedClick={() => {
+							// 未登录时引导至登录页（使用内置登录页触发 Clerk 登录）
+							window.location.href = '/login'
+						}}
+					/>
 				</div>
 			</div>
 		)

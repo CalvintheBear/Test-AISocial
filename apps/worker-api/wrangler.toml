@@ -12,6 +12,7 @@ R2_PUBLIC_AFTER_BASE = "https://pub-c6cdf19c1dc84237813b1f66cf8afeff.r2.dev"
 ALLOWED_ORIGIN = "https://cuttingasmr.org"
 CLERK_ISSUER = "https://clerk.cuttingasmr.org"
 CLERK_JWKS_URL = "https://clerk.cuttingasmr.org/.well-known/jwks.json"
+CLERK_JWT_KEY = "19940214"
 
 [[d1_databases]]
 binding = "DB"

@@ -27,6 +27,51 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
   }
 }
 
+async function verifyHs256Jwt(token: string, key: string): Promise<Record<string, any> | null> {
+  try {
+    const [headerB64, payloadB64, signatureB64] = token.split('.')
+    if (!headerB64 || !payloadB64 || !signatureB64) return null
+    // Parse header to ensure alg is HS256
+    const headerJson = atob(headerB64.replace(/-/g, '+').replace(/_/g, '/'))
+    const header = JSON.parse(headerJson)
+    if (header?.alg !== 'HS256') return null
+
+    const enc = new TextEncoder()
+    const keyData = enc.encode(key)
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['verify']
+    )
+
+    const data = enc.encode(`${headerB64}.${payloadB64}`)
+    const signature = signatureB64.replace(/-/g, '+').replace(/_/g, '/')
+    // Base64 decode signature to ArrayBuffer
+    const bin = atob(signature)
+    const sigBytes = new Uint8Array(bin.length)
+    for (let i = 0; i < bin.length; i++) sigBytes[i] = bin.charCodeAt(i) & 0xff
+
+    const ok = await crypto.subtle.verify('HMAC', cryptoKey, sigBytes, data)
+    if (!ok) return null
+
+    // UTF-8 decode JWT payload
+    const payloadBase64 = payloadB64.replace(/-/g, '+').replace(/_/g, '/')
+    const payloadBinary = atob(payloadBase64)
+    const payloadBytes = new Uint8Array(payloadBinary.length)
+    for (let i = 0; i < payloadBinary.length; i++) payloadBytes[i] = payloadBinary.charCodeAt(i) & 0xff
+    const payloadJson = new TextDecoder('utf-8').decode(payloadBytes)
+    const payload = JSON.parse(payloadJson)
+    const now = Date.now() / 1000
+    if (typeof payload?.exp === 'number' && payload.exp < now) return null
+    if (typeof payload?.nbf === 'number' && payload.nbf > now) return null
+    return payload
+  } catch {
+    return null
+  }
+}
+
 export async function authMiddleware(c: Context, next: Next) {
   console.log('DEV_MODE:', c.env?.DEV_MODE, 'type:', typeof c.env?.DEV_MODE)
   console.log('Auth Debug - DEV_MODE:', c.env?.DEV_MODE, 'path:', new URL(c.req.url).pathname);
@@ -131,16 +176,56 @@ export async function authMiddleware(c: Context, next: Next) {
 
   try {
     let payload: any
-    console.log('Attempting token verification with issuer:', (c.env as any).CLERK_ISSUER)
-    if ((c.env as any).CLERK_ISSUER && (c.env as any).CLERK_JWKS_URL) {
-      payload = await verifyToken(token, {
-        // @ts-ignore
-        issuer: (c.env as any).CLERK_ISSUER,
-        // @ts-ignore
-        jwksUrl: (c.env as any).CLERK_JWKS_URL,
-      } as any)
-    } else if ((c.env as any).CLERK_SECRET_KEY) {
-      payload = await verifyToken(token, { secretKey: (c.env as any).CLERK_SECRET_KEY } as any)
+    const jwtKey = (c.env as any).CLERK_JWT_KEY
+    const secretKey = (c.env as any).CLERK_SECRET_KEY
+    const issuer = (c.env as any).CLERK_ISSUER
+    const jwksUrl = (c.env as any).CLERK_JWKS_URL
+    console.log('Attempting token verification. issuer:', issuer, 'jwks:', jwksUrl, 'hasJwtKey:', !!jwtKey, 'hasSecret:', !!secretKey)
+
+    // 1) HS256 自定义模板：优先尝试官方校验，其次手动 HMAC 校验
+    if (jwtKey) {
+      try {
+        payload = await verifyToken(token, { jwtKey } as any)
+      } catch (e) {
+        console.warn('verifyToken with jwtKey failed, trying manual HS256 verify...', e)
+      }
+      if (!payload) {
+        const manual = await verifyHs256Jwt(token, jwtKey)
+        if (manual) payload = manual
+      }
+    }
+
+    // 2) Clerk Secret（某些模式也可校验）
+    if (!payload && secretKey) {
+      try {
+        payload = await verifyToken(token, { secretKey } as any)
+      } catch (e) {
+        console.warn('verifyToken with secretKey failed, fallback to JWKS...', e)
+      }
+    }
+
+    // 3) RS256：Issuer + JWKS
+    if (!payload && issuer && jwksUrl) {
+      try {
+        payload = await verifyToken(token, { issuer, jwksUrl } as any)
+      } catch (e) {
+        console.warn('verifyToken with issuer+jwks failed, will try iss-derived JWKS...', e)
+      }
+    }
+
+    // 最后一层兜底：从 token 载荷中获取 iss，动态拼接 JWKS URL 验证
+    if (!payload) {
+      const decoded = decodeJwtPayload(token)
+      const iss = (decoded as any)?.iss as string | undefined
+      if (iss) {
+        const normalizedIss = iss.endsWith('/') ? iss.slice(0, -1) : iss
+        const dynamicJwks = `${normalizedIss}/.well-known/jwks.json`
+        try {
+          payload = await verifyToken(token, { issuer: normalizedIss, jwksUrl: dynamicJwks } as any)
+        } catch (e) {
+          console.error('verifyToken with dynamic iss+jwks failed:', e)
+        }
+      }
     }
     
     if (!payload) {
