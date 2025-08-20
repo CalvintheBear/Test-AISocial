@@ -13,43 +13,23 @@ router.get('/', async (c) => {
   const d1 = D1Service.fromEnv(c.env)
   const redis = RedisService.fromEnv(c.env)
   
-  // Try to get from cache first
-  const cacheKey = `feed:list:${limit}`
-  const cached = await redis.getFeed(limit)
-  
-  let list
-  if (cached) {
-    list = JSON.parse(cached)
+  // 匿名态优先使用缓存；登录态直接用 LEFT JOIN 一次性取到关系位
+  let items
+  if (!userId) {
+    const cached = await redis.getFeed(limit)
+    let list
+    if (cached) {
+      list = JSON.parse(cached)
+    } else {
+      list = await d1.listFeed(Number(limit))
+      await redis.setFeed(limit, JSON.stringify(list), 600)
+    }
+    const userStates = list.map(() => ({ liked: false, faved: false }))
+    items = formatArtworkListForAPI(list, userStates)
   } else {
-    // Cache miss - get from D1 and cache it
-    list = await d1.listFeed(Number(limit))
-    await redis.setFeed(limit, JSON.stringify(list), 600) // 10 minutes TTL
+    const { artworks, userStates } = await d1.listFeedWithUserState(userId, Number(limit))
+    items = formatArtworkListForAPI(artworks, userStates)
   }
-  
-  // Sync counts for all artworks and get actual counts
-  const artworkIds = list.map((a: any) => a.id)
-  const [favorites, likedIds] = await Promise.all([
-    redis.listFavorites(userId),
-    redis.listUserLikes(userId)
-  ])
-  const likedSet = new Set(likedIds)
-  
-  // Sync actual counts for all artworks
-  const syncedArtworks = await Promise.all(
-    list.map(async (artwork: any) => {
-      const actualCounts = await d1.syncArtworkCounts(artwork.id)
-      return {
-        ...artwork,
-        likeCount: actualCounts.likeCount,
-        favoriteCount: actualCounts.favoriteCount
-      }
-    })
-  )
-  
-  const items = formatArtworkListForAPI(syncedArtworks, artworkIds.map((id: string) => ({
-    liked: likedSet.has(id),
-    faved: favorites.includes(id)
-  })))
   return c.json(ok(items))
 })
 

@@ -99,7 +99,8 @@ router.post('/:id/like', async (c) => {
   }
   
   // Invalidate cache
-  try { await redis.invalidateFeed() } catch {}
+  // 点赞不会影响“收藏列表”缓存；此处不清理整页Feed，依赖前端乐观更新
+  try { /* no-op invalidation */ } catch {}
   
   // 获取更新后的热度数据
   const hotData = await d1.getArtworkHotData(id)
@@ -150,7 +151,7 @@ router.delete('/:id/like', async (c) => {
     userState.faved = await d1.isFavoritedByUser(userId, id)
   }
   
-  try { await redis.invalidateFeed() } catch {}
+  try { /* no-op invalidation */ } catch {}
   
   // 获取更新后的热度数据
   const hotData = await d1.getArtworkHotData(id)
@@ -200,8 +201,7 @@ router.post('/:id/favorite', async (c) => {
   }
   
   await Promise.all([
-    redis.invalidateUserFavorites(userId),
-    redis.invalidateFeed()
+    redis.invalidateUserFavorites(userId)
   ])
   
   // 获取用户状态和热度数据
@@ -248,7 +248,7 @@ router.delete('/:id/favorite', async (c) => {
   
   await Promise.all([
     redis.invalidateUserFavorites(userId),
-    redis.invalidateFeed()
+    
   ])
   
   // 获取用户状态和热度数据

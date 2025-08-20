@@ -134,6 +134,58 @@ export class D1Service {
   }
 
   /**
+   * 使用 LEFT JOIN 在一次查询中返回 Feed 列表以及当前用户的关系位
+   */
+  async listFeedWithUserState(userId: string, limit = 20): Promise<{ artworks: Artwork[]; userStates: Array<{ liked: boolean; faved: boolean }> }> {
+    const stmt = this.db.prepare(`
+      SELECT 
+        a.*, 
+        u.name as user_name, 
+        u.profile_pic,
+        CASE WHEN al.user_id IS NULL THEN 0 ELSE 1 END AS isLiked,
+        CASE WHEN af.user_id IS NULL THEN 0 ELSE 1 END AS isFavorited
+      FROM artworks a
+      JOIN users u ON a.user_id = u.id
+      LEFT JOIN artworks_like al ON al.artwork_id = a.id AND al.user_id = ?
+      LEFT JOIN artworks_favorite af ON af.artwork_id = a.id AND af.user_id = ?
+      WHERE a.status = 'published'
+      ORDER BY COALESCE(a.published_at, a.created_at) DESC
+      LIMIT ?
+    `)
+    const rows = await stmt.bind(userId, userId, limit).all() as any
+
+    const artworks: Artwork[] = []
+    const userStates: Array<{ liked: boolean; faved: boolean }> = []
+
+    for (const row of (rows.results || [])) {
+      const slug = row.slug || this.generateSlug(String(row.title) || 'untitled')
+      artworks.push({
+        id: String(row.id),
+        slug,
+        title: String(row.title || 'Untitled'),
+        url: String(row.thumb_url || row.url),
+        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        author: {
+          id: String(row.user_id),
+          name: String(row.user_name || ''),
+          profilePic: row.profile_pic ? String(row.profile_pic) : undefined
+        },
+        likeCount: Number(row.like_count || 0),
+        favoriteCount: Number(row.favorite_count || 0),
+        createdAt: Number(row.created_at),
+        publishedAt: row.published_at ? Number(row.published_at) : undefined,
+        engagementWeight: Number(row.engagement_weight || 0)
+      })
+      userStates.push({
+        liked: Number(row.isLiked || 0) === 1,
+        faved: Number(row.isFavorited || 0) === 1,
+      })
+    }
+
+    return { artworks, userStates }
+  }
+
+  /**
    * 返回最近发布作品的原图与缩略图 URL，用于离线生成缩略图任务
    */
   async listRecentPublishedWithUrls(limit = 50): Promise<Array<{ id: string; originalUrl: string; thumbUrl: string | null }>> {
