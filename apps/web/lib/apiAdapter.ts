@@ -8,7 +8,7 @@ interface BackendArtworkResponse {
   url: string
   thumb_url: string
   slug: string
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'generating'
   created_at: number
   published_at?: number
   author: {

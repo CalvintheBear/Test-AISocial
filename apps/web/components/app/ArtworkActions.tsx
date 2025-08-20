@@ -13,7 +13,7 @@ interface ArtworkActionsProps {
   artworkId: string
   initialLikeCount: number
   initialIsFavorite: boolean
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'generating'
   isAuthor?: boolean
   authorId?: string
 }
@@ -29,7 +29,7 @@ export function ArtworkActions({ artworkId, initialLikeCount, initialIsFavorite,
   const [publishing, setPublishing] = useState(false)
   const [unpublishing, setUnpublishing] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [statusState, setStatusState] = useState<'draft' | 'published'>(status)
+  const [statusState, setStatusState] = useState<'draft' | 'published' | 'generating'>(status)
   const [isAuthor, setIsAuthor] = useState<boolean>(!!isAuthorProp)
 
   useEffect(() => { setIsAuthor(!!isAuthorProp) }, [isAuthorProp])

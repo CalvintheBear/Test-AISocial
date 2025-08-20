@@ -6,7 +6,7 @@ export type Artwork = {
   url: string
   originalUrl?: string
   thumbUrl?: string
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'generating'
   author: User
   likeCount: number
   favoriteCount: number
@@ -86,7 +86,7 @@ export class D1Service {
       url: String(row.thumb_url || row.url),
       originalUrl: String(row.url),
       thumbUrl: String(row.thumb_url || row.url),
-      status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+      status: row.status || 'draft',
       author: {
         id: String(row.user_id),
         name: String(row.user_name || ''),
@@ -118,7 +118,7 @@ export class D1Service {
         slug: slug,
         title: String(row.title || 'Untitled'),
         url: String(row.thumb_url || row.url),
-        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        status: row.status || 'draft',
         author: {
           id: String(row.user_id),
           name: String(row.user_name || ''),
@@ -164,7 +164,7 @@ export class D1Service {
         slug,
         title: String(row.title || 'Untitled'),
         url: String(row.thumb_url || row.url),
-        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        status: row.status || 'draft',
         author: {
           id: String(row.user_id),
           name: String(row.user_name || ''),
@@ -205,7 +205,7 @@ export class D1Service {
         slug,
         title: String(row.title || 'Untitled'),
         url: String(row.thumb_url || row.url),
-        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        status: row.status || 'draft',
         author: {
           id: String(row.user_id),
           name: String(row.user_name || ''),
@@ -258,7 +258,7 @@ export class D1Service {
         slug: slug,
         title: String(row.title || 'Untitled'),
         url: String(row.thumb_url || row.url),
-        status: (row.status === 'draft' || row.status === 'published') ? row.status : 'draft',
+        status: row.status || 'draft',
         author: {
           id: String(row.user_id),
           name: String(row.user_name),

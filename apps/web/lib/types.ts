@@ -16,7 +16,7 @@ export type ArtworkListItem = {
   hotness?: number
   trend?: 'up' | 'down' | 'stable'
   rank?: number
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'generating'
 }
 
 export type ArtworkDetail = {
@@ -26,7 +26,7 @@ export type ArtworkDetail = {
   url: string
   thumb_url: string
   created_at: number
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'generating'
   author: User
   like_count: number
   fav_count: number
