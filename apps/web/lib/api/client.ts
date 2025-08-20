@@ -31,10 +31,15 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
       token = undefined
     }
   }
-  // 回退到 DEV_JWT
+  // 可选回退到 DEV_JWT（需显式开启）
   if (!token) {
     await initClerkTokenProvider()
-    token = (await tokenProvider?.()) || process.env.NEXT_PUBLIC_DEV_JWT
+    const maybeToken = await tokenProvider?.()
+    const devJwt = process.env.NEXT_PUBLIC_DEV_JWT
+    const useDevJwt = process.env.NEXT_PUBLIC_USE_DEV_JWT === '1'
+    const normalized = (maybeToken || '').trim()
+    const isLikelyValid = normalized && normalized !== 'undefined' && normalized !== 'null'
+    token = isLikelyValid ? normalized : (useDevJwt ? devJwt : undefined)
   }
 
   const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8787'
