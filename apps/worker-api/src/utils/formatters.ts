@@ -27,6 +27,8 @@ export function formatArtworkForAPI(
   artwork: Artwork,
   userState: { liked: boolean; faved: boolean }
 ): UnifiedArtworkResponse {
+  const authorName = (artwork.author?.name || '').trim() || '未命名用户'
+  const authorPic = (artwork.author as any)?.profilePic || (artwork as any)?.author?.profile_pic || '/images/default-avatar.jpg'
   return {
     id: artwork.id,
     title: artwork.title,
@@ -38,8 +40,8 @@ export function formatArtworkForAPI(
     published_at: artwork.publishedAt,
     author: {
       id: artwork.author.id,
-      name: artwork.author.name,
-      profile_pic: artwork.author.profilePic
+      name: authorName,
+      profile_pic: authorPic
     },
     like_count: artwork.likeCount,
     fav_count: artwork.favoriteCount,

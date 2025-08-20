@@ -181,7 +181,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 				<div className="flex items-center space-x-6 px-8">
 					<Image
 						src={profile?.profilePic || profile?.profile_pic || '/images/default-avatar.jpg'}
-						alt={profile?.name || '用户'}
+						alt={(profile?.name || '').trim() || '未命名用户'}
 						width={120}
 						height={120}
 						className="rounded-full border-4 border-white"
