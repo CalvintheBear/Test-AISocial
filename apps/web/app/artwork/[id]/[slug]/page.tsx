@@ -142,8 +142,6 @@ export default async function ArtworkPage({
           {/* Author Actions: 发布/取消发布/删除 */}
           <ArtworkActions
             artworkId={artwork.id}
-            initialLikeCount={artwork.like_count}
-            initialIsFavorite={!!artwork.user_state.faved}
             status={artwork.status}
             authorId={artwork.author.id}
           />
