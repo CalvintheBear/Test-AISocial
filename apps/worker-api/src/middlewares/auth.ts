@@ -159,18 +159,16 @@ export async function authMiddleware(c: Context, next: Next) {
     return next()
   }
 
-  let token: string | undefined
   const auth = c.req.header('authorization')
   console.log('Authorization header:', auth)
-  if (auth?.startsWith('Bearer ')) token = auth.slice('Bearer '.length)
-  if (!token) {
-    const cookie = c.req.header('cookie')
-    console.log('Cookie header:', cookie)
-    const sessionCookie = getCookie('__session', cookie)
-    if (sessionCookie) token = sessionCookie
-  }
-  console.log('Found token:', !!token, 'token length:', token?.length)
-  if (!token) {
+  const headerToken = auth?.startsWith('Bearer ') ? auth.slice('Bearer '.length) : undefined
+  const cookieHeader = c.req.header('cookie')
+  console.log('Cookie header:', cookieHeader)
+  const sessionCookie = getCookie('__session', cookieHeader)
+  const cookieToken = sessionCookie
+  const tokensToTry = Array.from(new Set([headerToken, cookieToken].filter(Boolean))) as string[]
+  console.log('Auth tokens candidates count:', tokensToTry.length)
+  if (tokensToTry.length === 0) {
     return c.json({ code: 'AUTH_REQUIRED', message: 'Authorization or Clerk session required' }, 401)
   }
 
@@ -182,83 +180,80 @@ export async function authMiddleware(c: Context, next: Next) {
     const jwksUrl = (c.env as any).CLERK_JWKS_URL
     console.log('Attempting token verification. issuer:', issuer, 'jwks:', jwksUrl, 'hasJwtKey:', !!jwtKey, 'hasSecret:', !!secretKey)
 
-    // 1) HS256 自定义模板：优先尝试官方校验，其次手动 HMAC 校验
-    if (jwtKey) {
-      try {
-        payload = await verifyToken(token, { jwtKey } as any)
-      } catch (e) {
-        console.warn('verifyToken with jwtKey failed, trying manual HS256 verify...', e)
-      }
-      if (!payload) {
-        const manual = await verifyHs256Jwt(token, jwtKey)
-        if (manual) payload = manual
-      }
-    }
-
-    // 2) Clerk Secret（某些模式也可校验）
-    if (!payload && secretKey) {
-      try {
-        payload = await verifyToken(token, { secretKey } as any)
-      } catch (e) {
-        console.warn('verifyToken with secretKey failed, fallback to JWKS...', e)
-      }
-    }
-
-    // 3) RS256：Issuer + JWKS
-    if (!payload && issuer && jwksUrl) {
-      try {
-        payload = await verifyToken(token, { issuer, jwksUrl } as any)
-      } catch (e) {
-        console.warn('verifyToken with issuer+jwks failed, will try iss-derived JWKS...', e)
-      }
-    }
-
-    // 最后一层兜底：从 token 载荷中获取 iss，动态拼接 JWKS URL 验证
-    if (!payload) {
-      const decoded = decodeJwtPayload(token)
-      const iss = (decoded as any)?.iss as string | undefined
-      if (iss) {
-        const normalizedIss = iss.endsWith('/') ? iss.slice(0, -1) : iss
-        const dynamicJwks = `${normalizedIss}/.well-known/jwks.json`
+    // 轮询尝试：先用 Authorization，再用 Cookie
+    for (const token of tokensToTry) {
+      payload = undefined
+      // 1) HS256
+      if (jwtKey) {
         try {
-          payload = await verifyToken(token, { issuer: normalizedIss, jwksUrl: dynamicJwks } as any)
+          payload = await verifyToken(token, { jwtKey } as any)
         } catch (e) {
-          console.error('verifyToken with dynamic iss+jwks failed:', e)
+          console.warn('verifyToken with jwtKey failed, trying manual HS256 verify...')
+        }
+        if (!payload) {
+          const manual = await verifyHs256Jwt(token, jwtKey)
+          if (manual) payload = manual
         }
       }
+      // 2) Secret
+      if (!payload && secretKey) {
+        try { payload = await verifyToken(token, { secretKey } as any) } catch {}
+      }
+      // 3) RS256 issuer+jwks
+      if (!payload && issuer && jwksUrl) {
+        try { payload = await verifyToken(token, { issuer, jwksUrl } as any) } catch {}
+      }
+      // 4) 动态 iss JWKS
+      if (!payload) {
+        const decoded = decodeJwtPayload(token)
+        const iss = (decoded as any)?.iss as string | undefined
+        if (iss) {
+          const normalizedIss = iss.endsWith('/') ? iss.slice(0, -1) : iss
+          const dynamicJwks = `${normalizedIss}/.well-known/jwks.json`
+          try { payload = await verifyToken(token, { issuer: normalizedIss, jwksUrl: dynamicJwks } as any) } catch {}
+        }
+      }
+
+      if (payload) {
+        console.log('JWT payload verified successfully (source:', token === headerToken ? 'header' : 'cookie', ')')
+        const userId = (payload as any)?.sub as string
+        if (!userId) break
+        ;(c as any).set('userId', userId)
+        const claims = {
+          name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
+          email: (payload as any)?.email ?? (payload as any)?.email_address ?? null,
+          picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? (payload as any)?.profile_image_url ?? null,
+          username: (payload as any)?.username ?? (payload as any)?.preferred_username ?? null,
+          email_verified: (payload as any)?.email_verified ?? (payload as any)?.email_verified ?? null,
+          updated_at: (payload as any)?.updated_at ?? null,
+        }
+        ;(c as any).set('claims', claims)
+        try {
+          const d1 = D1Service.fromEnv(c.env)
+          await d1.upsertUser({ id: userId, name: claims.name, email: claims.email, profilePic: claims.picture })
+        } catch {}
+        return next()
+      }
     }
-    
-    if (!payload) {
-      throw new Error('Token verification failed - no payload returned')
-    }
-    
-    console.log('JWT payload verified successfully')
-    const userId = (payload as any)?.sub as string
-    if (!userId) throw new Error('NO_SUB')
-    ;(c as any).set('userId', userId)
-    // Extract custom claims from Clerk template if present
-    // Handle both Clerk standard claims and custom template claims
-    const claims = {
-      name: (payload as any)?.name ?? (payload as any)?.full_name ?? (payload as any)?.given_name ?? null,
-      email: (payload as any)?.email ?? (payload as any)?.email_address ?? null,
-      picture: (payload as any)?.picture ?? (payload as any)?.image_url ?? (payload as any)?.profile_image_url ?? null,
-      username: (payload as any)?.username ?? (payload as any)?.preferred_username ?? null,
-      email_verified: (payload as any)?.email_verified ?? (payload as any)?.email_verified ?? null,
-      updated_at: (payload as any)?.updated_at ?? null,
-    }
-    ;(c as any).set('claims', claims)
-    try {
-      const d1 = D1Service.fromEnv(c.env)
-      await d1.upsertUser({ id: userId, name: claims.name, email: claims.email, profilePic: claims.picture })
-    } catch {}
-    return next()
+
+    // 若全部失败
+    throw new Error('Token verification failed - no payload returned')
+
+    // unreachable: 已在上面的循环内 return next()
   } catch (error) {
     console.error('JWT verification failed:', error)
     
     // 仅在 DEV_MODE 下允许 fallback 解码（仅用于开发调试）
     if (c.env?.DEV_MODE === '1' || c.env?.DEV_MODE === 1) {
       console.log('DEV_MODE: Attempting fallback JWT decode...')
-      const payload = decodeJwtPayload(token)
+      const payload = (() => {
+        // 从候选里取第一个可解码的 token
+        for (const t of tokensToTry) {
+          const p = decodeJwtPayload(t)
+          if (p?.sub) return p
+        }
+        return null
+      })()
       if (payload?.sub && payload?.exp && Number(payload.exp) * 1000 > Date.now()) {
         console.log('DEV_MODE: Fallback validation passed for user:', payload.sub)
         ;(c as any).set('userId', payload.sub as string)

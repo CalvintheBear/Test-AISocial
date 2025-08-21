@@ -13,31 +13,30 @@ export class CheckinService {
   }
 
   private async ensureTables(): Promise<void> {
-    await this.db.exec(`
-      CREATE TABLE IF NOT EXISTS user_checkins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        checkin_date TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-      );
-    `)
-    await this.db.exec(`
-      CREATE TABLE IF NOT EXISTS checkin_credits (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        checkin_id INTEGER NOT NULL,
-        credits INTEGER NOT NULL DEFAULT 12,
-        expires_at INTEGER NOT NULL,
-        expired_at INTEGER,
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-        FOREIGN KEY (checkin_id) REFERENCES user_checkins(id) ON DELETE CASCADE
-      );
-    `)
+    // 首选带外键版本，失败则回退到无外键版本，避免生产环境中表结构不一致导致的创建失败
+    // 注意：D1 的 exec 在某些环境对分号结尾较敏感，去掉末尾分号并用一行定义
+    try {
+      await this.db.exec(
+        'CREATE TABLE IF NOT EXISTS user_checkins (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, checkin_date TEXT NOT NULL, created_at INTEGER NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE)'
+      )
+    } catch {
+      await this.db.exec(
+        'CREATE TABLE IF NOT EXISTS user_checkins (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, checkin_date TEXT NOT NULL, created_at INTEGER NOT NULL)'
+      )
+    }
+    try {
+      await this.db.exec(
+        'CREATE TABLE IF NOT EXISTS checkin_credits (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, checkin_id INTEGER NOT NULL, credits INTEGER NOT NULL DEFAULT 12, expires_at INTEGER NOT NULL, expired_at INTEGER, created_at INTEGER NOT NULL, FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, FOREIGN KEY (checkin_id) REFERENCES user_checkins(id) ON DELETE CASCADE)'
+      )
+    } catch {
+      await this.db.exec(
+        'CREATE TABLE IF NOT EXISTS checkin_credits (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, checkin_id INTEGER NOT NULL, credits INTEGER NOT NULL DEFAULT 12, expires_at INTEGER NOT NULL, expired_at INTEGER, created_at INTEGER NOT NULL)'
+      )
+    }
     // 创建索引
     try { await this.db.exec('CREATE INDEX IF NOT EXISTS idx_checkins_user_date ON user_checkins(user_id, checkin_date)') } catch {}
     try { await this.db.exec('CREATE INDEX IF NOT EXISTS idx_checkins_date ON user_checkins(checkin_date)') } catch {}
+    try { await this.db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_checkins_user_date_unique ON user_checkins(user_id, checkin_date)') } catch {}
     try { await this.db.exec('CREATE INDEX IF NOT EXISTS idx_checkin_credits_user ON checkin_credits(user_id)') } catch {}
     try { await this.db.exec('CREATE INDEX IF NOT EXISTS idx_checkin_credits_expires ON checkin_credits(expires_at)') } catch {}
     try { await this.db.exec('CREATE INDEX IF NOT EXISTS idx_checkin_credits_expired ON checkin_credits(expired_at)') } catch {}
@@ -148,12 +147,21 @@ export class CheckinService {
     const today = this.getTodayString()
     
     // 插入签到记录
-    const checkinResult = await this.db.prepare(`
+    const insertRes = await this.db.prepare(`
       INSERT INTO user_checkins (user_id, checkin_date, created_at)
       VALUES (?, ?, ?)
     `).bind(userId, today, now).run() as any
     
-    const checkinId = checkinResult.meta.last_row_id
+    // 兼容某些环境 meta 为空的情况
+    let checkinId: number | string | null = insertRes?.meta?.last_row_id ?? null
+    if (!checkinId) {
+      const row = await this.db.prepare(`SELECT id FROM user_checkins WHERE user_id = ? AND checkin_date = ?`)
+        .bind(userId, today).first() as any
+      checkinId = row?.id || null
+    }
+    if (!checkinId) {
+      throw new Error('CHECKIN_INSERT_FAILED')
+    }
     
     // 计算过期时间（隔天过期）
     const tomorrow = new Date()
