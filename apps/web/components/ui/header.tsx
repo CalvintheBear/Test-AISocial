@@ -24,8 +24,6 @@ const Header: React.FC<HeaderProps> = ({ className, onOpenCreateModal }) => {
 
         {/* Desktop Auth */}
         <div className="hidden md:flex items-center space-x-3">
-          <CheckinButton />
-          <CreditsBadge />
           {isClerkEnabled ? (
             <>
               <SignedOut>
@@ -34,6 +32,8 @@ const Header: React.FC<HeaderProps> = ({ className, onOpenCreateModal }) => {
                 </SignInButton>
               </SignedOut>
               <SignedIn>
+                <CheckinButton />
+                <CreditsBadge />
                 <UserButton afterSignOutUrl="/" />
               </SignedIn>
             </>

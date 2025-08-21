@@ -15,7 +15,7 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   const method = (init.method || 'GET').toUpperCase()
   const isGet = method === 'GET'
 
-  async function getClerkTokenWithTimeout(timeoutMs = 200): Promise<string | undefined> {
+  async function getClerkTokenWithTimeout(timeoutMs = 300): Promise<string | undefined> {
     if (typeof window === 'undefined') return undefined
     const maybeClerk = (window as any)?.Clerk
     if (!maybeClerk) return undefined
@@ -96,7 +96,11 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     } catch { return '' }
   })()
 
-  const forceAuthGet = isGet && /\/api\/users\/(me|[^/]+\/(likes|favorites|artworks))$/.test(path)
+  const forceAuthGet = isGet && (
+    /\/api\/users\/(me|[^/]+\/(likes|favorites|artworks))$/.test(path) ||
+    /\/api\/checkin\/status$/.test(path) ||
+    /\/api\/credits\/me$/.test(path)
+  )
   if (!token && typeof window !== 'undefined' && (!isGet || forceAuthGet)) {
     token = await getClerkTokenNoTimeout()
   }

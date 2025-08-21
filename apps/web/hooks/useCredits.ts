@@ -1,31 +1,43 @@
-import { useCallback, useEffect, useState } from 'react'
+import useSWR from 'swr'
 import { API } from '@/lib/api/endpoints'
 import { authFetch } from '@/lib/api/client'
 
 export function useCredits() {
-  const [credits, setCredits] = useState<number | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const refresh = useCallback(async () => {
-    setLoading(true)
-    setError(null)
+  const localInitial = (() => {
+    if (typeof window === 'undefined') return undefined as number | undefined
     try {
-      const data = await authFetch<{ credits: number }>(API.credits.me)
-      const value = (data as any)?.credits ?? (data as any)
-      setCredits(typeof value === 'number' ? value : 0)
-    } catch (e: any) {
-      setError(e?.message || '获取积分失败')
-    } finally {
-      setLoading(false)
+      const raw = localStorage.getItem('credits:value')
+      return raw ? Number(raw) : undefined
+    } catch { return undefined }
+  })()
+
+  const { data, error, isLoading, mutate } = useSWR<any>(
+    API.credits.me,
+    authFetch,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      dedupingInterval: 60_000,
+      fallbackData: typeof localInitial === 'number' ? { credits: localInitial } : undefined,
     }
-  }, [])
+  )
 
-  useEffect(() => {
-    refresh()
-  }, [refresh])
+  const parsed = (() => {
+    const value = typeof data === 'number' ? data : (data?.credits ?? data)
+    return typeof value === 'number' ? value : 0
+  })()
 
-  return { credits, loading, error, refresh }
+  // 将最新积分写入本地，用于下次首屏回显
+  if (typeof window !== 'undefined') {
+    try { localStorage.setItem('credits:value', String(parsed)) } catch {}
+  }
+
+  return {
+    credits: parsed as number,
+    loading: isLoading,
+    error: error ? (error as any).message || '获取积分失败' : null,
+    refresh: () => mutate(),
+  }
 }
 
 

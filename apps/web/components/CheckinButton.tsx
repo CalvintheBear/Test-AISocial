@@ -10,10 +10,18 @@ export default function CheckinButton() {
   const { stats, isLoading, refetch } = useCheckinStatus()
   const { checkin } = useCheckin()
   const [isCheckingIn, setIsCheckingIn] = useState(false)
-  const [checkedTodayLocal, setCheckedTodayLocal] = useState(false)
+  const [checkedTodayLocal, setCheckedTodayLocal] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      return localStorage.getItem('checkin:lastDate') === today
+    } catch {
+      return false
+    }
+  })
 
   const handleCheckin = async () => {
-    if (isCheckingIn || stats?.todayCheckedIn) return
+    if (isCheckingIn || stats?.todayCheckedIn || checkedTodayLocal) return
     
     setIsCheckingIn(true)
     try {
@@ -63,6 +71,7 @@ export default function CheckinButton() {
         size="sm"
         onClick={handleCheckin}
         disabled={checkedToday || isCheckingIn}
+        aria-disabled={checkedToday || isCheckingIn}
       >
         {checkedToday ? '今日已签到' : isCheckingIn ? '签到中...' : '签到'}
       </Button>

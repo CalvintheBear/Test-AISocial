@@ -50,7 +50,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 				setProfile(current)
 				setHideName(!current?.name)
 				setHideEmail(!current?.email)
-				if (current?.id) await reloadAll(current.id)
+				// likes 改为按需加载（切至 likes Tab 时再请求）
 			}
 		} catch {
 			// 忽略错误，不把它当作未登录；保持 UI 为已登录状态并允许稍后重试
@@ -71,10 +71,22 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 		loadProfile()
 	}, [isLoaded, isSignedIn, loadProfile])
 
+	// Tab 与 URL 同步（上移以便下方 hooks 使用）
+	const searchParams = useSearchParams()
+	const router = useRouter()
+	const tabParam = searchParams.get('tab') || 'works'
+	const setTab = (tab: string) => {
+		const params = new URLSearchParams(searchParams.toString())
+		params.set('tab', tab)
+		router.replace(`?${params.toString()}`)
+	}
+
 	// 目标用户ID：访问他人主页时使用 `username`，访问 "me" 时使用当前用户ID
 	const targetUserId = (username === 'me' ? profile?.id : username) as string | undefined
 	const { artworks: swrArtworks } = useUserArtworks(targetUserId || '', initialArtworks)
-	const { artworks: swrFavorites } = useFavorites(targetUserId || '', undefined)
+	// 收藏按需加载：只有当前 Tab 激活才发起请求
+	const enableFavorites = tabParam === 'favorites'
+	const { artworks: swrFavorites } = useFavorites(enableFavorites ? (targetUserId || '') : '', undefined)
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
 
@@ -124,15 +136,14 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	// 仅当本人访问自己的主页时，才允许显示“隐藏名称/邮箱”按钮
 	const isOwner = username === 'me' || !!(me?.id && username === me.id)
 
-	// Tab 与 URL 同步
-	const searchParams = useSearchParams()
-	const router = useRouter()
-	const tabParam = searchParams.get('tab') || 'works'
-	const setTab = (tab: string) => {
-		const params = new URLSearchParams(searchParams.toString())
-		params.set('tab', tab)
-		router.replace(`?${params.toString()}`)
-	}
+	// likes 按需加载：当切换到 likes 页签时再请求
+	useEffect(() => {
+		const uid = targetUserId
+		if (!uid) return
+		if (tabParam !== 'likes') return
+		if (likes && likes.length > 0) return
+		reloadAll(uid)
+	}, [tabParam, targetUserId, reloadAll, likes])
 
 	// 当 Clerk 已加载且未登录时，展示营销态（英雄区+CTA+示例卡）
 	if (isClerkEnabled && isLoaded && !isSignedIn) {
