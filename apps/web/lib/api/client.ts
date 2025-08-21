@@ -8,6 +8,43 @@ export async function initClerkTokenProvider(): Promise<void> {
   tokenProvider = async () => undefined
 }
 
+// 简单的短期 Token 缓存，降低每次请求都触发 Clerk 拉取的开销
+let cachedAuthToken: string | undefined
+let cachedAuthTokenExpireAt = 0
+function getCachedToken(): string | undefined {
+  if (!cachedAuthToken) return undefined
+  if (Date.now() >= cachedAuthTokenExpireAt) return undefined
+  return cachedAuthToken
+}
+function setCachedToken(token: string | undefined, ttlMs = 60_000) {
+  if (!token) return
+  cachedAuthToken = token
+  cachedAuthTokenExpireAt = Date.now() + Math.max(5_000, ttlMs)
+}
+
+// 未登录时的统一登录触发（节流避免重复弹窗）
+let lastAuthPromptAt = 0
+function promptSignInModal(): void {
+  if (typeof window === 'undefined') return
+  const now = Date.now()
+  if (now - lastAuthPromptAt < 3000) return
+  lastAuthPromptAt = now
+  try {
+    const clerk = (window as any)?.Clerk
+    if (clerk?.openSignIn) {
+      clerk.openSignIn({
+        afterSignInUrl: window.location.href,
+        afterSignUpUrl: window.location.href,
+      })
+      return
+    }
+  } catch {}
+  try {
+    const redirect = '/login?redirect_url=' + encodeURIComponent(window.location.href)
+    window.location.href = redirect
+  } catch {}
+}
+
 export async function authFetch<T = any>(input: RequestInfo, init: RequestInit = {}) {
   let token: string | undefined
 
@@ -16,6 +53,8 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   const isGet = method === 'GET'
 
   async function getClerkTokenWithTimeout(timeoutMs = 300): Promise<string | undefined> {
+    const cached = getCachedToken()
+    if (cached) return cached
     if (typeof window === 'undefined') return undefined
     const maybeClerk = (window as any)?.Clerk
     if (!maybeClerk) return undefined
@@ -44,7 +83,9 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
           return undefined
         }
       })()
-      return await Promise.race([loadPromise as Promise<string | undefined>, timeout])
+      const t = await Promise.race([loadPromise as Promise<string | undefined>, timeout])
+      if (t) setCachedToken(t)
+      return t
     } catch (e) {
       console.warn('Failed to get Clerk token quickly:', e)
       return undefined
@@ -52,6 +93,8 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   }
 
   async function getClerkTokenNoTimeout(): Promise<string | undefined> {
+    const cached = getCachedToken()
+    if (cached) return cached
     if (typeof window === 'undefined') return undefined
     try {
       const clerk = (window as any).Clerk
@@ -61,11 +104,15 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
       }
       const template = process.env.NEXT_PUBLIC_CLERK_JWT_TEMPLATE
       if (template) {
-        return (await clerk?.session?.getToken?.({ template, skipCache: true })) ||
+        const t = (await clerk?.session?.getToken?.({ template, skipCache: true })) ||
           (await clerk?.session?.getToken?.({ template }))
+        if (t) setCachedToken(t)
+        return t
       }
-      return (await clerk?.session?.getToken?.({ skipCache: true })) ||
+      const t = (await clerk?.session?.getToken?.({ skipCache: true })) ||
         (await clerk?.session?.getToken?.())
+      if (t) setCachedToken(t)
+      return t
     } catch (error) {
       console.warn('Failed to get Clerk token:', error)
       return undefined
@@ -73,7 +120,7 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
   }
 
   // 先尝试快速拿 token（仅客户端）
-  token = await getClerkTokenWithTimeout(200)
+  token = getCachedToken() || await getClerkTokenWithTimeout(200)
 
   // 可选回退到 DEV_JWT（需显式开启）
   if (!token) {
@@ -84,6 +131,7 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
     const normalized = (maybeToken || '').trim()
     const isLikelyValid = normalized && normalized !== 'undefined' && normalized !== 'null'
     token = isLikelyValid ? normalized : (useDevJwt ? devJwt : undefined)
+    if (token) setCachedToken(token)
   }
 
   // 对写请求或强鉴权的 GET，若仍未拿到 token，则等待一次无超时获取，避免首个 401 噪声
@@ -153,6 +201,10 @@ export async function authFetch<T = any>(input: RequestInfo, init: RequestInit =
 
       if (res.status === 401) {
         console.warn('Authentication failed:', err)
+        // 统一未登录处理：只对“写操作或强鉴权 GET”自动触发登录
+        if (!isGet || forceAuthGet) {
+          promptSignInModal()
+        }
       }
 
       throw err

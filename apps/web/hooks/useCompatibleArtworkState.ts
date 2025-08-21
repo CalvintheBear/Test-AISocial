@@ -102,8 +102,7 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
         fav_count: 0,
         user_state: { liked: !currentLiked, faved: false }
       })
-      // 延迟刷新以确保一致性
-      setTimeout(() => fetchState(), 500)
+      // 省略二次拉取，依赖本地合并与后端返回的计数，减少一次网络请求
     } catch (error) {
       console.error('Failed to toggle like:', error)
       setIsError(true)
@@ -142,8 +141,7 @@ export function useCompatibleArtworkState(artworkId: string): ArtworkStateHook {
         fav_count: data.fav_count ?? (currentFaved ? 0 : 1),
         user_state: { liked: false, faved: !currentFaved }
       })
-      // 延迟刷新以确保一致性
-      setTimeout(() => fetchState(), 500)
+      // 省略二次拉取，依赖本地合并与后端返回的计数，减少一次网络请求
     } catch (error) {
       console.error('Failed to toggle favorite:', error)
       setIsError(true)
