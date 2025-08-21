@@ -91,8 +91,6 @@ router.post('/fix-artwork/:id', async (c) => {
   }
 })
 
-export default router
-
 // 受保护：手动执行积分过期清算
 router.post('/credits/expire-now', async (c) => {
   try {
@@ -102,9 +100,35 @@ router.post('/credits/expire-now', async (c) => {
     }
 
     const credits = CreditsService.fromEnv(c.env)
-    const affected = await credits.expireDueCredits(Date.now())
-    return c.json({ success: true, message: `Expired ${affected} credit orders.` })
+    const now = Date.now()
+    
+    // 先查询一下符合条件的订单
+    const d1 = credits['db']
+    const rows = await d1.prepare(`
+      SELECT id, user_id, credits, expires_at, expired_at 
+      FROM payments 
+      WHERE status = 'succeeded' 
+      AND expires_at IS NOT NULL 
+      AND expires_at <= ? 
+      AND (expired_at IS NULL OR expired_at = 0)
+    `).bind(now).all() as any
+    
+    console.log('Found orders to expire:', rows.results)
+    
+    const affected = await credits.expireDueCredits(now)
+    return c.json({ 
+      success: true, 
+      message: `Expired ${affected} credit orders.`,
+      debug: {
+        currentTime: now,
+        foundOrders: rows.results?.length || 0,
+        orders: rows.results
+      }
+    })
   } catch (error) {
+    console.error('Expire credits error:', error)
     return c.json({ success: false, message: (error as any).message }, 500)
   }
 })
+
+export default router

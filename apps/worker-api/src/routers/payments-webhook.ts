@@ -31,7 +31,27 @@ router.post('/creem', async (c) => {
     const currency = String(obj?.order?.currency || obj?.product?.currency || obj?.currency || 'USD')
     let credits = Number(obj?.credits || obj?.metadata?.credits || 0)
     const productId = obj?.product?.id || obj?.order?.product || obj?.product || obj?.product_id || obj?.items?.[0]?.product_id || obj?.metadata?.productId
-    const isYearly = (obj?.product?.billing_period || obj?.subscription?.billing_period || '').includes('year') || (obj?.product?.name || '').toLowerCase().includes('year')
+    
+    // 年费产品ID列表
+    const yearlyProductIds = [
+      'prod_54wpsAr6bPuE0RaPGsToUW', // Basic yearly
+      'prod_2B1IyF8TesaUeCNuLlM8fD', // Pro yearly  
+      'prod_68tgdFA0fAFhFx7giLbwzd'  // Max yearly
+    ]
+    
+    // 优先通过 productId 判断，再通过 billing_period 和产品名称判断
+    const isYearly = yearlyProductIds.includes(productId) || 
+                    (obj?.product?.billing_period || obj?.subscription?.billing_period || '').includes('year') || 
+                    (obj?.product?.name || '').toLowerCase().includes('year')
+    
+    // 调试日志
+    console.log('Payment webhook debug:', {
+      productId,
+      isYearly,
+      billingPeriod: obj?.product?.billing_period || obj?.subscription?.billing_period,
+      productName: obj?.product?.name,
+      yearlyProductIds
+    })
 
     // 如果仍然没有用户ID，尝试从邮箱映射（作为最后兜底，不强制）
     // 在测试模式可能拿不到 userId，这里允许跳过加分但仍记录 payment
@@ -94,8 +114,10 @@ router.post('/creem', async (c) => {
       }
       const expiresAt = (() => {
         const base = Date.now()
-        // 年费：+365天，月费：+30天（简化）
-        return base + (isYearly ? 365 : 30) * 24 * 3600 * 1000
+        // 年费：+365天，月费：+30天
+        const daysToAdd = isYearly ? 365 : 30
+        const millisecondsPerDay = 24 * 60 * 60 * 1000
+        return base + (daysToAdd * millisecondsPerDay)
       })()
       try { await creditsService.createOrUpdatePayment({
         id: sessionId,

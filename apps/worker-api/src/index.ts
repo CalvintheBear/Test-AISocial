@@ -15,6 +15,7 @@ import kieCallback from './routers/kie-callback'
 import paymentsWebhook from './routers/payments-webhook'
 import payments from './routers/payments'
 import credits from './routers/credits'
+import checkin from './routers/checkin'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -38,6 +39,8 @@ app.use('*', corsMiddleware)
 app.route('/api/kie', kieCallback)
 // 支付 Webhook 公共路由（无需认证）
 app.route('/api/payments/webhook', paymentsWebhook)
+// 管理员路由（使用简单 token 验证，无需 Clerk 认证）
+app.route('/api/admin', admin)
 
 // 将 auth 放在业务路由前，并为健康检查保留匿名访问
 app.use('/api/*', authMiddleware)
@@ -45,12 +48,12 @@ app.route('/api/artworks', artworks)
 app.route('/api/works', works)
 app.route('/api/users', users)
 app.route('/api/feed', feed)
-app.route('/api/admin', admin)
 app.route('/api/hotness', hotness)
 app.route('/api/debug', debugRouter)
 // 支付与积分（需认证）
 app.route('/api/payments', payments)
 app.route('/api/credits', credits)
+app.route('/api/checkin', checkin)
 
 export default app
 

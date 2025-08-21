@@ -56,6 +56,17 @@ export class CreditsService {
       await this.db.prepare(`UPDATE payments SET expired_at = ? WHERE id = ?`).bind(now, r.id).run()
       affected++
     }
+    
+    // 同时处理签到积分过期
+    try {
+      const { CheckinService } = await import('./checkin')
+      const checkinService = new CheckinService(this.db)
+      const checkinExpired = await checkinService.expireCheckinCredits(now)
+      console.log(`Expired ${checkinExpired} checkin credit records`)
+    } catch (error) {
+      console.error('Failed to expire checkin credits:', error)
+    }
+    
     return affected
   }
 

@@ -41,6 +41,10 @@ export const API = {
   credits: {
     me: '/api/credits/me',
   },
+  checkin: {
+    status: '/api/checkin/status',
+    checkin: '/api/checkin/checkin',
+  },
 }
 
 
