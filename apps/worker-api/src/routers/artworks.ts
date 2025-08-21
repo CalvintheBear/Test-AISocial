@@ -563,7 +563,7 @@ router.get('/task-status/:taskId', async (c) => {
           return c.json(ok({
             taskId,
             status: 'completed',
-            resultImageUrl: fullArtwork.url,
+            resultImageUrl: fullArtwork.thumbUrl || fullArtwork.url,
             originalImageUrl: kieData.kie_original_image_url,
             artworkId: artwork.id,
             message: '任务已完成，作品已创建'
@@ -700,7 +700,7 @@ router.get('/:taskId/generation-status', async (c) => {
         return c.json(ok({
           taskId,
           status: 'completed',
-          resultImageUrl: fullArtwork.url,
+          resultImageUrl: fullArtwork.thumbUrl || fullArtwork.url,
           originalImageUrl: kieData.kie_original_image_url,
           artworkId: artwork.id,
           message: '任务已完成，作品已创建'
