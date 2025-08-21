@@ -58,19 +58,32 @@ router.post('/kie-callback', async (c) => {
       console.log(`📋 获取到任务信息:`, taskInfo)
       
       // 查找现有的KIE作品记录（仅当用户已创建草稿时）
-      const existingArtwork = await d1.getArtworkByKieTaskId(taskId)
+      const existingArtworkMinimal = await d1.getArtworkByKieTaskId(taskId)
       
-      if (existingArtwork) {
-        // 更新现有的作品记录
-        const artworkId = existingArtwork.id
-        await d1.updateArtworkUrl(artworkId, resultImageUrl, resultImageUrl)
+      if (existingArtworkMinimal) {
+        // 获取完整的作品记录
+        const artworkId = existingArtworkMinimal.id
+        const existingArtwork = await d1.getArtwork(artworkId)
+        
+        if (!existingArtwork) {
+          console.error(`❌ 找不到完整作品记录: ${artworkId}`)
+          return new Response(JSON.stringify({ error: '找不到完整作品记录' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json' }
+          })
+        }
+        
+        // 正确设置URL字段：
+        // url: 保持原始上传的图片URL不变
+        // thumb_url: 存储AI生成的图片URL
+        await d1.updateArtworkUrl(artworkId, existingArtwork.url, resultImageUrl)
         
         // 更新KIE相关字段和状态
         await d1.updateKieArtworkInfo(artworkId, {
           model: taskInfo.model || 'flux-kontext-pro',
           aspectRatio: taskInfo.aspectRatio || '1:1',
           outputFormat: 'png',
-          originalImageUrl: originImageUrl
+          originalImageUrl: originImageUrl || existingArtwork.url
         })
         
         // 确保slug不为空

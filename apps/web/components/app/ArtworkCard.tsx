@@ -30,6 +30,7 @@ export function ArtworkCard({ artwork, showHotness, locked, onLockedClick }: Art
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             className="object-cover"
             quality={85}
+            unoptimized={artwork.thumb_url.includes('tempfile.aiquickdraw.com') || artwork.thumb_url.includes('r2.dev')}
           />
           {locked && (
             <div className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-sm">
@@ -64,6 +65,7 @@ export function ArtworkCard({ artwork, showHotness, locked, onLockedClick }: Art
                 width={24}
                 height={24}
                 className="rounded-full"
+                unoptimized={(artwork.author.profile_pic || '').includes('via.placeholder.com') || (artwork.author.profile_pic || '').includes('images/default-avatar.jpg')}
               />
             </Link>
             <Link href={locked ? '#' : `/user/${artwork.author.id}`} className="text-sm font-medium hover:underline" onClick={e => { if (locked) { e.preventDefault(); onLockedClick?.() } }}>

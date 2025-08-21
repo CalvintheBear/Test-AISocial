@@ -60,6 +60,7 @@ export default async function ArtworkPage({
             className="object-contain"
             quality={95}
             priority
+            unoptimized={(artwork.thumb_url || artwork.url).includes('tempfile.aiquickdraw.com') || (artwork.thumb_url || artwork.url).includes('r2.dev')}
           />
         </div>
 
@@ -76,6 +77,7 @@ export default async function ArtworkPage({
                 width={40}
                 height={40}
                 className="rounded-full"
+                unoptimized={(artwork.author.profile_pic || '').includes('via.placeholder.com')}
               />
               <div>
                 <p className="font-semibold">{artwork.author.name || '未命名用户'}</p>
