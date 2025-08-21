@@ -83,7 +83,7 @@ router.post('/generate', async (c) => {
 router.get('/:id', async (c) => {
   try {
     const { id } = validateParam(IdParamSchema, { id: c.req.param('id') })
-    const userId = (c as any).get('userId') as string
+    const userId = (c as any).get('userId') as string | undefined
     const d1 = D1Service.fromEnv(c.env)
     
     const art = await d1.getArtwork(id)
@@ -93,16 +93,21 @@ router.get('/:id', async (c) => {
     
     // Get user state (liked/faved) from Redis or D1
     let userState = { liked: false, faved: false }
-    try {
-      const redis = RedisService.fromEnv(c.env)
-      const [isLiked, isFavorited] = await Promise.all([
-        userId ? redis.isLiked(userId, id) : Promise.resolve(false),
-        userId ? redis.isFavorite(userId, id) : Promise.resolve(false)
-      ])
-      userState = { liked: isLiked, faved: isFavorited }
-    } catch (e) {
-      // Fallback to D1 if Redis is unavailable
-      if (userId) {
+    let isAuthor = false
+    
+    if (userId) {
+      // 检查是否是作者
+      isAuthor = art.author.id === userId
+      
+      try {
+        const redis = RedisService.fromEnv(c.env)
+        const [isLiked, isFavorited] = await Promise.all([
+          redis.isLiked(userId, id),
+          redis.isFavorite(userId, id)
+        ])
+        userState = { liked: isLiked, faved: isFavorited }
+      } catch (e) {
+        // Fallback to D1 if Redis is unavailable
         userState = {
           liked: await d1.isLikedByUser(userId, id),
           faved: await d1.isFavoritedByUser(userId, id)
@@ -110,11 +115,12 @@ router.get('/:id', async (c) => {
       }
     }
     
-    // Create response with actual counts
+    // Create response with actual counts and author info
     const response = {
       ...formatArtworkForAPI(art, userState),
       like_count: art.likeCount,
-      fav_count: art.favoriteCount
+      fav_count: art.favoriteCount,
+      is_author: isAuthor
     }
     return c.json(ok(response))
   } catch (error) {
