@@ -5,6 +5,7 @@ import { HotnessService } from './services/hotness'
 import { syncArtworkCounts, checkDataConsistency } from './utils/sync-counts'
 import { hotnessMetrics } from './utils/hotness-metrics'
 import { batchUpdateManager } from './utils/hotness-batch-updater'
+import { CreditsService } from './services/credits'
 
 export interface Env extends Record<string, unknown> {
   DB: D1Database
@@ -19,6 +20,17 @@ export default {
     const d1 = D1Service.fromEnv(env)
     const r2 = R2Service.fromEnv(env)
     const redis = RedisService.fromEnv(env)
+
+    try {
+      // 到期积分扣除
+      const credits = CreditsService.fromEnv(env)
+      const expired = await credits.expireDueCredits(Date.now())
+      if (expired > 0) {
+        console.log(`expired ${expired} credit orders`)
+      }
+    } catch (error) {
+      console.error('expire credits failed:', error)
+    }
 
     try {
       // 1. Get recent published artworks with original/thumb URLs

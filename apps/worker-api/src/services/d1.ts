@@ -70,6 +70,12 @@ export class D1Service {
     await this.db.prepare(`UPDATE users SET hide_name = ?, hide_email = ?, updated_at = ? WHERE id = ?`).bind(hideName, hideEmail, Date.now(), userId).run()
   }
 
+  async getUserByEmail(email: string): Promise<{ id: string; name?: string | null } | null> {
+    const row = await this.db.prepare(`SELECT id, name FROM users WHERE lower(email) = lower(?) LIMIT 1`).bind(email).first() as any
+    if (!row) return null
+    return { id: String(row.id), name: row.name ? String(row.name) : null }
+  }
+
   async getArtwork(id: string): Promise<Artwork | null> {
     const stmt = this.db.prepare(`
       SELECT a.*, CASE WHEN COALESCE(u.hide_name,0)=1 THEN '' ELSE u.name END as user_name, u.profile_pic

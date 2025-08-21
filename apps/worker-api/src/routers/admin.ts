@@ -3,6 +3,7 @@ import { syncArtworkCounts, checkDataConsistency } from '../utils/sync-counts'
 import { D1Service } from '../services/d1'
 import { RedisService } from '../services/redis'
 import type { Env } from '../types'
+import { CreditsService } from '../services/credits'
 
 const router = new Hono<{ Bindings: Env }>()
 
@@ -91,3 +92,19 @@ router.post('/fix-artwork/:id', async (c) => {
 })
 
 export default router
+
+// 受保护：手动执行积分过期清算
+router.post('/credits/expire-now', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (authHeader !== `Bearer ${c.env.ADMIN_TOKEN || 'admin-secret'}`) {
+      return c.json({ success: false, message: 'Unauthorized' }, 401)
+    }
+
+    const credits = CreditsService.fromEnv(c.env)
+    const affected = await credits.expireDueCredits(Date.now())
+    return c.json({ success: true, message: `Expired ${affected} credit orders.` })
+  } catch (error) {
+    return c.json({ success: false, message: (error as any).message }, 500)
+  }
+})
