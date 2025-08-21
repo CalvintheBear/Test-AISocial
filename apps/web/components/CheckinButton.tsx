@@ -72,6 +72,7 @@ export default function CheckinButton() {
         onClick={handleCheckin}
         disabled={checkedToday || isCheckingIn}
         aria-disabled={checkedToday || isCheckingIn}
+        className={checkedToday ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-default hover:bg-gray-100 pointer-events-none' : ''}
       >
         {checkedToday ? '今日已签到' : isCheckingIn ? '签到中...' : '签到'}
       </Button>

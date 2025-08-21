@@ -71,21 +71,24 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 		loadProfile()
 	}, [isLoaded, isSignedIn, loadProfile])
 
-	// Tab 与 URL 同步（上移以便下方 hooks 使用）
+	// Tab 状态：首次从 URL 读取，之后仅本地更新；用 history.replaceState 同步地址，避免触发 Next RSC 请求
 	const searchParams = useSearchParams()
 	const router = useRouter()
-	const tabParam = searchParams.get('tab') || 'works'
+	const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'works')
 	const setTab = (tab: string) => {
-		const params = new URLSearchParams(searchParams.toString())
-		params.set('tab', tab)
-		router.replace(`?${params.toString()}`)
+		setActiveTab(tab)
+		try {
+			const url = new URL(window.location.href)
+			url.searchParams.set('tab', tab)
+			window.history.replaceState(null, '', url.toString())
+		} catch {}
 	}
 
 	// 目标用户ID：访问他人主页时使用 `username`，访问 "me" 时使用当前用户ID
 	const targetUserId = (username === 'me' ? profile?.id : username) as string | undefined
 	const { artworks: swrArtworks } = useUserArtworks(targetUserId || '', initialArtworks)
 	// 收藏按需加载：只有当前 Tab 激活才发起请求
-	const enableFavorites = tabParam === 'favorites'
+	const enableFavorites = activeTab === 'favorites'
 	const { artworks: swrFavorites, mutate: refreshFavorites } = useFavorites(enableFavorites ? (targetUserId || '') : '', undefined)
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
@@ -148,10 +151,10 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	useEffect(() => {
 		const uid = targetUserId
 		if (!uid) return
-		if (tabParam !== 'likes') return
+		if (activeTab !== 'likes') return
 		if (likes && likes.length > 0) return
 		reloadAll(uid)
-	}, [tabParam, targetUserId, reloadAll, likes])
+	}, [activeTab, targetUserId, reloadAll, likes])
 
 	// 当 Clerk 已加载且未登录时，展示营销态（英雄区+CTA+示例卡）
 	if (isClerkEnabled && isLoaded && !isSignedIn) {
@@ -245,7 +248,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 				</div>
 			</div>
 
-			<Tabs value={tabParam} onValueChange={setTab} className="w-full">
+			<Tabs value={activeTab} onValueChange={setTab} className="w-full">
 				<TabsList className="grid w-full grid-cols-3 max-w-lg mb-8">
 					<TabsTrigger value="works">我的作品</TabsTrigger>
 					<TabsTrigger value="favorites">我的收藏</TabsTrigger>
