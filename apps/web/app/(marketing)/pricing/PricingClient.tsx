@@ -67,6 +67,15 @@ const PLANS = [
 ]
 
 async function startCheckout(plan: typeof PLANS[number], interval: 'monthly' | 'yearly', amount: number) {
+  // 先校验登录状态；未登录则跳转登录页
+  try {
+    await authFetch(API.me)
+  } catch {
+    if (typeof window !== 'undefined') {
+      window.location.href = `/login?next=/pricing`
+    }
+    return
+  }
   const productId = interval === 'monthly' ? (plan as any).productMonthly : (plan as any).productYearly
   const res = await authFetch<{ id: string; url: string }>(API.payments.checkout, {
     method: 'POST',
