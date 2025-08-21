@@ -879,7 +879,7 @@ export class D1Service {
   async ensureArtworkSlug(artworkId: string, title: string): Promise<void> {
     const stmt = this.db.prepare(`
       UPDATE artworks 
-      SET slug = CASE WHEN COALESCE(slug, '') = '' THEN ? ELSE slug END,
+      SET slug = CASE WHEN COALESCE(slug, '') = '' OR slug IS NULL THEN ? ELSE slug END,
           updated_at = ?
       WHERE id = ?
     `)
