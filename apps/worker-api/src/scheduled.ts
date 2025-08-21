@@ -124,7 +124,7 @@ export default {
       
       // 获取最近发布的作品
       const thirtyDaysAgo = Date.now() - (30 * 24 * 3600 * 1000)
-      const recentArtworks = await d1.getArtworksInTimeRange(thirtyDaysAgo, 100)
+      const recentArtworks = await d1.getArtworksInTimeRange(thirtyDaysAgo, Date.now())
       
       // 使用批量更新优化
       if (recentArtworks.length > 0) {
@@ -163,6 +163,17 @@ export default {
         // 强制处理批量队列
         const result = await batchUpdater.flushQueue()
         console.log(`热度刷新完成: ${result.processed}/${recentArtworks.length} 个作品已更新`)
+
+        // 同步最近作品的热度到 D1（确保 DB 与 Redis 一致）
+        try {
+          const ids = recentArtworks.map(a => a.id)
+          if (ids.length > 0) {
+            const syncRes = await hotness.batchSyncHotnessToDatabase(ids)
+            console.log(`批量同步热度到数据库: total=${syncRes.total}, success=${syncRes.success}, failed=${syncRes.failed}`)
+          }
+        } catch (e) {
+          console.error('批量同步热度到数据库失败:', e)
+        }
         
         // 记录指标
         hotnessMetrics.recordHotnessUpdate()

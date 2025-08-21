@@ -174,13 +174,15 @@ router.get('/trending/:timeWindow', async (c) => {
           }
         }
         
-        // 获取热度分数
+        // 获取热度分数（Redis + DB 兜底）
         const hotScore = await hotness.getArtworkHotData(artwork.id)
+        const dbData = await d1.getArtworkHotData(artwork.id)
+        const score = (hotScore?.total_score ?? 0) || Number(dbData?.hot_score || 0)
         
         return {
           ...formatArtworkForAPI(artwork, userState),
-          hot_score: hotScore.total_score || 0,
-          hot_level: HotnessCalculator.getHotnessLevel(hotScore.total_score || 0),
+          hot_score: score,
+          hot_level: HotnessCalculator.getHotnessLevel(score),
           time_window: timeWindow
         }
       })

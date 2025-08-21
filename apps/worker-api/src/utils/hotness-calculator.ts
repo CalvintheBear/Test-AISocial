@@ -52,10 +52,6 @@ export interface HotnessConfig {
     model_bonus: number;
     resolution_bonus: number;
     aspect_ratio_bonus: number;
-    user_reputation_bonus: number;
-    location_bonus: number;
-    country_bonus: number;
-    region_bonus: number;
   };
 }
 
@@ -67,12 +63,12 @@ export class HotnessCalculator {
    */
   static readonly DEFAULT_CONFIG: HotnessConfig = {
     weights: {
-      like: 2,
-      favorite: 5,
-      publish: 10,
-      view: 0.1,
-      comment: 3,
-      share: 8
+      like: 1,
+      favorite: 2,
+      publish: 0,
+      view: 0,
+      comment: 0,
+      share: 0
     },
     decay: {
       daily: 0.8,
@@ -83,11 +79,7 @@ export class HotnessCalculator {
       prompt_bonus: 1.2,
       model_bonus: 1.1,
       resolution_bonus: 2.0,
-      aspect_ratio_bonus: 0.5,
-      user_reputation_bonus: 0.1,
-      location_bonus: 1.1,
-      country_bonus: 1.05,
-      region_bonus: 1.02
+      aspect_ratio_bonus: 0.5
     }
   };
 
@@ -157,105 +149,37 @@ export class HotnessCalculator {
   private calculateTimeDecay(publishedAt: number, currentTime: number): number {
     const { decay } = this.config;
     
-    const days = Math.max(0, Math.floor((currentTime - publishedAt) / 86400000));
-    const hours = Math.max(0, Math.floor((currentTime - publishedAt) / 3600000));
+    // 确保时间差不为负
+    const timeDiff = Math.max(0, currentTime - Math.min(publishedAt, currentTime));
+    const days = Math.max(0, Math.floor(timeDiff / 86400000));
+    const hours = Math.max(0, Math.floor(timeDiff / 3600000));
     
     // 复合衰减模型
-    const compoundDecay = Math.pow(decay.daily, days) * Math.pow(decay.hourly, Math.min(hours, 24));
+    const compoundDecay = Math.pow(Math.max(0.1, decay.daily), days) * Math.pow(Math.max(0.1, decay.hourly), Math.min(hours, 24));
     
     // 分段衰减策略
     const segmentedDecay = days < 1
       ? 1.0 // 24小时内不衰减
       : days < 7
       ? Math.pow(0.9, days) // 7天内缓慢衰减
-      : Math.pow(decay.fast, days); // 7天后快速衰减
+      : Math.pow(Math.max(0.1, decay.fast), days); // 7天后快速衰减
     
-    // 返回复合衰减和分段衰减的较小值
-    return Math.min(compoundDecay, segmentedDecay);
+    // 返回复合衰减和分段衰减的较小值，确保最小值为0.01
+    return Math.max(0.01, Math.min(compoundDecay, segmentedDecay));
   }
 
-  /**
+/**
    * 计算质量权重因子 - 包含用户声誉计算
    */
-  async calculateQualityFactor(artwork: ArtworkData, userArtworkCount?: number): Promise<number> {
-    const { quality } = this.config;
-    let factor = 1.0;
-    
-    // 1. 分辨率奖励
-    if (artwork.width && artwork.height) {
-      const pixels = artwork.width * artwork.height;
-      factor *= Math.min(pixels / 1000000, quality.resolution_bonus);
-    }
-    
-    // 2. 完整度奖励
-    if (artwork.prompt) factor *= quality.prompt_bonus;
-    if (artwork.model) factor *= quality.model_bonus;
-    
-    // 3. 宽高比奖励（标准比例奖励）
-    if (artwork.width && artwork.height) {
-      const ratio = artwork.width / artwork.height;
-      const idealRatio = 16 / 9; // 标准16:9比例
-      const ratioDiff = Math.abs(1 - ratio / idealRatio);
-      factor *= (1 + quality.aspect_ratio_bonus * (1 - ratioDiff));
-    }
-    
-    // 4. 用户声誉奖励
-    if (userArtworkCount !== undefined) {
-      factor *= (1 + quality.user_reputation_bonus * Math.log10(Math.max(userArtworkCount, 1)));
-    }
-    
-    // 5. 地理位置奖励
-    if (artwork.latitude && artwork.longitude) {
-      factor *= quality.location_bonus;
-    }
-    
-    // 6. 国家/地区奖励
-    if (artwork.country) {
-      factor *= quality.country_bonus;
-    }
-    
-    // 7. 区域奖励
-    if (artwork.region) {
-      factor *= quality.region_bonus;
-    }
-    
-    return Math.max(factor, 0.5); // 最低0.5倍，防止过度惩罚
+  calculateQualityFactor(_artwork: ArtworkData): number {
+    // 简化：质量因子固定为 1
+    return 1;
   }
 
   /**
    * 使用依赖注入计算热度分数 - 支持用户声誉计算
    */
-  async calculateHotScoreWithReputation(
-    artwork: ArtworkData, 
-    interactions?: InteractionData,
-    userArtworkCount?: number
-  ): Promise<number> {
-    const now = Date.now();
-    const publishedAt = artwork.published_at || artwork.created_at;
-    
-    // 1. 基础权重
-    const baseWeight = artwork.engagement_weight || 0;
-    
-    // 2. 用户互动权重
-    const interactionWeight = this.calculateInteractionWeight(interactions || {
-      likes: artwork.like_count || 0,
-      favorites: artwork.favorite_count || 0,
-      comments: artwork.comment_count || 0,
-      shares: artwork.share_count || 0,
-      views: artwork.view_count || 0
-    });
-    
-    // 3. 时间衰减权重
-    const timeDecay = this.calculateTimeDecay(publishedAt, now);
-    
-    // 4. 质量权重（包含用户声誉）
-    const qualityFactor = await this.calculateQualityFactor(artwork, userArtworkCount);
-    
-    // 最终热度计算
-    const finalScore = (Number(baseWeight) + Number(interactionWeight)) * Number(timeDecay) * Number(qualityFactor);
-    
-    return Math.max(finalScore, 0); // 确保热度不为负数
-  }
+  // 已移除含“用户声誉”的扩展版本，前端未使用，避免复杂度
 
   /**
    * 计算预测热度（用于新作品）

@@ -356,28 +356,14 @@ export class HotnessBatchUpdater {
    * 计算互动权重
    */
   private calculateInteractionWeight(data: any): number {
-    return (data.like_weight || 0) + (data.favorite_weight || 0) + 
-           (data.comment_count || 0) * 3 +
-           (data.share_count || 0) * 8 +
-           (data.view_count || 0) * 0.1;
+    // 极简化：只考虑点赞与收藏
+    return (data.like_weight || 0) + (data.favorite_weight || 0);
   }
 
   /**
    * 计算质量因子
    */
-  private calculateQualityFactor(data: any): number {
-    let factor = 1.0;
-    
-    if (data.width && data.height) {
-      const pixels = data.width * data.height;
-      factor *= Math.min(pixels / 1000000, 2.0);
-    }
-    
-    if (data.prompt) factor *= 1.2;
-    if (data.model) factor *= 1.1;
-    
-    return Math.max(factor, 0.5);
-  }
+  private calculateQualityFactor(_data: any): number { return 1; }
 
   /**
    * 获取队列状态

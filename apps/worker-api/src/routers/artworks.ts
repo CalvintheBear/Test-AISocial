@@ -150,12 +150,13 @@ router.post('/:id/like', async (c) => {
     d1.incrLikeCount(id, 1)
   ])
 
-  // 热度更新异步处理，避免阻塞请求
+  // 热度更新和缓存失效
   try {
     const p = (async () => {
       try {
         await hotness.updateArtworkHotness(id, 'like', userId)
         await hotness.syncHotnessToDatabase(id)
+        await hotness.invalidateRelatedCaches(id, userId)
       } catch (e) { console.error('hotness like async failed:', e) }
     })()
     ;(c as any).executionCtx?.waitUntil?.(p)
@@ -203,13 +204,14 @@ router.delete('/:id/like', async (c) => {
     d1.incrLikeCount(id, -1)
   ])
 
-  // 热度异步
+  // 热度更新和缓存失效
   const hotness = new HotnessService(redis, d1)
   try {
     const p = (async () => {
       try {
         await hotness.updateArtworkHotness(id, 'unlike', userId)
         await hotness.syncHotnessToDatabase(id)
+        await hotness.invalidateRelatedCaches(id, userId)
       } catch (e) { console.error('hotness unlike async failed:', e) }
     })()
     ;(c as any).executionCtx?.waitUntil?.(p)
@@ -259,12 +261,13 @@ router.post('/:id/favorite', async (c) => {
     d1.incrFavoriteCount(id, 1)
   ])
 
-  // 热度异步
+  // 热度更新和缓存失效
   try {
     const p = (async () => {
       try {
         await hotness.updateArtworkHotness(id, 'favorite', userId)
         await hotness.syncHotnessToDatabase(id)
+        await hotness.invalidateRelatedCaches(id, userId)
       } catch (e) { console.error('hotness favorite async failed:', e) }
     })()
     ;(c as any).executionCtx?.waitUntil?.(p)
@@ -305,12 +308,13 @@ router.delete('/:id/favorite', async (c) => {
     d1.incrFavoriteCount(id, -1)
   ])
 
-  // 热度异步
+  // 热度更新和缓存失效
   try {
     const p = (async () => {
       try {
         await hotness.updateArtworkHotness(id, 'unfavorite', userId)
         await hotness.syncHotnessToDatabase(id)
+        await hotness.invalidateRelatedCaches(id, userId)
       } catch (e) { console.error('hotness unfavorite async failed:', e) }
     })()
     ;(c as any).executionCtx?.waitUntil?.(p)

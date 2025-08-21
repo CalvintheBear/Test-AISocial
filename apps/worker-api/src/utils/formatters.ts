@@ -54,9 +54,14 @@ export function formatArtworkForAPI(
     like_count: artwork.likeCount,
     fav_count: artwork.favoriteCount,
     user_state: userState,
-    hot_score: artwork.engagementWeight
-      ? artwork.engagementWeight * Math.pow(0.5, Math.max(0, Math.floor((Date.now() - (artwork.publishedAt || artwork.createdAt || 0)) / 86400000)))
-      : 0,
+    // 优先使用数据库持久化的热度分数，其次才基于 engagementWeight 做临时估算
+    hot_score: typeof (artwork as any).hotScore === 'number'
+      ? (artwork as any).hotScore as number
+      : (
+        artwork.engagementWeight
+          ? artwork.engagementWeight * Math.pow(0.5, Math.max(0, Math.floor((Date.now() - (artwork.publishedAt || artwork.createdAt || 0)) / 86400000)))
+          : 0
+        ),
     prompt: kieData.kie_prompt,
     kie_model: kieData.kie_model,
     kie_aspect_ratio: kieData.kie_aspect_ratio,

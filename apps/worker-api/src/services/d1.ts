@@ -13,6 +13,9 @@ export type Artwork = {
   createdAt: number
   publishedAt?: number
   engagementWeight?: number
+  hotScore?: number
+  hotLevel?: string
+  lastHotUpdate?: number
   kieData?: {
     kie_prompt?: string
     kie_model?: string
@@ -107,6 +110,10 @@ export class D1Service {
       likeCount: Number(row.like_count || 0),
       favoriteCount: Number(row.favorite_count || 0),
       createdAt: Number(row.created_at),
+      publishedAt: row.published_at ? Number(row.published_at) : undefined,
+      hotScore: Number(row.hot_score || 0),
+      hotLevel: row.hot_level ? String(row.hot_level) : 'new',
+      lastHotUpdate: Number(row.last_hot_update || 0),
       kieData: {
         kie_prompt: row.kie_prompt ? String(row.kie_prompt) : undefined,
         kie_model: row.kie_model ? String(row.kie_model) : undefined,
@@ -339,8 +346,9 @@ export class D1Service {
     
     const stmt = this.db.prepare(`
       INSERT INTO artworks (
-        id, user_id, title, url, thumb_url, slug, status, created_at, updated_at, mime_type, width, height, prompt, model, seed
-      ) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?)
+        id, user_id, title, url, thumb_url, slug, status, created_at, updated_at, 
+        mime_type, width, height, prompt, model, seed, engagement_weight
+      ) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     await stmt.bind(
       id, 
@@ -356,7 +364,8 @@ export class D1Service {
       opts?.height || null, // height
       opts?.prompt || null, // prompt
       opts?.model || null, // model
-      opts?.seed || null // seed
+      opts?.seed || null, // seed
+      10 // engagement_weight - 默认发布权重
     ).run()
     return id
   }

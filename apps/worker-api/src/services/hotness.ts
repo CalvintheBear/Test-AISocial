@@ -43,14 +43,14 @@ export class HotnessService {
    * 互动行为权重表
    */
   static readonly WEIGHTS = {
-    LIKE: 2,
-    FAVORITE: 5,
-    PUBLISH: 10,
-    VIEW: 0.1,
-    COMMENT: 3,
-    SHARE: 8,
-    UNLIKE: -2,
-    UNFAVORITE: -5
+    LIKE: 1,
+    FAVORITE: 2,
+    PUBLISH: 0,
+    VIEW: 0,
+    COMMENT: 0,
+    SHARE: 0,
+    UNLIKE: -1,
+    UNFAVORITE: -2
   };
 
   /**
@@ -94,31 +94,42 @@ export class HotnessService {
     userId?: string,
     metadata?: any
   ): Promise<number> {
+    const lockKey = `hotness_lock:${artworkId}`;
+    const lockValue = Date.now().toString();
+    
     try {
-      // 1. 检查防刷限制
+      // 1. 获取分布式锁
+      const locked = await this.redis.set(lockKey, lockValue, 5); // 5秒锁
+      if (!locked) {
+        throw new Error('Could not acquire lock for hotness update');
+      }
+
+      // 2. 检查防刷限制
       if (userId && !(await this.checkRateLimit(userId, action, artworkId))) {
         throw new Error('Rate limit exceeded');
       }
 
-      // 2. 获取当前热度数据
-      const currentData = await this.getArtworkHotData(artworkId);
+      // 3. 计算新的热度值（直接基于数据库真实数据，避免依赖不完整的Redis字段）
+      const newScore = await this.calculateHotnessFromDB(artworkId);
       
-      // 3. 计算新的热度值
-      const weight = HotnessService.getActionWeight(action);
-      const newScore = await this.recalculateHotScore(artworkId, currentData, weight);
-      
-      // 4. 更新Redis数据结构
+      // 5. 更新Redis数据结构
       await this.updateRedisStructures(artworkId, newScore, action, userId);
       
-      // 5. 记录用户行为（如果有用户ID）
+      // 6. 记录用户行为（如果有用户ID）
       if (userId) {
         await this.recordUserAction(userId, artworkId, action, metadata);
       }
+      
+      // 7. 失效相关缓存
+      await this.invalidateRelatedCaches(artworkId, userId);
       
       return newScore;
     } catch (error) {
       console.error('Failed to update artwork hotness:', error);
       throw error;
+    } finally {
+      // 释放锁
+      await this.redis.execute('DEL', lockKey);
     }
   }
 
@@ -230,8 +241,8 @@ export class HotnessService {
     const timeDecay = Math.pow(HotnessService.DECAY_FACTORS.DAILY, days) * 
                      Math.pow(HotnessService.DECAY_FACTORS.HOURLY, Math.min(hours, 24));
     
-    // 计算质量因子
-    const qualityFactor = this.calculateQualityFactor(currentData);
+    // 质量因子（已简化为常数1）
+    const qualityFactor = 1;
     
     // 最终热度分数
     const finalScore = (baseWeight + this.calculateInteractionWeight(currentData)) * 
@@ -271,7 +282,7 @@ export class HotnessService {
   async invalidateHotnessCache(): Promise<void> {
     try {
       // 清除所有热度相关的缓存
-      const patterns = ['hotness:top:*', 'hotness:trending:*'];
+      const patterns = ['hotness:top:*', 'trending:*'];
       for (const pattern of patterns) {
         const keys = await this.redis.keys(pattern);
         for (const key of keys) {
@@ -296,21 +307,7 @@ export class HotnessService {
   /**
    * 计算质量因子
    */
-  private calculateQualityFactor(data: any): number {
-    let factor = 1.0;
-    
-    // 分辨率奖励
-    if (data.width && data.height) {
-      const pixels = data.width * data.height;
-      factor *= Math.min(pixels / 1000000, 2.0);
-    }
-    
-    // 完整度奖励
-    if (data.prompt) factor *= 1.2;
-    if (data.model) factor *= 1.1;
-    
-    return Math.max(factor, 0.5);
-  }
+  private calculateQualityFactor(_data: any): number { return 1; }
 
   /**
    * 获取行为权重
@@ -447,5 +444,44 @@ export class HotnessService {
       score: score ? parseFloat(String(score)) : 0,
       timestamp: new Date().toISOString()
     };
+  }
+
+  /**
+   * 失效相关缓存 - 关键修复
+   */
+  async invalidateRelatedCaches(artworkId: string, userId?: string): Promise<void> {
+    const promises: Promise<any>[] = [];
+    
+    // 失效feed缓存
+    promises.push(this.redis.keys('feed:list:*').then(keys => 
+      Promise.all(keys.map(key => this.redis.execute('DEL', key)))
+    ));
+    
+    // 失效热度缓存
+    promises.push(this.redis.execute('DEL', 'hot_rank'));
+    promises.push(this.redis.execute('DEL', `artwork:${artworkId}:state`));
+    
+    // 失效趋势缓存
+    promises.push(this.redis.keys('trending:*').then(keys => 
+      Promise.all(keys.map(key => this.redis.execute('DEL', key)))
+    ));
+    
+    // 如果提供了userId，失效用户相关缓存
+    if (userId) {
+      promises.push(this.redis.execute('DEL', `user:${userId}:artworks`));
+      promises.push(this.redis.execute('DEL', `user:${userId}:favorites:list`));
+    }
+
+    // 获取作品作者并失效其缓存
+    try {
+      const artwork = await this.d1.getArtwork(artworkId);
+      if (artwork && artwork.author.id !== userId) {
+        promises.push(this.redis.execute('DEL', `user:${artwork.author.id}:artworks`));
+      }
+    } catch (error) {
+      console.warn('Failed to get artwork for cache invalidation:', error);
+    }
+
+    await Promise.allSettled(promises);
   }
 }
