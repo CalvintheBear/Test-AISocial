@@ -24,7 +24,7 @@ export function useCheckinStatus() {
   const localChecked =
     (typeof window !== 'undefined' && localStorage.getItem('checkin:lastDate') === today) || false
 
-  const { data, error, isLoading } = useSWR<{ success: boolean; data: CheckinStats }>(
+  const { data, error, isLoading } = useSWR<CheckinStats>(
     API.checkin.status,
     authFetch,
     {
@@ -33,18 +33,18 @@ export function useCheckinStatus() {
       dedupingInterval: 0,
       shouldRetryOnError: false,
       fallbackData: localChecked
-        ? { success: true, data: { todayCheckedIn: true, consecutiveDays: 0, totalCheckins: 0, lastCheckinDate: today } }
+        ? { todayCheckedIn: true, consecutiveDays: 0, totalCheckins: 0, lastCheckinDate: today }
         : undefined,
     }
   )
 
   // 服务端确认后，写入本地，供下次首屏快速锁定
-  if (typeof window !== 'undefined' && data?.data?.todayCheckedIn) {
+  if (typeof window !== 'undefined' && data?.todayCheckedIn) {
     try { localStorage.setItem('checkin:lastDate', today) } catch {}
   }
 
   return {
-    stats: data?.data,
+    stats: data,
     isLoading,
     error,
     refetch: () => mutate(API.checkin.status),
@@ -53,42 +53,55 @@ export function useCheckinStatus() {
 
 export function useCheckin() {
   const checkin = async (): Promise<CheckinResult> => {
-    const response = await authFetch(API.checkin.checkin, {
+    // authFetch 会在非 2xx 抛错，并解包后端的 { success, data } 为 data
+    const data = await authFetch<{ creditsAdded: number; consecutiveDays: number }>(API.checkin.checkin, {
       method: 'POST',
     })
-    
-    if (!response.ok) {
-      throw new Error('签到失败')
-    }
-    
-    const result = await response.json()
-    
-    // 签到成功后刷新积分和签到状态
-    if (result.success) {
+
+    // data 代表路由返回的 data 字段。若今日已签到，后端 success=false 但依然会返回 { creditsAdded: 0, consecutiveDays: 0 }
+    const isSuccess = Number(data?.creditsAdded || 0) > 0
+
+    if (isSuccess) {
       mutate(API.credits.me)
       // 乐观更新：立刻将 todayCheckedIn 置为 true
-      mutate(API.checkin.status, (prev: CheckinStats | undefined) => ({
-        todayCheckedIn: true,
-        consecutiveDays: (prev?.consecutiveDays ?? 0) + 1,
-        totalCheckins: (prev?.totalCheckins ?? 0) + 1,
-        lastCheckinDate: new Date().toISOString().split('T')[0],
-      }), false)
+      mutate(
+        API.checkin.status,
+        (prev: CheckinStats | undefined) => ({
+          todayCheckedIn: true,
+          consecutiveDays: (prev?.consecutiveDays ?? 0) + 1,
+          totalCheckins: (prev?.totalCheckins ?? 0) + 1,
+          lastCheckinDate: new Date().toISOString().split('T')[0],
+        }),
+        false
+      )
       // 写入本地锁定（本地时区）
       try { localStorage.setItem('checkin:lastDate', new Date().toLocaleDateString('en-CA')) } catch {}
       // 再触发一次校正请求
       mutate(API.checkin.status)
-    }
-    // 已签到的场景：也同步锁定状态
-    if (!result.success && String(result.message || '').includes('已经签到')) {
-      mutate(API.checkin.status, (prev: CheckinStats | undefined) => ({
-        todayCheckedIn: true,
-        consecutiveDays: prev?.consecutiveDays ?? 0,
-        totalCheckins: prev?.totalCheckins ?? 0,
-        lastCheckinDate: prev?.lastCheckinDate ?? null,
-      }), false)
+    } else {
+      // 已签到的场景：同步锁定状态
+      mutate(
+        API.checkin.status,
+        (prev: CheckinStats | undefined) => ({
+          todayCheckedIn: true,
+          consecutiveDays: prev?.consecutiveDays ?? 0,
+          totalCheckins: prev?.totalCheckins ?? 0,
+          lastCheckinDate: prev?.lastCheckinDate ?? null,
+        }),
+        false
+      )
       try { localStorage.setItem('checkin:lastDate', new Date().toLocaleDateString('en-CA')) } catch {}
     }
-    
+
+    const result: CheckinResult = {
+      success: isSuccess,
+      message: isSuccess ? '签到成功！' : '今天已经签到过了',
+      data: {
+        creditsAdded: Number(data?.creditsAdded || 0),
+        consecutiveDays: Number(data?.consecutiveDays || 0),
+      },
+    }
+
     return result
   }
 

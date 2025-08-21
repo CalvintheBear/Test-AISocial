@@ -86,10 +86,10 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 
 	// 目标用户ID：访问他人主页时使用 `username`，访问 "me" 时使用当前用户ID
 	const targetUserId = (username === 'me' ? profile?.id : username) as string | undefined
-	const { artworks: swrArtworks } = useUserArtworks(targetUserId || '', initialArtworks)
+	const { artworks: swrArtworks, isLoading: isLoadingWorks } = useUserArtworks(targetUserId || '', initialArtworks)
 	// 收藏按需加载：只有当前 Tab 激活才发起请求
 	const enableFavorites = activeTab === 'favorites'
-	const { artworks: swrFavorites, mutate: refreshFavorites } = useFavorites(enableFavorites ? (targetUserId || '') : '', undefined)
+	const { artworks: swrFavorites, isLoading: isLoadingFavorites, mutate: refreshFavorites } = useFavorites(enableFavorites ? (targetUserId || '') : '', undefined)
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
 	// 当切到“我的收藏”时，若还未拉取，则主动触发一次
@@ -256,7 +256,9 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 				</TabsList>
 
 				<TabsContent value="works">
-					{!loading && artworks.length === 0 ? (
+					{(loading || isLoadingWorks) ? (
+						<ArtworkGrid artworks={[]} loading={true} />
+					) : !loading && artworks.length === 0 ? (
 						<div className="text-center py-16 bg-white rounded-lg border">
 							<h3 className="text-lg font-semibold mb-2">发布你的第一件作品</h3>
 							<p className="text-gray-500 mb-4">在社区中展示你的灵感与创作</p>
@@ -267,7 +269,9 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 					)}
 				</TabsContent>
 				<TabsContent value="favorites">
-					{!loading && favorites.length === 0 ? (
+					{(loading || (enableFavorites && isLoadingFavorites)) ? (
+						<ArtworkGrid artworks={[]} loading={true} />
+					) : !loading && favorites.length === 0 ? (
 						<div className="text-center py-16 bg-white rounded-lg border">
 							<h3 className="text-lg font-semibold mb-2">还没有收藏</h3>
 							<p className="text-gray-500 mb-4">去看看社区里正在流行的精彩作品</p>

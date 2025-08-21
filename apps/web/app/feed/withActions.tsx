@@ -83,7 +83,9 @@ export default function ClientFeedActions({ initialArtworks }: { initialArtworks
       {activeTab === 'feed' ? (
         <ArtworkGrid artworks={clientArtworks} onLike={onLike} onFavorite={onFavorite} loading={isLoading} />
       ) : (
-        <TrendingTab />
+        <div className="min-h-[50vh]">
+          <TrendingTab />
+        </div>
       )}
     </div>
   )
