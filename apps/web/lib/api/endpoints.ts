@@ -33,6 +33,14 @@ export const API = {
   generate: '/api/artworks/generate',
   generationStatus: (id: string) => `/api/artworks/task-status/${id}`,
   regenerate: (id: string) => `/api/artworks/${id}/regenerate`,
+
+  // 支付与积分
+  payments: {
+    checkout: '/api/payments/checkout',
+  },
+  credits: {
+    me: '/api/credits/me',
+  },
 }
 
 

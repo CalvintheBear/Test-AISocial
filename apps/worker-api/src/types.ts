@@ -18,6 +18,12 @@ export type Env = {
   ADMIN_TOKEN?: string
   // KIE API
   KIE_API_KEY?: string
+  // Payments - Creem
+  CREEM_API_KEY?: string
+  CREEM_WEBHOOK_SECRET?: string
+  CREEM_API_BASE_URL?: string
+  CREEM_SUCCESS_URL?: string
+  CREEM_CANCEL_URL?: string
   // Dev
   DEV_MODE?: string
 }

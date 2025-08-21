@@ -3,6 +3,7 @@ import { Button } from './button'
 import Link from 'next/link'
 import { SignedIn, SignedOut, UserButton, SignInButton } from '@clerk/nextjs'
 import { useClerkEnabled } from '@/hooks/useClerkEnabled'
+import CreditsBadge from '@/components/CreditsBadge'
 
 interface HeaderProps {
   className?: string
@@ -21,7 +22,8 @@ const Header: React.FC<HeaderProps> = ({ className, onOpenCreateModal }) => {
         <div />
 
         {/* Desktop Auth */}
-        <div className="hidden md:flex items-center space-x-2">
+        <div className="hidden md:flex items-center space-x-3">
+          <CreditsBadge />
           {isClerkEnabled ? (
             <>
               <SignedOut>

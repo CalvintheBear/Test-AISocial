@@ -6,6 +6,7 @@ import { KIEService } from '../services/kie-api'
 import { IdParamSchema, validateParam } from '../schemas/validation'
 import { ok, fail } from '../utils/response'
 import { formatArtworkForAPI } from '../utils/formatters'
+import { CreditsService } from '../services/credits'
 
 const router = new Hono()
 
@@ -20,6 +21,19 @@ router.post('/generate', async (c) => {
   }
 
   try {
+    // 扣减积分：每次生成消耗3积分
+    try {
+      const creditsService = new CreditsService((c.env as any).DB)
+      const balance = await creditsService.getBalance(userId)
+      if (balance < 3) {
+        return c.json(fail('INSUFFICIENT_CREDITS', '积分不足，请前往定价页购买'), 402)
+      }
+      await creditsService.addCredits(userId, -3)
+    } catch (e) {
+      console.error('credit check failed:', e)
+      return c.json(fail('CREDITS_ERROR', '积分服务不可用'), 500)
+    }
+
     const kie = new KIEService((c.env as any).KIE_API_KEY || '')
 
     // 1. 启动 KIE 生成任务（不创建数据库记录）
@@ -910,6 +924,19 @@ router.post('/:id/regenerate', async (c) => {
     const artwork = await d1.getArtwork(id)
     if (!artwork || artwork.author.id !== userId) {
       return c.json(fail('NOT_FOUND', 'Artwork not found'), 404)
+    }
+
+    // 扣减积分：再生成也消耗3积分
+    try {
+      const creditsService = new CreditsService((c.env as any).DB)
+      const balance = await creditsService.getBalance(userId)
+      if (balance < 3) {
+        return c.json(fail('INSUFFICIENT_CREDITS', '积分不足，请前往定价页购买'), 402)
+      }
+      await creditsService.addCredits(userId, -3)
+    } catch (e) {
+      console.error('credit check failed:', e)
+      return c.json(fail('CREDITS_ERROR', '积分服务不可用'), 500)
     }
 
     // 启动新的生成任务
