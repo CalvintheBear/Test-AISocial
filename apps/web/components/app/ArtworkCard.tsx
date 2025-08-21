@@ -7,7 +7,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import LikeFavoriteBarNew from './LikeFavoriteBarNew'
 import { ArtworkHotnessIndicator } from '@/components/HotnessBadge'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 interface ArtworkCardProps {
   artwork: ArtworkListItem
@@ -20,16 +20,23 @@ interface ArtworkCardProps {
 
 export function ArtworkCard({ artwork, showHotness, locked, onLockedClick }: ArtworkCardProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const href = locked ? '#' : `/artwork/${artwork.id}/${artwork.slug}`
+  const handleNavigate = (e: React.MouseEvent) => {
+    if (locked) { e.preventDefault(); onLockedClick?.(); return }
+    e.preventDefault()
+    const from = pathname
+    router.push(href)
+    setTimeout(() => {
+      if (from === pathname) {
+        window.location.href = href
+      }
+    }, 500)
+  }
 
   return (
     <Card className="overflow-hidden transition-transform hover:scale-105">
-      <Link href={href} onClick={e => { 
-        if (locked) { e.preventDefault(); onLockedClick?.(); return }
-        // 保障跳转：部分环境可能有第三方阻断默认行为，这里强制路由跳转
-        e.preventDefault()
-        router.push(href)
-      }}>
+      <Link href={href} onClick={handleNavigate}>
         <div className="relative aspect-square">
           <Image
             src={artwork.thumb_url}
@@ -81,11 +88,7 @@ export function ArtworkCard({ artwork, showHotness, locked, onLockedClick }: Art
             </Link>
           </div>
         </div>
-        <Link href={href} onClick={e => { 
-          if (locked) { e.preventDefault(); onLockedClick?.(); return }
-          e.preventDefault()
-          router.push(href)
-        }}>
+        <Link href={href} onClick={handleNavigate}>
           <h3 className="text-lg font-semibold mt-2 hover:underline">{artwork.title}</h3>
         </Link>
       </CardHeader>
