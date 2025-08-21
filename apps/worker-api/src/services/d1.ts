@@ -875,6 +875,18 @@ export class D1Service {
     await stmt.bind(resultImageUrl, thumbUrl || resultImageUrl, Date.now(), artworkId).run()
   }
 
+  // 新增：确保slug不为空的方法
+  async ensureArtworkSlug(artworkId: string, title: string): Promise<void> {
+    const stmt = this.db.prepare(`
+      UPDATE artworks 
+      SET slug = CASE WHEN COALESCE(slug, '') = '' THEN ? ELSE slug END,
+          updated_at = ?
+      WHERE id = ?
+    `)
+    const slug = this.generateSlug(title || 'untitled')
+    await stmt.bind(slug, Date.now(), artworkId).run()
+  }
+
   // 新增：更新作品状态的方法
   async updateArtworkStatus(artworkId: string, status: string): Promise<void> {
     const stmt = this.db.prepare(`

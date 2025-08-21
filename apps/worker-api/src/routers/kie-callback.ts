@@ -73,6 +73,9 @@ router.post('/kie-callback', async (c) => {
           originalImageUrl: originImageUrl
         })
         
+        // 确保slug不为空
+        await d1.ensureArtworkSlug(artworkId, taskInfo.title || 'AI 生成作品')
+        
         // 更新生成状态为已完成
         await d1.updateArtworkGenerationStatus(artworkId, {
           status: 'completed',
