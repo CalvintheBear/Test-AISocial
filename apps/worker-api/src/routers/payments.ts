@@ -10,6 +10,22 @@ router.post('/checkout', async (c) => {
 
   const { packageId, credits, amount, currency, interval, productId } = await c.req.json().catch(() => ({})) as any
 
+  // 测试模式兜底：若传入了 productId，直接跳转到 creem 测试支付链接
+  if (productId && String(productId).startsWith('prod_')) {
+    const url = `https://www.creem.io/test/payment/${productId}`
+    await new CreditsService((c.env as any).DB).createOrUpdatePayment({
+      id: productId,
+      userId,
+      provider: 'creem',
+      status: 'pending',
+      amount: Number(amount || 0),
+      currency: String(currency || 'USD'),
+      credits: Number(credits || 0),
+      raw: { productId, interval, mode: 'direct-test-link' },
+    })
+    return c.json({ data: { id: productId, url } })
+  }
+
   if (!env.CREEM_API_KEY || !env.CREEM_API_BASE_URL) {
     return c.json({ error: 'PAYMENT_PROVIDER_NOT_CONFIGURED' }, 501)
   }
