@@ -41,7 +41,7 @@ router.post('/generate', async (c) => {
       model,
       aspectRatio,
       inputImage,
-      title: title || 'AI Generated Artwork',
+      title: title || 'AI生成中...',
       createdAt: Date.now()
     }
     

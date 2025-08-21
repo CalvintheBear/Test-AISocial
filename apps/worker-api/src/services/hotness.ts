@@ -204,7 +204,7 @@ export class HotnessService {
       total: artworkIds.length,
       success: results.filter(r => r.status === 'fulfilled').length,
       failed: results.filter(r => r.status === 'rejected').length,
-      errors: results.filter(r => r.status === 'rejected').map(r => r.reason)
+      errors: results.filter(r => r.status === 'rejected').map(r => (r as PromiseRejectedResult).reason)
     };
   }
 

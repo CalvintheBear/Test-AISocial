@@ -54,22 +54,46 @@ router.post('/kie-callback', async (c) => {
         const taskInfo = JSON.parse(taskInfoStr)
         console.log(`📋 获取到任务信息:`, taskInfo)
         
-        // 创建最终的作品记录，包含KIE相关信息
-        const artworkId = await d1.createKieArtwork(
-          taskInfo.userId,
-          taskInfo.title,
-          {
-            taskId: taskId,
-            prompt: taskInfo.prompt,
-            model: taskInfo.model,
-            aspectRatio: taskInfo.aspectRatio,
-            inputImage: originImageUrl, // 使用回调中的原图URL
-            status: 'published' // 直接设为已发布状态
-          }
-        )
+        // 查找并更新现有的KIE作品记录
+        const existingArtwork = await d1.getArtworkByKieTaskId(taskId)
+        let artworkId: string
         
-        // 更新作品的图片URL
-        await d1.updateArtworkUrl(artworkId, generatedImageUrl, generatedImageUrl)
+        if (existingArtwork) {
+          // 更新现有的作品记录
+          artworkId = existingArtwork.id
+          await d1.updateArtworkUrl(artworkId, generatedImageUrl, generatedImageUrl)
+          await d1.updateArtworkStatus(artworkId, 'published')
+          
+// 更新KIE相关字段和状态
+          await d1.updateKieArtworkInfo(artworkId, {
+            model: taskInfo.model || 'flux-kontext-pro',
+            aspectRatio: taskInfo.aspectRatio || '1:1',
+            outputFormat: 'png',
+            originalImageUrl: originImageUrl
+          })
+          
+          // 更新生成状态
+          await d1.updateArtworkGenerationStatus(artworkId, {
+            status: 'completed',
+            completedAt: Date.now(),
+            resultImageUrl: generatedImageUrl
+          })
+        } else {
+          // 创建新的作品记录（兼容性回退）
+          artworkId = await d1.createKieArtwork(
+            taskInfo.userId,
+            taskInfo.title,
+            {
+              taskId: taskId,
+              prompt: taskInfo.prompt,
+              model: taskInfo.model,
+              aspectRatio: taskInfo.aspectRatio,
+              inputImage: originImageUrl,
+              status: 'published'
+            }
+          )
+          await d1.updateArtworkUrl(artworkId, generatedImageUrl, generatedImageUrl)
+        }
         
         console.log(`🎨 作品 ${artworkId} 创建成功，图片: ${generatedImageUrl}`)
         

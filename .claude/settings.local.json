@@ -33,7 +33,8 @@
       "Bash(wrangler deploy:*)",
       "Bash(rg:*)",
       "WebFetch(domain:docs.kie.ai)",
-      "WebFetch(domain:old-docs.kie.ai)"
+      "WebFetch(domain:old-docs.kie.ai)",
+      "Bash(cmd:*)"
     ],
     "deny": []
   }
