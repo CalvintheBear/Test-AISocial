@@ -41,6 +41,58 @@ router.get('/:id/profile', async (c) => {
   return c.json(ok(user || { id }))
 })
 
+// 聚合：个人主页首屏数据（强缓存+Redis）
+router.get('/:id/summary', async (c) => {
+  const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
+  const currentUserId = (c as any).get('userId') as string
+  const d1 = D1Service.fromEnv(c.env)
+  const redis = RedisService.fromEnv(c.env)
+
+  // 缓存键：公开数据（profile+works）对匿名与登录一致；但 userStates 取决于 currentUserId
+  const cacheKey = `user:${id}:summary:v1`
+  try {
+    const cached = await redis.get(cacheKey)
+    if (cached) {
+      return c.json(ok(JSON.parse(cached)))
+    }
+  } catch {}
+
+  // 基础资料与作品（发布态）
+  const user = await d1.getUser(id)
+  const allWorks = await d1.listUserArtworks(id)
+  const visibleWorks = (currentUserId === id) ? allWorks : allWorks.filter((a: any) => a.status === 'published')
+
+  // 用户状态
+  const artworkIds = visibleWorks.map((a: any) => a.id)
+  let userStates: Array<{ liked: boolean; faved: boolean }> = []
+  if (currentUserId && artworkIds.length > 0) {
+    try {
+      const [likedIds, favedIds] = await Promise.all([
+        redis.listUserLikes(currentUserId),
+        d1.listUserFavorites(currentUserId)
+      ])
+      const likedSet = new Set(likedIds)
+      const favedSet = new Set(favedIds)
+      userStates = artworkIds.map((id: string) => ({ liked: likedSet.has(id), faved: favedSet.has(id) }))
+    } catch {
+      userStates = await Promise.all(
+        artworkIds.map(async (aid: string) => ({
+          liked: await d1.isLikedByUser(currentUserId, aid),
+          faved: await d1.isFavoritedByUser(currentUserId, aid)
+        }))
+      )
+    }
+  } else {
+    userStates = artworkIds.map(() => ({ liked: false, faved: false }))
+  }
+
+  const items = formatArtworkListForAPI(visibleWorks as any, userStates)
+  const payload = { profile: user || { id }, artworks: items }
+
+  try { await redis.set(cacheKey, JSON.stringify(payload), 300) } catch {}
+  return c.json(ok(payload))
+})
+
 router.get('/:id/artworks', async (c) => {
   const { id } = validateParam(UserIdParamSchema, { id: c.req.param('id') })
   const currentUserId = (c as any).get('userId') as string

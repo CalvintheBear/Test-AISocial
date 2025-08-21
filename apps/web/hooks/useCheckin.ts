@@ -19,8 +19,8 @@ export interface CheckinResult {
 }
 
 export function useCheckinStatus() {
-  // 基于 localStorage 的首屏乐观回退，做到“秒锁定”
-  const today = new Date().toISOString().split('T')[0]
+  // 统一今天日期（本地时区），避免 UTC 跨天导致的错判
+  const today = new Date().toLocaleDateString('en-CA')
   const localChecked =
     (typeof window !== 'undefined' && localStorage.getItem('checkin:lastDate') === today) || false
 
@@ -73,8 +73,8 @@ export function useCheckin() {
         totalCheckins: (prev?.totalCheckins ?? 0) + 1,
         lastCheckinDate: new Date().toISOString().split('T')[0],
       }), false)
-      // 写入本地锁定
-      try { localStorage.setItem('checkin:lastDate', new Date().toISOString().split('T')[0]) } catch {}
+      // 写入本地锁定（本地时区）
+      try { localStorage.setItem('checkin:lastDate', new Date().toLocaleDateString('en-CA')) } catch {}
       // 再触发一次校正请求
       mutate(API.checkin.status)
     }
@@ -86,7 +86,7 @@ export function useCheckin() {
         totalCheckins: prev?.totalCheckins ?? 0,
         lastCheckinDate: prev?.lastCheckinDate ?? null,
       }), false)
-      try { localStorage.setItem('checkin:lastDate', new Date().toISOString().split('T')[0]) } catch {}
+      try { localStorage.setItem('checkin:lastDate', new Date().toLocaleDateString('en-CA')) } catch {}
     }
     
     return result

@@ -86,9 +86,17 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	const { artworks: swrArtworks } = useUserArtworks(targetUserId || '', initialArtworks)
 	// 收藏按需加载：只有当前 Tab 激活才发起请求
 	const enableFavorites = tabParam === 'favorites'
-	const { artworks: swrFavorites } = useFavorites(enableFavorites ? (targetUserId || '') : '', undefined)
+	const { artworks: swrFavorites, mutate: refreshFavorites } = useFavorites(enableFavorites ? (targetUserId || '') : '', undefined)
 	useEffect(() => { if (swrArtworks) setArtworks(swrArtworks) }, [swrArtworks])
 	useEffect(() => { if (swrFavorites) setFavorites(swrFavorites) }, [swrFavorites])
+	// 当切到“我的收藏”时，若还未拉取，则主动触发一次
+	useEffect(() => {
+		if (!enableFavorites) return
+		if (!targetUserId) return
+		if (favorites.length > 0) return
+		refreshFavorites()
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [enableFavorites, targetUserId])
 
 	const persistPrivacy = useCallback(async (payload: { hideName?: boolean; hideEmail?: boolean }) => {
 		try {

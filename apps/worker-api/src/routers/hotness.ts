@@ -48,6 +48,8 @@ router.get('/trending', async (c) => {
       paginatedArtworks.map(async ({ artworkId, score }) => {
         const artwork = await d1.getArtwork(artworkId)
         if (!artwork) return null
+        // 仅展示已发布作品
+        if (artwork.status !== 'published') return null
         
         const userId = (c as any).get('userId') as string
         let userState = { liked: false, faved: false }
@@ -149,7 +151,8 @@ router.get('/trending/:timeWindow', async (c) => {
       artworkIds.map(async ({ id }) => await d1.getArtwork(id))
     )
     
-    const validArtworks = artworks.filter(Boolean)
+    // 仅保留已发布作品
+    const validArtworks = artworks.filter(a => a && a.status === 'published')
     
     // 获取用户状态
     const userId = (c as any).get('userId') as string
@@ -293,6 +296,7 @@ router.get('/rank', async (c) => {
       paginatedRankings.map(async ({ artworkId, score }, index) => {
         const artwork = await d1.getArtwork(artworkId)
         if (!artwork) return null
+        if (artwork.status !== 'published') return null
         
         const userId = (c as any).get('userId') as string
         let userState = { liked: false, faved: false }

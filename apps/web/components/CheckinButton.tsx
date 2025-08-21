@@ -13,7 +13,7 @@ export default function CheckinButton() {
   const [checkedTodayLocal, setCheckedTodayLocal] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toLocaleDateString('en-CA')
       return localStorage.getItem('checkin:lastDate') === today
     } catch {
       return false

@@ -16,7 +16,7 @@ export function useFavorites(userId: string, initialData?: ArtworkListItem[]) {
     () => fetchUserFavorites(userId),
     {
       revalidateOnFocus: false,
-      revalidateOnReconnect: false,
+      revalidateOnReconnect: true,
       keepPreviousData: true,
       fallbackData: initialData,
     }
