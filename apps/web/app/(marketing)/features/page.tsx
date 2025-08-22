@@ -2,6 +2,9 @@ import { Card, Button } from '@/components/ui'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { FeaturesGrid } from '@/components/landing/features-grid'
+import { TestimonialsSection } from '@/components/landing/testimonials'
+import { Footer } from '@/components/landing/footer'
 
 export const metadata: Metadata = {
   title: '功能介绍 - AI Social | 强大的AI创作工具',
@@ -23,226 +26,160 @@ export const dynamic = 'force-static'
 
 export default function FeaturesPage() {
   return (
-    <main className="min-h-screen pt-16">
+    <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="py-20 bg-grid">
-        <div className="container text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold mb-6"
-          >
-            <span className="text-gradient">探索我们强大的AI创作功能</span>
-          </h1>
-          <p className="text-lg md:text-xl text-text-2 max-w-3xl mx-auto"
-          >
-            从一个简单的想法到一件惊艳的艺术品，我们提供全流程创作工具。
-            让AI成为你创意表达的强大助力。
-          </p>
-        </div>
-      </section>
-
-      {/* Text to Image & Image to Image Section */}
-      <section className="py-20 bg-surface">
-        <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">文生图 & 图生图</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-          >
-            <div className="space-y-6">
-              <h3 className="text-2xl font-semibold">将文字转化为艺术</h3>
-              <ul className="space-y-3 text-text-2"
-              >
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>强大的自然语言处理，精准理解中文提示词</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>多种艺术风格和流派自由选择</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>高清输出，最高支持4K分辨率</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>实时生成预览，所见即所得</span>
-                </li>
-              </ul>
-              <Link href="#"
-              >
-                <Button className="bg-primary-500 hover:bg-primary-600"
-                >
-                  体验文生图
-                </Button>
-              </Link>
-            </div>
-            <div className="bg-gradient-to-br from-primary-100 to-primary-200 h-64 rounded-lg flex items-center justify-center shadow-lg"
+      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 py-20 md:py-32">
+        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/20 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0))]" />
+        <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-6xl"
             >
-              <div className="text-center p-6"
-              >
-                <div className="w-32 h-32 bg-surface rounded-lg mx-auto mb-4 flex items-center justify-center shadow-md"
-                >
-                  <span className="text-4xl">🎨</span>
-                </div>
-                <p className="font-medium text-text">AI生成艺术作品预览</p>
-                <p className="text-sm text-text-2">对应API: POST /api/artworks/generate</p>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mt-16"
-          >
-            <div className="order-2 lg:order-1 bg-gradient-to-br from-accent-100 to-accent-200 h-64 rounded-lg flex items-center justify-center shadow-lg"
+              探索我们强大的
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">AI创作功能</span>
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400"
             >
-              <div className="text-center p-6"
-              >
-                <div className="w-32 h-32 bg-surface rounded-lg mx-auto mb-4 flex items-center justify-center shadow-md"
-                >
-                  <span className="text-4xl">🔄</span>
-                </div>
-                <p className="font-medium text-text">图像转换效果预览</p>
-                <p className="text-sm text-text-2">对应API: POST /api/artworks/upload</p>
-              </div>
-            </div>
-            <div className="order-1 lg:order-2 space-y-6">
-              <h3 className="text-2xl font-semibold">用AI转换图像</h3>
-              <ul className="space-y-3 text-text-2"
-              >
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>风格迁移和图像增强</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>物体移除和添加</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>背景替换和场景转换</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-primary-500 mr-2 mt-1">✓</span>
-                  <span>图像放大和清晰度增强</span>
-                </li>
-              </ul>
-              <Link href="#"
-              >
-                <Button className="bg-primary-500 hover:bg-primary-600"
-                >
-                  体验图生图
-                </Button>
-              </Link>
-            </div>
+              从一个简单的想法到一件惊艳的艺术品，我们提供全流程创作工具。
+              让AI成为你创意表达的强大助力。
+            </p>
           </div>
         </div>
       </section>
 
-      {/* From Draft to Publish Section */}
-      <section className="py-20 bg-grid">
-        <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">从草稿到发布</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8"
-          >
-            {[
-              {
-                title: "创作",
-                description: "从AI生成的艺术作品开始，或上传你自己的创作",
-                icon: "🎨",
-                api: "POST /api/artworks/generate"
-              },
-              {
-                title: "完善",
-                description: "使用我们的编辑工具完善你的艺术作品",
-                icon: "✏️",
-                api: "status: draft"
-              },
-              {
-                title: "发布",
-                description: "一键将你的杰作分享到社区",
-                icon: "🚀",
-                api: "POST /api/artworks/:id/publish"
-              }
-            ].map((step, index) => (
-              <Card key={index} className="p-6 text-center shadow-lg"
-              >
-                <div className="text-4xl mb-4">{step.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
-                <p className="text-text-2 mb-2">{step.description}</p>
-                <p className="text-xs text-primary-600 font-mono">{step.api}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      <FeaturesGrid />
 
-      {/* Discover, Like, Collect Section */}
-      <section className="py-20 bg-surface">
-        <div className="container">
-          <h2 className="text-3xl font-bold text-center mb-12">发现、点赞与收藏</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+      {/* Detailed Features */}
+      <section className="py-24 sm:py-32 bg-slate-50 dark:bg-slate-900">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center mb-16"
           >
-            <div className="space-y-6">
-              <h3 className="text-2xl font-semibold">探索惊人的艺术作品</h3>
-              <p className="text-text-2">
-                发现来自全球创作者的精彩AI生成艺术作品。
-                按风格、主题或热度浏览，为你的下一个创作寻找灵感。
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center">
-                  <span className="text-primary-500 mr-3">❤️</span>
-                  <span className="text-text-2">为你喜欢的作品点赞并收藏</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-primary-500 mr-3">🔖</span>
-                  <span className="text-text-2">保存收藏夹以便日后回顾</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-primary-500 mr-3">💬</span>
-                  <span className="text-text-2">与创作者和社区互动</span>
-                </div>
-              </div>
-              <div className="space-y-2 text-sm text-text-2"
-              >
-                <p>• GET /api/feed - 获取推荐作品</p>
-                <p>• POST /api/artworks/:id/like - 点赞作品</p>
-                <p>• POST /api/artworks/:id/favorite - 收藏作品</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4"
+            <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl"
             >
-              {[1, 2, 3, 4].map((i) => (
-                <Card key={i} className="aspect-square flex items-center justify-center shadow-md"
-                >
-                  <div className="text-center p-4"
-                  >
-                    <div className="w-24 h-24 bg-gradient-to-br from-primary-100 to-primary-200 rounded-lg mx-auto mb-2 flex items-center justify-center"
-                    >
-                      <span className="text-2xl">🖼️</span>
+              深入了解每个功能
+            </h2>
+            <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-400"
+            >
+              我们提供了一套完整的AI创作工具，让每个人都能成为艺术家。
+            </p>
+          </div>
+
+          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+            <div className="space-y-16">
+              {/* 文生图 */}
+              <div className="grid grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-2">
+                <div className="lg:pr-8">
+                  <div className="lg:max-w-lg">
+                    <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                      文生图 - 文字转艺术
+                    </h3>
+                    <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
+                      将你的想法用文字描述，AI即刻为你生成独特的艺术作品。
+                      支持中文提示词，理解复杂场景描述。
+                    </p>
+                    <ul role="list" className="mt-8 space-y-4 text-slate-600 dark:text-slate-400">
+                      <li className="flex gap-x-3">
+                        <span className="text-purple-600">✓</span>
+                        <span>支持多种艺术风格：写实、插画、动漫、水墨等</span>
+                      </li>
+                      <li className="flex gap-x-3">
+                        <span className="text-purple-600">✓</span>
+                        <span>高清输出，最高支持4K分辨率</span>
+                      </li>
+                      <li className="flex gap-x-3">
+                        <span className="text-purple-600">✓</span>
+                        <span>实时预览，支持多次迭代优化</span>
+                      </li>
+                      <li className="flex gap-x-3">
+                        <span className="text-purple-600">✓</span>
+                        <span>保存历史记录，方便回溯</span>
+                      </li>
+                    </ul>
+                    <div className="mt-8">
+                      <Button className="bg-gradient-to-r from-purple-600 to-pink-600" asChild>
+                        <Link href="/feed">立即体验</Link>
+                      </Button>
                     </div>
-                    <p className="text-sm font-medium">作品 {i}</p>
                   </div>
-                </Card>
-              ))}
+                </div>
+                <div className="flex items-center justify-center">
+                  <div className="relative rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 p-2 shadow-lg dark:from-purple-900/20 dark:to-pink-900/20">
+                    <div className="aspect-[16/10] w-full rounded-xl bg-white dark:bg-slate-800 p-6">
+                      <div className="flex h-full items-center justify-center">
+                        <div className="text-center">
+                          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 p-4">
+                            <span className="text-2xl text-white">🎨</span>
+                          </div>
+                          <p className="text-lg font-medium text-slate-700 dark:text-slate-300">
+                            AI艺术生成演示
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 图生图 */}
+              <div className="grid grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-2">
+                <div className="flex items-center justify-center lg:order-2">
+                  <div className="relative rounded-2xl bg-gradient-to-r from-blue-100 to-cyan-100 p-2 shadow-lg dark:from-blue-900/20 dark:to-cyan-900/20">
+                    <div className="aspect-[16/10] w-full rounded-xl bg-white dark:bg-slate-800 p-6">
+                      <div className="flex h-full items-center justify-center">
+                        <div className="text-center">
+                          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 p-4">
+                            <span className="text-2xl text-white">🔄</span>
+                          </div>
+                          <p className="text-lg font-medium text-slate-700 dark:text-slate-300">
+                            图像转换演示
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="lg:pl-8 lg:order-1">
+                  <div className="lg:max-w-lg">
+                    <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                      图生图 - 图像转换增强
+                    </h3>
+                    <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
+                      上传现有图像，使用AI进行风格转换、内容增强、
+                      背景替换等高级编辑操作。
+                    </p>
+                    <ul role="list" className="mt-8 space-y-4 text-slate-600 dark:text-slate-400">
+                      <li className="flex gap-x-3">
+                        <span className="text-blue-600">✓</span>
+                        <span>风格迁移和图像增强</span>
+                      </li>
+                      <li className="flex gap-x-3">
+                        <span className="text-blue-600">✓</span>
+                        <span>物体移除和智能填充</span>
+                      </li>
+                      <li className="flex gap-x-3">
+                        <span className="text-blue-600">✓</span>
+                        <span>背景替换和场景转换</span>
+                      </li>
+                      <li className="flex gap-x-3">
+                        <span className="text-blue-600">✓</span>
+                        <span>图像放大和清晰度增强</span>
+                      </li>
+                    </ul>
+                    <div className="mt-8">
+                      <Button className="bg-gradient-to-r from-blue-600 to-cyan-600" asChild>
+                        <Link href="/feed">开始创作</Link>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-primary-500 text-white">
-        <div className="container text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">准备好开始创作了吗？</h2>
-          <p className="text-xl mb-8 opacity-90">
-            与数千名创作者一起，将你的想象力变为现实
-          </p>
-          <Link href="#">
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="bg-white text-primary-500 hover:bg-white/90"
-            >
-              立即开始创作
-            </Button>
-          </Link>
-        </div>
-      </section>
+      <TestimonialsSection />
+      <Footer />
     </main>
   )
 }
