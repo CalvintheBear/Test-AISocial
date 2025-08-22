@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#3b74ff',
+  themeColor: '#0ea5e9',
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
 
   const Shell = ({ children }: { children: ReactNode }) => (
     <html lang="zh-CN" className={`${inter.variable}`}>
-      <body className="font-sans antialiased bg-bg">
+      <body className="font-sans antialiased bg-background text-foreground">
         <NavigationRefresh />
         <ClientLayout>
           {children}

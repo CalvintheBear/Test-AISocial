@@ -1,16 +1,18 @@
-@import './tokens.css';
-
+@import './theme.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
   html, body {
     padding: 0;
     margin: 0;
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans), system-ui, sans-serif;
   }
   
   * {
@@ -19,7 +21,7 @@
   
   /* Focus styles for accessibility */
   *:focus-visible {
-    outline: 2px solid var(--color-primary-500);
+    outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
   }
   
@@ -27,43 +29,65 @@
   html {
     scroll-behavior: smooth;
   }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/50;
+  }
 }
 
 @layer utilities {
   /* Container utilities */
   .container {
-    width: 100%;
-    margin: 0 auto;
-    padding: 0 1rem;
+    @apply mx-auto max-w-7xl px-4 md:px-8;
   }
   
-  @media (min-width: 640px) {
-    .container {
-      max-width: var(--container-sm);
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Animation utilities */
+  .animate-in {
+    animation: animate-in 0.2s ease-out;
+  }
+  
+  .animate-out {
+    animation: animate-out 0.2s ease-in;
+  }
+  
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
     }
   }
   
-  @media (min-width: 768px) {
-    .container {
-      max-width: var(--container-md);
+  @keyframes animate-out {
+    from {
+      opacity: 1;
+      transform: translateY(0);
     }
-  }
-  
-  @media (min-width: 1024px) {
-    .container {
-      max-width: var(--container-lg);
-    }
-  }
-  
-  @media (min-width: 1280px) {
-    .container {
-      max-width: var(--container-xl);
-    }
-  }
-  
-  @media (min-width: 1536px) {
-    .container {
-      max-width: var(--container-2xl);
+    to {
+      opacity: 0;
+      transform: translateY(-10px);
     }
   }
 }

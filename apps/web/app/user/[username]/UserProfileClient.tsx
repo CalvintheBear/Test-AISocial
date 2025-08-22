@@ -198,21 +198,21 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	}
 
 	return (
-		<div>
-			<div className="bg-gradient-to-r from-blue-500 to-purple-600 h-64 rounded-lg mb-8 flex items-center">
+		<div className="max-w-7xl mx-auto px-4 py-8">
+			<div className="bg-gradient-to-r from-primary to-purple-600 h-64 rounded-xl mb-8 flex items-center">
 				<div className="flex items-center space-x-6 px-8">
 					<Image
 						src={profile?.profilePic || profile?.profile_pic || '/images/default-avatar.jpg'}
 						alt={(profile?.name || '').trim() || '未命名用户'}
 						width={120}
 						height={120}
-						className="rounded-full border-4 border-white"
+						className="rounded-full border-4 border-white shadow-lg"
 					/>
 					<div className="text-white">
-						<div className="flex items-center space-x-3">
+						<div className="flex items-center space-x-3 mb-2">
 							<h1 className="text-3xl font-bold">{hideName ? '匿名用户' : (profile?.name || '未命名用户')}</h1>
 							{isOwner && (
-								<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideName: !hideName })}>
+								<Button size="sm" variant="secondary" onClick={() => persistPrivacy({ hideName: !hideName })} className="bg-white/20 hover:bg-white/30">
 									{hideName ? '显示名称' : '隐藏名称'}
 								</Button>
 							)}
@@ -220,7 +220,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 						<div className="flex items-center space-x-3">
 							<p className="text-lg opacity-90">{hideEmail ? '暂不可见' : (profile?.email || '未绑定邮箱')}</p>
 							{isOwner && (
-								<Button size="sm" variant="outline" className="bg-white/20 border-white/40" onClick={() => persistPrivacy({ hideEmail: !hideEmail })}>
+								<Button size="sm" variant="secondary" onClick={() => persistPrivacy({ hideEmail: !hideEmail })} className="bg-white/20 hover:bg-white/30">
 									{hideEmail ? '显示邮箱' : '隐藏邮箱'}
 								</Button>
 							)}
@@ -229,23 +229,23 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 				</div>
 			</div>
 
-			<div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-				<div className="bg-white rounded-lg p-4 shadow-sm">
-					<div className="text-xs text-gray-500">作品</div>
-					<div className="text-2xl font-bold">{artworks.length}</div>
-				</div>
-				<div className="bg-white rounded-lg p-4 shadow-sm">
-					<div className="text-xs text-gray-500">收藏</div>
-					<div className="text-2xl font-bold">{favorites.length}</div>
-				</div>
-				<div className="bg-white rounded-lg p-4 shadow-sm">
-					<div className="text-xs text-gray-500">点赞</div>
-					<div className="text-2xl font-bold">{likes.length}</div>
-				</div>
-				<div className="bg-white rounded-lg p-4 shadow-sm">
-					<div className="text-xs text-gray-500">隐私</div>
-					<div className="text-sm">{hideName ? '名称隐藏' : '名称可见'} / {hideEmail ? '邮箱隐藏' : '邮箱可见'}</div>
-				</div>
+			<div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+				<Card className="p-4">
+					<div className="text-sm text-muted-foreground">作品</div>
+					<div className="text-2xl font-bold text-foreground">{artworks.length}</div>
+				</Card>
+				<Card className="p-4">
+					<div className="text-sm text-muted-foreground">收藏</div>
+					<div className="text-2xl font-bold text-foreground">{favorites.length}</div>
+				</Card>
+				<Card className="p-4">
+					<div className="text-sm text-muted-foreground">点赞</div>
+					<div className="text-2xl font-bold text-foreground">{likes.length}</div>
+				</Card>
+				<Card className="p-4">
+					<div className="text-sm text-muted-foreground">隐私</div>
+					<div className="text-sm text-foreground">{hideName ? '名称隐藏' : '名称可见'} / {hideEmail ? '邮箱隐藏' : '邮箱可见'}</div>
+				</Card>
 			</div>
 
 			<Tabs value={activeTab} onValueChange={setTab} className="w-full">
@@ -259,10 +259,10 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 					{(loading || isLoadingWorks) ? (
 						<ArtworkGrid artworks={[]} loading={true} />
 					) : !loading && artworks.length === 0 ? (
-						<div className="text-center py-16 bg-white rounded-lg border">
+						<div className="text-center py-16">
 							<h3 className="text-lg font-semibold mb-2">发布你的第一件作品</h3>
-							<p className="text-gray-500 mb-4">在社区中展示你的灵感与创作</p>
-							<Link href="/artwork"><Button variant="primary" size="sm">前往创作</Button></Link>
+							<p className="text-muted-foreground mb-4">在社区中展示你的灵感与创作</p>
+							<Link href="/artwork"><Button variant="default" size="sm">前往创作</Button></Link>
 						</div>
 					) : (
 						<ArtworkGrid artworks={artworks} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
@@ -272,11 +272,11 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 					{(loading || (enableFavorites && isLoadingFavorites)) ? (
 						<ArtworkGrid artworks={[]} loading={true} />
 					) : !loading && favorites.length === 0 ? (
-						<div className="text-center py-16 bg-white rounded-lg border">
+						<div className="text-center py-16">
 							<h3 className="text-lg font-semibold mb-2">还没有收藏</h3>
-							<p className="text-gray-500 mb-4">去看看社区里正在流行的精彩作品</p>
+							<p className="text-muted-foreground mb-4">去看看社区里正在流行的精彩作品</p>
 							<div className="flex items-center justify-center gap-3">
-								<Link href="/feed"><Button variant="primary" size="sm">推荐 Feed</Button></Link>
+								<Link href="/feed"><Button variant="default" size="sm">推荐 Feed</Button></Link>
 								<Link href="/trending"><Button variant="outline" size="sm">热点推荐</Button></Link>
 							</div>
 						</div>
@@ -286,11 +286,11 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 				</TabsContent>
 				<TabsContent value="likes">
 					{!loading && likes.length === 0 ? (
-						<div className="text-center py-16 bg-white rounded-lg border">
+						<div className="text-center py-16">
 							<h3 className="text-lg font-semibold mb-2">还没有点赞</h3>
-							<p className="text-gray-500 mb-4">发现并点赞你喜欢的作品</p>
+							<p className="text-muted-foreground mb-4">发现并点赞你喜欢的作品</p>
 							<div className="flex items-center justify-center gap-3">
-								<Link href="/feed"><Button variant="primary" size="sm">去发现</Button></Link>
+								<Link href="/feed"><Button variant="default" size="sm">去发现</Button></Link>
 								<Link href="/trending"><Button variant="outline" size="sm">看看热门</Button></Link>
 							</div>
 						</div>

@@ -49,10 +49,10 @@ export default async function ArtworkPage({
   let isAuthor = false
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Artwork Image */}
-        <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
+        <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
           <Image
             src={artwork.thumb_url || artwork.url}
             alt={artwork.title}
@@ -67,7 +67,7 @@ export default async function ArtworkPage({
         {/* Artwork Details */}
         <div className="space-y-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{artwork.title}</h1>
+            <h1 className="text-4xl font-bold tracking-tight mb-2">{artwork.title}</h1>
             
             {/* Author Info */}
             <div className="flex items-center space-x-3 mb-4">
@@ -81,7 +81,7 @@ export default async function ArtworkPage({
               />
               <div>
                 <p className="font-semibold">{artwork.author.name || '未命名用户'}</p>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   创建于 {new Date(artwork.created_at).toLocaleDateString('zh-CN')}
                 </p>
               </div>
@@ -90,24 +90,24 @@ export default async function ArtworkPage({
             {/* AI Generation Info */}
             {artwork.prompt && (
               <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2 text-gray-800">AI 生成提示词</h3>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <p className="text-gray-700 leading-relaxed">{artwork.prompt}</p>
+                <h3 className="text-lg font-semibold mb-2">AI 生成提示词</h3>
+                <div className="bg-muted/50 border rounded-lg p-4">
+                  <p className="text-muted-foreground leading-relaxed">{artwork.prompt}</p>
                   {(artwork.kie_model || artwork.kie_aspect_ratio || artwork.kie_output_format) && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="flex flex-wrap gap-2 text-sm text-gray-600">
+                    <div className="mt-3 pt-3 border-t">
+                      <div className="flex flex-wrap gap-2 text-sm">
                         {artwork.kie_model && (
-                          <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-xs">
                             模型: {artwork.kie_model}
                           </span>
                         )}
                         {artwork.kie_aspect_ratio && (
-                          <span className="bg-green-100 text-green-800 px-2 py-1 rounded">
+                          <span className="bg-secondary/10 text-secondary-foreground px-2 py-1 rounded-md text-xs">
                             宽高比: {artwork.kie_aspect_ratio}
                           </span>
                         )}
                         {artwork.kie_output_format && (
-                          <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                          <span className="bg-accent/10 text-accent-foreground px-2 py-1 rounded-md text-xs">
                             格式: {artwork.kie_output_format.toUpperCase()}
                           </span>
                         )}
@@ -119,8 +119,8 @@ export default async function ArtworkPage({
             )}
 
             {artwork.status === 'draft' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
-                <p className="text-yellow-800 font-medium">草稿状态</p>
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-yellow-800 font-medium mb-1">草稿状态</p>
                 <p className="text-yellow-700 text-sm">此作品仍为草稿，其他用户无法查看。</p>
               </div>
             )}
@@ -139,35 +139,38 @@ export default async function ArtworkPage({
               />
             </div>
           </Card>
+          
           {/* Author Actions: 发布/取消发布/删除 */}
           <ArtworkActions
             artworkId={artwork.id}
             status={artwork.status}
             authorId={artwork.author.id}
           />
-          {/* 热度与收藏计数 */}
-          <Card className="p-4">
-            <div className="flex items-center space-x-6 text-sm text-gray-600">
-              <div>收藏数：{artwork.fav_count ?? 0}</div>
-              {typeof artwork.hot_score === 'number' && (
-                <div>热度：{artwork.hot_score.toFixed(2)}</div>
-              )}
-            </div>
-          </Card>
-
-          {/* Stats */}
-          <Card className="p-4">
-            <div className="grid grid-cols-2 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold">{artwork.like_count}</p>
-                <p className="text-sm text-gray-600">点赞数</p>
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="p-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-foreground">{artwork.like_count}</p>
+                <p className="text-sm text-muted-foreground">点赞数</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{artwork.fav_count ?? 0}</p>
-                <p className="text-sm text-gray-600">收藏数</p>
+            </Card>
+            <Card className="p-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-foreground">{artwork.fav_count ?? 0}</p>
+                <p className="text-sm text-muted-foreground">收藏数</p>
               </div>
-            </div>
-          </Card>
+            </Card>
+          </div>
+          
+          {typeof artwork.hot_score === 'number' && (
+            <Card className="p-4">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-foreground">{artwork.hot_score.toFixed(2)}</p>
+                <p className="text-sm text-muted-foreground">热度值</p>
+              </div>
+            </Card>
+          )}
         </div>
       </div>
     </div>

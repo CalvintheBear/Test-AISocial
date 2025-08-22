@@ -41,7 +41,7 @@ export function ClientLayout({ children }: ClientLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen font-sans antialiased bg-bg">
+    <div className="min-h-screen font-sans antialiased bg-background text-foreground">
       {/* Header */}
       <Header onOpenCreateModal={() => setIsCreateModalOpen(true)} />
       

@@ -47,34 +47,34 @@ export default function ClientFeedActions({ initialArtworks }: { initialArtworks
   }, [addFavorite, removeFavorite])
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">发现作品</h1>
-        <p className="text-gray-600">探索社区中令人惊叹的 AI 生成艺术作品，发现创意灵感</p>
+        <h1 className="text-4xl font-bold tracking-tight mb-2">发现作品</h1>
+        <p className="text-muted-foreground text-lg">探索社区中令人惊叹的 AI 生成艺术作品，发现创意灵感</p>
       </div>
       
       {/* 标签切换 */}
-      <div className="mb-6 border-b border-gray-200">
+      <div className="mb-8 border-b">
         <nav className="-mb-px flex space-x-8">
           <button
             onClick={() => setActiveTab('feed')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'feed'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             最新作品
           </button>
           <button
             onClick={() => setActiveTab('trending')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
               activeTab === 'trending'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
-            🔥 热门作品
+            <span className="text-orange-500">🔥</span> 热门作品
           </button>
         </nav>
       </div>

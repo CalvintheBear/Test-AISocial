@@ -64,9 +64,9 @@ function TrendingPageContent() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <Flame className="w-8 h-8 text-orange-500" />
-            <h1 className="text-3xl font-bold text-gray-900">热点推荐</h1>
+            <h1 className="text-4xl font-bold tracking-tight">热点推荐</h1>
           </div>
-          <p className="text-gray-600">发现社区中最受欢迎和正在崛起的AI艺术作品</p>
+          <p className="text-muted-foreground text-lg">发现社区中最受欢迎和正在崛起的AI艺术作品</p>
         </div>
 
         {/* 筛选器 */}
