@@ -21,11 +21,16 @@ export const API = {
   
   hotness: {
     trending: '/api/hotness/trending',
-    byCategory: (category: string, limit?: number) => 
+    byTimeWindow: (timeWindow: string, category?: string) =>
+      `/api/hotness/trending/${timeWindow}${category ? `?category=${category}` : ''}`,
+    byCategory: (category: string, limit?: number) =>
       `/api/hotness/trending?category=${category}&limit=${limit || 20}`,
     detail: (id: string) => `/api/hotness/${id}`,
     rank: '/api/hotness/rank',
     refresh: '/api/hotness/refresh',
+    config: '/api/hotness/config',
+    sync: (id: string) => `/api/hotness/sync/${id}`,
+    syncBatch: '/api/hotness/sync-batch',
   },
   
   base: (p: string) => p,

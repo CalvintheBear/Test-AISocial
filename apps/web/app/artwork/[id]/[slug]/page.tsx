@@ -63,6 +63,7 @@ export default async function ArtworkPage({
                 fill
                 className="object-cover"
                 priority
+                unoptimized={(artwork.thumb_url || artwork.url).includes('tempfile.aiquickdraw.com') || (artwork.thumb_url || artwork.url).includes('r2.dev')}
               />
             </div>
           </div>
@@ -83,6 +84,7 @@ export default async function ArtworkPage({
                     width={40}
                     height={40}
                     className="rounded-full"
+                    unoptimized={artwork.author.profile_pic.includes('via.placeholder.com') || artwork.author.profile_pic.includes('images/default-avatar.jpg')}
                   />
                 ) : (
                   <span className="text-gray-600 font-medium">

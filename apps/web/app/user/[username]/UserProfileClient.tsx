@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { SignedIn, SignedOut, SignInButton, useAuth } from '@clerk/nextjs'
+import { useDebouncedCallback } from '@/hooks/useDebounce'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card } from '@/components/ui/card'
@@ -35,14 +36,19 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	const [loading, setLoading] = useState(!initialArtworks)
 
 
-	const reloadAll = useCallback(async (userId: string) => {
+	// 防抖的数据重新加载
+	const reloadAllImmediate = useCallback(async (userId: string) => {
 		const [lks] = await Promise.all([
 			authFetch(API.userLikes(userId)).then(data => adaptArtworkList(data || [])),
 		])
 		setLikes(lks || [])
 	}, [])
 
-	const loadProfile = useCallback(async () => {
+	// 防抖1秒，避免频繁切换Tab导致的重复请求
+	const reloadAll = useDebouncedCallback(reloadAllImmediate, 1000, [reloadAllImmediate])
+
+	// 防抖的用户资料加载
+	const loadProfileImmediate = useCallback(async () => {
 		try {
 			setLoading(true)
 			// 仅当访问 "me" 时才请求当前用户资料
@@ -59,7 +65,10 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 		} finally {
 			setLoading(false)
 		}
-	}, [reloadAll, username])
+	}, [username])
+
+	// 防抖500ms，避免快速认证状态变化导致的重复请求
+	const loadProfile = useDebouncedCallback(loadProfileImmediate, 500, [loadProfileImmediate])
 
 	// 当认证状态变化时，重新加载资料
 	useEffect(() => {
@@ -77,14 +86,22 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	const searchParams = useSearchParams()
 	const router = useRouter()
 	const [activeTab, setActiveTab] = useState<string>(searchParams.get('tab') || 'works')
-	const setTab = (tab: string) => {
-		setActiveTab(tab)
+
+	// 防抖的URL更新，避免快速切换时频繁更新URL
+	const updateUrlImmediate = useCallback((tab: string) => {
 		try {
 			const url = new URL(window.location.href)
 			url.searchParams.set('tab', tab)
 			window.history.replaceState(null, '', url.toString())
 		} catch {}
-	}
+	}, [])
+
+	const updateUrl = useDebouncedCallback(updateUrlImmediate, 300, [updateUrlImmediate])
+
+	const setTab = useCallback((tab: string) => {
+		setActiveTab(tab)
+		updateUrl(tab) // 防抖更新URL
+	}, [updateUrl])
 
 	// 目标用户ID：访问他人主页时使用 `username`，访问 "me" 时使用当前用户ID
 	const targetUserId = (username === 'me' ? profile?.id : username) as string | undefined
@@ -103,7 +120,8 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [enableFavorites, targetUserId])
 
-	const persistPrivacy = useCallback(async (payload: { hideName?: boolean; hideEmail?: boolean }) => {
+	// 防抖的隐私设置更新
+	const persistPrivacyImmediate = useCallback(async (payload: { hideName?: boolean; hideEmail?: boolean }) => {
 		try {
 			const updated = await authFetch('/api/users/me/privacy', { method: 'POST', body: JSON.stringify(payload) })
 			setMe(updated)
@@ -112,12 +130,17 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 		} catch {}
 	}, [])
 
+	// 防抖500ms，避免用户快速切换导致过多请求
+	const persistPrivacy = useDebouncedCallback(persistPrivacyImmediate, 500, [persistPrivacyImmediate])
+
 	// Actions: like / favorite
 	const { like } = useLike()
 	const { addFavorite, removeFavorite } = useFavorite()
 	const likedOnceRef = useRef<Set<string>>(new Set())
+	const favoritedOnceRef = useRef<Set<string>>(new Set())
 
-	const handleLike = useCallback(async (artworkId: string) => {
+	// 防抖的点赞操作，避免快速连续点击
+	const handleLikeImmediate = useCallback(async (artworkId: string) => {
 		if (!artworkId) return
 		if (likedOnceRef.current.has(artworkId)) return
 		likedOnceRef.current.add(artworkId)
@@ -129,8 +152,17 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 		try { await like(artworkId) } catch {}
 	}, [like])
 
-	const handleFavorite = useCallback(async (artworkId: string) => {
+	const handleLike = useDebouncedCallback(handleLikeImmediate, 300, [handleLikeImmediate])
+
+	// 防抖的收藏操作，避免快速连续点击
+	const handleFavoriteImmediate = useCallback(async (artworkId: string) => {
 		if (!artworkId) return
+		if (favoritedOnceRef.current.has(artworkId)) return
+		favoritedOnceRef.current.add(artworkId)
+
+		// 清除防重复标记的定时器，避免长时间禁用操作
+		setTimeout(() => favoritedOnceRef.current.delete(artworkId), 1000)
+
 		let nextIsFav = false
 		const toggle = (list: ArtworkListItem[]) => list.map(a => {
 			if (a.id !== artworkId) return a
@@ -145,6 +177,8 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 			else await removeFavorite(artworkId)
 		} catch {}
 	}, [addFavorite, removeFavorite])
+
+	const handleFavorite = useDebouncedCallback(handleFavoriteImmediate, 300, [handleFavoriteImmediate])
 
 	// 仅当本人访问自己的主页时，才允许显示“隐藏名称/邮箱”按钮
 	const isOwner = username === 'me' || !!(me?.id && username === me.id)

@@ -41,7 +41,7 @@ KIE_CALLBACK_URL = "https://cuttingasmr.org/api/kie/kie-callback"
 # wrangler secret put CLERK_SECRET_KEY
 # wrangler secret put ADMIN_TOKEN
 
-# Creem API 配置
+# Creem API 配置 - 生产环境请使用 wrangler secret put 命令设置
 # wrangler secret put CREEM_API_KEY
 # wrangler secret put CREEM_WEBHOOK_SECRET
 
