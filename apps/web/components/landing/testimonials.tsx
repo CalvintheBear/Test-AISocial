@@ -43,16 +43,16 @@ interface TestimonialsSectionProps {
 
 export function TestimonialsSection({ className }: TestimonialsSectionProps) {
   return (
-    <section className={`bg-slate-50 py-24 dark:bg-slate-900 ${className}`}>
+    <section className={`bg-muted py-24 sm:py-32 ${className}`}>
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-base font-semibold leading-7 text-purple-600">
+          <h2 className="text-base font-semibold leading-7 text-primary">
             用户评价
           </h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <p className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             深受创作者喜爱
           </p>
-          <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-400">
+          <p className="mt-6 text-lg leading-8 text-muted-foreground">
             听听来自全球创作者的真实声音，看看他们如何用这个平台改变创作方式。
           </p>
         </div>
@@ -61,13 +61,13 @@ export function TestimonialsSection({ className }: TestimonialsSectionProps) {
           {testimonials.map((testimonial) => (
             <article
               key={testimonial.name}
-              className="rounded-2xl bg-white p-8 shadow-lg dark:bg-slate-800">
-              <div className="flex items-center gap-x-1 text-purple-600">
+              className="rounded-2xl bg-card p-8 shadow-lg">
+              <div className="flex items-center gap-x-1 text-primary">
                 {[...Array(testimonial.rating)].map((_, i) => (
                   <Star key={i} className="h-5 w-5 fill-current" />
                 ))}
               </div>
-              <blockquote className="mt-6 text-lg leading-8 text-slate-700 dark:text-slate-300">
+              <blockquote className="mt-6 text-lg leading-8 text-foreground/80">
                 "{testimonial.content}"
               </blockquote>
               <figcaption className="mt-6 flex items-center gap-x-4">
@@ -79,10 +79,10 @@ export function TestimonialsSection({ className }: TestimonialsSectionProps) {
                   height={48}
                 />
                 <div>
-                  <div className="text-base font-semibold text-slate-900 dark:text-white">
+                  <div className="text-base font-semibold text-foreground">
                     {testimonial.name}
                   </div>
-                  <div className="text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  <div className="text-sm leading-6 text-muted-foreground">
                     {testimonial.role} · {testimonial.company}
                   </div>
                 </div>

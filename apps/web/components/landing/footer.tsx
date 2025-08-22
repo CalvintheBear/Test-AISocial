@@ -33,29 +33,29 @@ const navigation = {
 
 export function Footer({ className }: FooterProps) {
   return (
-    <footer className={`bg-slate-50 dark:bg-slate-900 ${className}`}>
+    <footer className={`bg-muted ${className}`}>
       <div className="mx-auto max-w-7xl overflow-hidden px-6 py-20 sm:py-24 lg:px-8">
         <div className="mx-auto grid max-w-2xl grid-cols-1 gap-8 lg:max-w-none lg:grid-cols-5">
           {/* Brand */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600" />
-              <span className="text-xl font-bold text-slate-900 dark:text-white">AI创作平台</span>
+              <div className="h-8 w-8 rounded-lg bg-primary" />
+              <span className="text-xl font-bold text-foreground">AI创作平台</span>
             </Link>
-            <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-400">
+            <p className="mt-4 text-sm leading-6 text-muted-foreground">
               释放你的创意潜能，用AI创造令人惊叹的视觉艺术。
               加入我们的创作者社区，探索无限可能。
             </p>
             <div className="mt-6 flex space-x-4">
-              <a href="#" className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300">
+              <a href="#" className="text-muted-foreground hover:text-foreground">
                 <span className="sr-only">Twitter</span>
                 <Twitter className="h-6 w-6" />
               </a>
-              <a href="#" className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300">
+              <a href="#" className="text-muted-foreground hover:text-foreground">
                 <span className="sr-only">GitHub</span>
                 <Github className="h-6 w-6" />
               </a>
-              <a href="#" className="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300">
+              <a href="#" className="text-muted-foreground hover:text-foreground">
                 <span className="sr-only">Instagram</span>
                 <Instagram className="h-6 w-6" />
               </a>
@@ -64,11 +64,11 @@ export function Footer({ className }: FooterProps) {
 
           {/* Navigation */}
           <div>
-            <h3 className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">产品</h3>
+            <h3 className="text-sm font-semibold leading-6 text-foreground">产品</h3>
             <ul role="list" className="mt-6 space-y-4">
               {navigation.product.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm leading-6 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300">
+                  <Link href={item.href} className="text-sm leading-6 text-muted-foreground hover:text-foreground">
                     {item.name}
                   </Link>
                 </li>
@@ -77,11 +77,11 @@ export function Footer({ className }: FooterProps) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">公司</h3>
+            <h3 className="text-sm font-semibold leading-6 text-foreground">公司</h3>
             <ul role="list" className="mt-6 space-y-4">
               {navigation.company.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm leading-6 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300">
+                  <Link href={item.href} className="text-sm leading-6 text-muted-foreground hover:text-foreground">
                     {item.name}
                   </Link>
                 </li>
@@ -90,11 +90,11 @@ export function Footer({ className }: FooterProps) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">资源</h3>
+            <h3 className="text-sm font-semibold leading-6 text-foreground">资源</h3>
             <ul role="list" className="mt-6 space-y-4">
               {navigation.resources.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm leading-6 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300">
+                  <Link href={item.href} className="text-sm leading-6 text-muted-foreground hover:text-foreground">
                     {item.name}
                   </Link>
                 </li>
@@ -103,11 +103,11 @@ export function Footer({ className }: FooterProps) {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold leading-6 text-slate-900 dark:text-white">法律</h3>
+            <h3 className="text-sm font-semibold leading-6 text-foreground">法律</h3>
             <ul role="list" className="mt-6 space-y-4">
               {navigation.legal.map((item) => (
                 <li key={item.name}>
-                  <Link href={item.href} className="text-sm leading-6 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-300">
+                  <Link href={item.href} className="text-sm leading-6 text-muted-foreground hover:text-foreground">
                     {item.name}
                   </Link>
                 </li>
@@ -116,8 +116,8 @@ export function Footer({ className }: FooterProps) {
           </div>
         </div>
 
-        <div className="mt-16 border-t border-slate-200 pt-8 dark:border-slate-800">
-          <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+        <div className="mt-16 border-t border-border pt-8">
+          <p className="text-xs leading-5 text-muted-foreground">
             © 2024 AI创作平台. 保留所有权利.
           </p>
         </div>

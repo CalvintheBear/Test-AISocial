@@ -1,7 +1,6 @@
-import { Card, Button } from '@/components/ui'
+import { Button } from '@/components/ui'
 import { Metadata } from 'next'
 import Link from 'next/link'
-import Image from 'next/image'
 import { FeaturesGrid } from '@/components/landing/features-grid'
 import { TestimonialsSection } from '@/components/landing/testimonials'
 import { Footer } from '@/components/landing/footer'
@@ -28,17 +27,17 @@ export default function FeaturesPage() {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 py-20 md:py-32">
-        <div className="absolute inset-0 bg-grid-slate-100 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] dark:bg-grid-slate-700/20 dark:[mask-image:linear-gradient(0deg,rgba(255,255,255,0.1),rgba(255,255,255,0))]" />
+      <section className="relative overflow-hidden bg-background py-20 md:py-32">
+        <div className="absolute inset-0 pointer-events-none [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
         <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-6xl"
+            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl"
             >
               探索我们强大的
               <br />
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">AI创作功能</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400"
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground"
             >
               从一个简单的想法到一件惊艳的艺术品，我们提供全流程创作工具。
               让AI成为你创意表达的强大助力。
@@ -50,15 +49,15 @@ export default function FeaturesPage() {
       <FeaturesGrid />
 
       {/* Detailed Features */}
-      <section className="py-24 sm:py-32 bg-slate-50 dark:bg-slate-900">
+      <section className="py-24 sm:py-32 bg-muted">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center mb-16"
           >
-            <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl"
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
             >
               深入了解每个功能
             </h2>
-            <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-400"
+            <p className="mt-6 text-lg leading-8 text-muted-foreground"
             >
               我们提供了一套完整的AI创作工具，让每个人都能成为艺术家。
             </p>
@@ -70,14 +69,14 @@ export default function FeaturesPage() {
               <div className="grid grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-2">
                 <div className="lg:pr-8">
                   <div className="lg:max-w-lg">
-                    <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    <h3 className="text-2xl font-bold tracking-tight text-foreground">
                       文生图 - 文字转艺术
                     </h3>
-                    <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
+                    <p className="mt-4 text-lg text-muted-foreground">
                       将你的想法用文字描述，AI即刻为你生成独特的艺术作品。
                       支持中文提示词，理解复杂场景描述。
                     </p>
-                    <ul role="list" className="mt-8 space-y-4 text-slate-600 dark:text-slate-400">
+                    <ul role="list" className="mt-8 space-y-4 text-muted-foreground">
                       <li className="flex gap-x-3">
                         <span className="text-purple-600">✓</span>
                         <span>支持多种艺术风格：写实、插画、动漫、水墨等</span>
@@ -103,14 +102,14 @@ export default function FeaturesPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-center">
-                  <div className="relative rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 p-2 shadow-lg dark:from-purple-900/20 dark:to-pink-900/20">
-                    <div className="aspect-[16/10] w-full rounded-xl bg-white dark:bg-slate-800 p-6">
+                  <div className="relative rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 p-2 shadow-lg">
+                    <div className="aspect-[16/10] w-full rounded-xl bg-card p-6">
                       <div className="flex h-full items-center justify-center">
                         <div className="text-center">
                           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 p-4">
                             <span className="text-2xl text-white">🎨</span>
                           </div>
-                          <p className="text-lg font-medium text-slate-700 dark:text-slate-300">
+                          <p className="text-lg font-medium text-foreground/80">
                             AI艺术生成演示
                           </p>
                         </div>
@@ -123,14 +122,14 @@ export default function FeaturesPage() {
               {/* 图生图 */}
               <div className="grid grid-cols-1 gap-x-8 gap-y-16 lg:grid-cols-2">
                 <div className="flex items-center justify-center lg:order-2">
-                  <div className="relative rounded-2xl bg-gradient-to-r from-blue-100 to-cyan-100 p-2 shadow-lg dark:from-blue-900/20 dark:to-cyan-900/20">
-                    <div className="aspect-[16/10] w-full rounded-xl bg-white dark:bg-slate-800 p-6">
+                  <div className="relative rounded-2xl bg-gradient-to-r from-blue-100 to-cyan-100 p-2 shadow-lg">
+                    <div className="aspect-[16/10] w-full rounded-xl bg-card p-6">
                       <div className="flex h-full items-center justify-center">
                         <div className="text-center">
                           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 p-4">
                             <span className="text-2xl text-white">🔄</span>
                           </div>
-                          <p className="text-lg font-medium text-slate-700 dark:text-slate-300">
+                          <p className="text-lg font-medium text-foreground/80">
                             图像转换演示
                           </p>
                         </div>
@@ -140,14 +139,14 @@ export default function FeaturesPage() {
                 </div>
                 <div className="lg:pl-8 lg:order-1">
                   <div className="lg:max-w-lg">
-                    <h3 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+                    <h3 className="text-2xl font-bold tracking-tight text-foreground">
                       图生图 - 图像转换增强
                     </h3>
-                    <p className="mt-4 text-lg text-slate-600 dark:text-slate-400">
+                    <p className="mt-4 text-lg text-muted-foreground">
                       上传现有图像，使用AI进行风格转换、内容增强、
                       背景替换等高级编辑操作。
                     </p>
-                    <ul role="list" className="mt-8 space-y-4 text-slate-600 dark:text-slate-400">
+                    <ul role="list" className="mt-8 space-y-4 text-muted-foreground">
                       <li className="flex gap-x-3">
                         <span className="text-blue-600">✓</span>
                         <span>风格迁移和图像增强</span>

@@ -1,4 +1,4 @@
-import { Check, Sparkles, Zap, Shield, Users, Palette, Rocket } from 'lucide-react';
+import { Sparkles, Zap, Shield, Users, Palette, Rocket } from 'lucide-react';
 
 interface Feature {
   icon: React.ReactNode;
@@ -48,13 +48,13 @@ export function FeaturesGrid({ className }: FeaturesGridProps) {
     <section className={`py-24 sm:py-32 ${className}`}>
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-base font-semibold leading-7 text-purple-600">
+          <h2 className="text-base font-semibold leading-7 text-primary">
             核心功能
           </h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <p className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             释放你的创作潜能
           </p>
-          <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-400">
+          <p className="mt-6 text-lg leading-8 text-muted-foreground">
             我们提供了一套完整的AI创作工具，让每个人都能成为艺术家。
             无论你是专业设计师还是创意爱好者，都能在这里找到适合你的创作方式。
           </p>
@@ -63,18 +63,16 @@ export function FeaturesGrid({ className }: FeaturesGridProps) {
         <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
           <dl className="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
             {features.map((feature) => (
-              <div key={feature.title} className="flex flex-col">
-                <div className="relative rounded-2xl border border-slate-200 p-8 transition-all hover:shadow-lg dark:border-slate-700 dark:hover:shadow-purple-500/10">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+              <div key={feature.title} className="rounded-2xl border border-border bg-card p-8 transition-all hover:shadow-lg">
+                <dt className="flex items-center gap-4">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                     {feature.icon}
-                  </div>
-                  <dt className="mt-6 text-lg font-semibold leading-7 text-slate-900 dark:text-white">
-                    {feature.title}
-                  </dt>
-                  <dd className="mt-2 flex flex-auto flex-col text-base leading-7 text-slate-600 dark:text-slate-400">
-                    <p className="flex-auto">{feature.description}</p>
-                  </dd>
-                </div>
+                  </span>
+                  <span className="text-lg font-semibold leading-7 text-foreground">{feature.title}</span>
+                </dt>
+                <dd className="mt-4 text-base leading-7 text-muted-foreground">
+                  {feature.description}
+                </dd>
               </div>
             ))}
           </dl>

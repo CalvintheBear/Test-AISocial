@@ -43,30 +43,28 @@ export function StatsSection({ className }: StatsSectionProps) {
     <section className={`py-24 sm:py-32 ${className}`}>
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             用数据说话
           </h2>
-          <p className="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-400">
+          <p className="mt-6 text-lg leading-8 text-muted-foreground">
             我们的平台正在改变创作者的工作方式，这些数字证明了我们的影响力。
           </p>
         </div>
 
-        <div className="mx-auto mt-16 grid max-w-lg grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-4">
+        <dl className="mx-auto mt-16 grid max-w-lg grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 lg:mx-0 lg:max-w-none lg:grid-cols-4">
           {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center justify-center rounded-2xl bg-white p-8 text-center shadow-lg dark:bg-slate-800">
-              <div className="rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 p-3 text-white">
-                {stat.icon}
-              </div>
-              <dt className="mt-4 text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-                {stat.value}
+            <div key={stat.label} className="flex flex-col items-center justify-center rounded-2xl bg-card p-8 text-center shadow-lg">
+              <dt className="flex flex-col items-center">
+                <span className="rounded-lg bg-primary p-3 text-primary-foreground">{stat.icon}</span>
+                <span className="mt-4 font-semibold text-foreground">{stat.label}</span>
               </dt>
-              <dd className="mt-2 text-base leading-7 text-slate-600 dark:text-slate-400">
-                <div className="font-semibold text-slate-900 dark:text-white">{stat.label}</div>
-                <div className="text-sm">{stat.description}</div>
+              <dd className="mt-2 text-base leading-7 text-muted-foreground">
+                <div className="text-3xl font-bold tracking-tight text-foreground">{stat.value}</div>
+                <div className="text-sm text-muted-foreground/90">{stat.description}</div>
               </dd>
             </div>
           ))}
-        </div>
+        </dl>
       </div>
     </section>
   );
