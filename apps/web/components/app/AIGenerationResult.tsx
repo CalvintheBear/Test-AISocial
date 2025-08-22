@@ -82,6 +82,7 @@ export function AIGenerationResult({
             faved: false,
           },
           status: 'draft',
+          created_at: Math.floor(Date.now() / 1000),
         })
 
         alert('草稿已保存！')
@@ -132,6 +133,7 @@ export function AIGenerationResult({
             faved: false,
           },
           status: 'published',
+          created_at: Math.floor(Date.now() / 1000),
         })
 
         alert('作品已发布！')

@@ -9,7 +9,7 @@ interface CTASectionProps {
 export function CTASection({ className }: CTASectionProps) {
   return (
     <section className={`relative isolate overflow-hidden bg-gradient-to-r from-purple-600 to-pink-600 ${className}`}>
-      <div className="absolute inset-0 -z-10 bg-[url(~/app/grid.svg)] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+      <div className="absolute inset-0 -z-10 bg-white/5 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
 
       <div className="mx-auto max-w-7xl px-6 py-24 sm:py-32 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">

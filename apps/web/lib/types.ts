@@ -17,6 +17,7 @@ export type ArtworkListItem = {
   trend?: 'up' | 'down' | 'stable'
   rank?: number
   status: 'draft' | 'published' | 'generating'
+  created_at: number
 }
 
 export type ArtworkDetail = {

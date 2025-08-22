@@ -6,7 +6,7 @@ import { Button } from '@/components/ui'
 import Image from 'next/image'
 import Link from 'next/link'
 import LikeFavoriteBarNew from './LikeFavoriteBarNew'
-import { ArtworkHotnessIndicator } from '@/components/HotnessBadge'
+import { HotnessBadge } from '@/components/HotnessBadge'
 import { useRouter, usePathname } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
 
@@ -111,7 +111,7 @@ export function ArtworkCard({ artwork, showHotness, locked, onLockedClick }: Art
           />
           {showHotness && typeof artwork.hot_score === 'number' && (
             <div className="flex items-center space-x-1">
-              <ArtworkHotnessIndicator hotness={artwork.hot_score} showText={false} />
+              <HotnessBadge score={artwork.hot_score} showIcon={false} size="sm" />
               <span className="text-xs font-medium text-muted-foreground">{artwork.hot_score.toFixed(1)}</span>
             </div>
           )}

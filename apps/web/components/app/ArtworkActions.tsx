@@ -86,7 +86,7 @@ export function ArtworkActions({ artworkId, status, isAuthor: isAuthorProp, auth
         <div />
         <div className="flex items-center space-x-2">
           {statusState === 'draft' && isAuthor && (
-            <Button variant="primary" className="bg-green-600 hover:bg-green-700" onClick={onPublish} disabled={publishing}>
+            <Button className="bg-green-600 text-white hover:bg-green-700" onClick={onPublish} disabled={publishing}>
               {publishing ? '发布中…' : '发布作品'}
             </Button>
           )}

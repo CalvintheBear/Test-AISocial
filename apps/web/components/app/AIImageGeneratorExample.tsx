@@ -21,7 +21,7 @@ export function AIImageGeneratorExample() {
       <div className="flex gap-4">
                  <Button
            onClick={() => setShowGenerator(!showGenerator)}
-           variant={showGenerator ? "outline" : "primary"}
+           variant={showGenerator ? "outline" : "default"}
          >
           {showGenerator ? '隐藏生成器' : '🎨 创建AI图像'}
         </Button>

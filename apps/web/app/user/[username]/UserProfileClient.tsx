@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { SignedIn, SignedOut, SignInButton, useAuth } from '@clerk/nextjs'
 import Image from 'next/image'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Card } from '@/components/ui/card'
 import { ArtworkGrid } from '@/components/app/ArtworkGrid'
 import { authFetch } from '@/lib/api/client'
 import { API } from '@/lib/api/endpoints'
@@ -165,7 +166,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 					<p className="opacity-90 mb-6">登录后可发布作品、收藏/点赞、个性化你的主页。</p>
 					<div className="flex gap-3">
 						<SignInButton mode="modal">
-							<Button variant="primary">登录 / 注册</Button>
+							<Button>登录 / 注册</Button>
 						</SignInButton>
 						<Link href="/feed"><Button variant="outline" className="bg-white/10 border-white/30 text-white">先逛逛</Button></Link>
 					</div>

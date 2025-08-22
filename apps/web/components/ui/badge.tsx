@@ -36,4 +36,6 @@ function Badge({
   )
 }
 
+export type BadgeProps = React.ComponentProps<'div'> & VariantProps<typeof badgeVariants>
+
 export { Badge, badgeVariants }

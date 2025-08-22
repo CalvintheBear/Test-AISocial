@@ -51,7 +51,8 @@ export function adaptArtworkListItem(backendArtwork: BackendArtworkResponse): Ar
     hotness: backendArtwork.hotness,
     trend: backendArtwork.trend,
     rank: backendArtwork.rank,
-    status: backendArtwork.status
+    status: backendArtwork.status,
+    created_at: backendArtwork.created_at
   }
 }
 

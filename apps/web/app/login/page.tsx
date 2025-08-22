@@ -23,7 +23,7 @@ export default function LoginPage() {
 							<div className="text-center space-y-3">
 								<p className="text-green-600">你已登录。</p>
 								<Link href="/user/me">
-									<Button variant="primary" size="sm">前往个人主页</Button>
+									<Button size="sm">前往个人主页</Button>
 								</Link>
 							</div>
 						</SignedIn>
@@ -31,7 +31,7 @@ export default function LoginPage() {
 				) : (
 					<div className="text-center space-y-4">
 						<p className="text-gray-600">当前未启用第三方登录。</p>
-						<Link href="/feed"><Button variant="primary" size="sm">先去看看</Button></Link>
+						<Link href="/feed"><Button size="sm">先去看看</Button></Link>
 					</div>
 				)}
 			</div>

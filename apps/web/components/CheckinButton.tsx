@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useCheckinStatus, useCheckin } from '@/hooks/useCheckin'
-import { toast } from '@/components/ui/toast'
 
 export default function CheckinButton() {
   const { stats, isLoading, refetch } = useCheckinStatus()
@@ -28,20 +27,18 @@ export default function CheckinButton() {
       const result = await checkin()
       if (result.success) {
         setCheckedTodayLocal(true)
-        toast.success('签到成功！', `获得${result.data.creditsAdded}积分，连续签到${result.data.consecutiveDays}天`)
         // 立即拉取一次最新状态，防止按钮可重复点击
         refetch()
       } else {
         if (result.message?.includes('已经签到')) {
           setCheckedTodayLocal(true)
           refetch()
-          toast.info('今日已签到')
         } else {
-          toast.error('签到失败', result.message)
         }
       }
     } catch (error) {
-      toast.error('签到失败', '网络错误，请稍后重试')
+      // Handle error silently or with console log
+      console.error('签到失败:', error)
     } finally {
       setIsCheckingIn(false)
     }
@@ -67,7 +64,7 @@ export default function CheckinButton() {
         </Badge>
       )}
       <Button
-        variant={checkedToday ? "outline" : "primary"}
+        variant={checkedToday ? "outline" : "default"}
         size="sm"
         onClick={handleCheckin}
         disabled={checkedToday || isCheckingIn}

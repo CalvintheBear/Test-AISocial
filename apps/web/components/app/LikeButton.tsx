@@ -75,7 +75,7 @@ export default function LikeButton({
   return (
     <Button
       variant="ghost"
-      size={size === 'sm' ? 'sm' : size === 'md' ? 'md' : 'lg'}
+      size={size === 'sm' ? 'sm' : 'lg'}
       onClick={onToggleLike}
       disabled={isLoading}
       className={`flex items-center space-x-1 transition-colors ${
