@@ -108,7 +108,7 @@ export default function PricingClient() {
 
   return (
     <>
-      <section className="py-16 bg-grid">
+      <section className="py-16 page-bg container-gradient-shadow">
         <div className="container text-center">
           <h1 className="text-4xl md:text-6xl font-extrabold mb-4">选择适合你的计划</h1>
           <p className="text-text-2 mb-6">购买积分，用于生成高清图像与高级模型</p>
@@ -117,14 +117,15 @@ export default function PricingClient() {
         </div>
       </section>
 
-      <section className="py-12">
-        <div className="container grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div className="with-mask section-gradient">
+        <section className="py-12 container-gradient-shadow">
+          <div className="container grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {PLANS.map((plan) => {
             const original = plan.monthly
             const discounted = Number((plan.yearly / 12).toFixed(2))
             const display = billing === 'monthly' ? original : discounted
             return (
-              <Card key={plan.id} className={`p-6 shadow-lg ${plan.best ? 'border-2 border-primary-400' : ''}`}>
+              <Card key={plan.id} className={`p-6 shadow-lg card-gradient-shadow ${plan.best ? 'border-2 border-primary-400' : ''}`}>
                 {plan.best && (
                   <div className="mb-2"><Badge className="bg-primary-500 text-white">Most Popular</Badge></div>
                 )}
@@ -149,8 +150,9 @@ export default function PricingClient() {
               </Card>
             )
           })}
-        </div>
-      </section>
+                  </div>
+        </section>
+      </div>
     </>
   )
 }

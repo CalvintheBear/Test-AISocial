@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { AIImageGenerator } from './AIImageGenerator'
 import { Button } from '@/components/ui/button'
+import { CTAButton } from '@/components/ui/cta-button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 
 export function AIImageGeneratorExample() {
@@ -19,12 +20,13 @@ export function AIImageGeneratorExample() {
     <div className="space-y-6">
       {/* 控制按钮 */}
       <div className="flex gap-4">
-                 <Button
+                 <CTAButton
            onClick={() => setShowGenerator(!showGenerator)}
-           variant={showGenerator ? "outline" : "default"}
+           variant={showGenerator ? "secondary" : "primary"}
+           size="md"
          >
           {showGenerator ? '隐藏生成器' : '🎨 创建AI图像'}
-        </Button>
+        </CTAButton>
         
                  {generatedArtworks.length > 0 && (
            <Button variant="outline" onClick={() => setGeneratedArtworks([])}>
@@ -55,13 +57,13 @@ export function AIImageGeneratorExample() {
                     <span className="text-sm text-gray-500">#{index + 1}</span>
                     <span className="font-mono text-sm">{artworkId}</span>
                   </div>
-                  <Button
+                  <CTAButton
                     size="sm"
-                    variant="outline"
+                    variant="secondary"
                     onClick={() => window.open(`/artwork/${artworkId}`, '_blank')}
                   >
                     查看作品
-                  </Button>
+                  </CTAButton>
                 </div>
               ))}
             </div>

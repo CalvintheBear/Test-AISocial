@@ -5,6 +5,7 @@ import { ArtworkCard } from './ArtworkCard'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from './EmptyState'
 import { Card, CardContent } from '@/components/ui/card'
+import { AnimatedList, FadeInUp } from '@/components/ui/animated-container'
 
 interface ArtworkGridProps {
   artworks: ArtworkListItem[]
@@ -19,7 +20,11 @@ interface ArtworkGridProps {
 export function ArtworkGrid({ artworks, onLike, onFavorite, loading, showHotness, locked, onLockedClick }: ArtworkGridProps) {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <AnimatedList
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+        animation="fade-in-up"
+        staggerDelay={50}
+      >
         {Array.from({ length: 8 }).map((_, index) => (
           <Card key={index} className="overflow-hidden">
             <CardContent className="p-0">
@@ -38,16 +43,25 @@ export function ArtworkGrid({ artworks, onLike, onFavorite, loading, showHotness
             </CardContent>
           </Card>
         ))}
-      </div>
+      </AnimatedList>
     )
   }
 
   if (!artworks || artworks.length === 0) {
-    return <EmptyState title="暂无作品" description="请稍后重试或调整筛选条件" />
+    return (
+      <FadeInUp delay={100}>
+        <EmptyState title="暂无作品" description="请稍后重试或调整筛选条件" />
+      </FadeInUp>
+    )
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <AnimatedList
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+      animation="fade-in-up"
+      staggerDelay={100}
+      delay={200}
+    >
       {artworks.map((artwork) => (
         <ArtworkCard
           key={artwork.id}
@@ -59,6 +73,6 @@ export function ArtworkGrid({ artworks, onLike, onFavorite, loading, showHotness
           onLockedClick={onLockedClick}
         />
       ))}
-    </div>
+    </AnimatedList>
   )
 }

@@ -19,11 +19,11 @@ const HotnessIndicator: React.FC<HotnessIndicatorProps> = ({
   className = ''
 }) => {
   const getHotnessLevel = (score: number) => {
-    if (score > 100) return { level: 'viral', color: 'text-red-500', bgColor: 'bg-red-50', label: '爆红' };
-    if (score > 50) return { level: 'hot', color: 'text-orange-500', bgColor: 'bg-orange-50', label: '热门' };
-    if (score > 20) return { level: 'rising', color: 'text-yellow-500', bgColor: 'bg-yellow-50', label: '上升' };
-    if (score > 10) return { level: 'active', color: 'text-blue-500', bgColor: 'bg-blue-50', label: '活跃' };
-    if (score > 5) return { level: 'new', color: 'text-green-500', bgColor: 'bg-green-50', label: '新作品' };
+    if (score > 100) return { level: 'viral', color: 'text-white', bgColor: 'bg-gradient-to-r from-orange-400 to-red-500', label: '爆红' };
+    if (score > 50) return { level: 'hot', color: 'text-white', bgColor: 'bg-gradient-to-r from-yellow-400 to-orange-500', label: '热门' };
+    if (score > 20) return { level: 'rising', color: 'text-white', bgColor: 'bg-gradient-to-r from-emerald-400 to-teal-500', label: '上升' };
+    if (score > 10) return { level: 'active', color: 'text-white', bgColor: 'bg-gradient-to-r from-cyan-400 to-blue-500', label: '活跃' };
+    if (score > 5) return { level: 'new', color: 'text-gray-600', bgColor: 'bg-gray-100', label: '新作品' };
     return { level: 'cold', color: 'text-gray-500', bgColor: 'bg-gray-50', label: '新发布' };
   };
 

@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
 import Image from 'next/image';
+import { FadeInUp, AnimatedList } from '@/components/ui/animated-container';
 
 interface Testimonial {
   name: string;
@@ -43,28 +44,39 @@ interface TestimonialsSectionProps {
 
 export function TestimonialsSection({ className }: TestimonialsSectionProps) {
   return (
-    <section className={`bg-muted py-24 sm:py-32 ${className}`}>
+    <section className={`relative bg-muted py-24 sm:py-32 ${className}`}>
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-base font-semibold leading-7 text-primary">
-            用户评价
-          </h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            深受创作者喜爱
-          </p>
-          <p className="mt-6 text-lg leading-8 text-muted-foreground">
-            听听来自全球创作者的真实声音，看看他们如何用这个平台改变创作方式。
-          </p>
-        </div>
+                 <div className="mx-auto max-w-2xl text-center">
+           <FadeInUp delay={100}>
+             <h2 className="text-base font-semibold leading-7 text-gray-700 bg-gray-50 px-3 py-1 rounded-full inline-block">
+               用户评价
+             </h2>
+           </FadeInUp>
+           <FadeInUp delay={200}>
+             <p className="mt-2 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+               深受创作者喜爱
+             </p>
+           </FadeInUp>
+           <FadeInUp delay={300}>
+             <p className="mt-6 text-lg leading-8 text-muted-foreground">
+               听听来自全球创作者的真实声音，看看他们如何用这个平台改变创作方式。
+             </p>
+           </FadeInUp>
+         </div>
 
-        <div className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-3">
+        <AnimatedList
+          className="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-8 lg:mx-0 lg:max-w-none lg:grid-cols-3"
+          animation="fade-in-up"
+          staggerDelay={100}
+          delay={400}
+        >
           {testimonials.map((testimonial) => (
             <article
               key={testimonial.name}
-              className="rounded-2xl bg-card p-8 shadow-lg">
-              <div className="flex items-center gap-x-1 text-primary">
+              className="rounded-2xl bg-card p-8 shadow-lg card-gradient-shadow card-hover">
+              <div className="flex items-center gap-x-1">
                 {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="h-5 w-5 fill-current" />
+                  <Star key={i} className="h-5 w-5 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
                 ))}
               </div>
               <blockquote className="mt-6 text-lg leading-8 text-foreground/80">
@@ -89,7 +101,7 @@ export function TestimonialsSection({ className }: TestimonialsSectionProps) {
               </figcaption>
             </article>
           ))}
-        </div>
+        </AnimatedList>
       </div>
     </section>
   );

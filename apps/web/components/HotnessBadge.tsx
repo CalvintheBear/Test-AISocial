@@ -9,11 +9,11 @@ interface HotnessBadgeProps {
 
 export function HotnessBadge({ score, level, showIcon = true, size = 'md' }: HotnessBadgeProps) {
   const getHotnessLevel = (score: number): { level: string; color: string; icon: string } => {
-    if (score >= 50) return { level: '热门', color: 'text-red-600 bg-red-100', icon: '🔥' }
-    if (score >= 20) return { level: '热门', color: 'text-orange-600 bg-orange-100', icon: '🔥' }
-    if (score >= 10) return { level: '温暖', color: 'text-yellow-600 bg-yellow-100', icon: '⭐' }
-    if (score >= 5) return { level: '活跃', color: 'text-blue-600 bg-blue-100', icon: '✨' }
-    return { level: '普通', color: 'text-gray-600 bg-gray-100', icon: '❄️' }
+    if (score >= 50) return { level: '火爆', color: 'text-white bg-gradient-to-r from-orange-400 to-red-500 shadow-lg', icon: '🔥' }
+    if (score >= 20) return { level: '热门', color: 'text-white bg-gradient-to-r from-yellow-400 to-orange-500 shadow-md', icon: '🔥' }
+    if (score >= 10) return { level: '温暖', color: 'text-white bg-gradient-to-r from-emerald-400 to-teal-500 shadow-md', icon: '⭐' }
+    if (score >= 5) return { level: '活跃', color: 'text-white bg-gradient-to-r from-cyan-400 to-blue-500 shadow-sm', icon: '✨' }
+    return { level: '普通', color: 'text-gray-600 bg-gray-100 border border-gray-200', icon: '💧' }
   }
 
   const hotness = getHotnessLevel(score)

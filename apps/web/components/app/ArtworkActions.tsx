@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Card } from '@/components/ui'
+import { CTAButton } from '@/components/ui/cta-button'
 import { usePublish } from '@/hooks/usePublish'
 import { useRouter } from 'next/navigation'
 import { authFetch } from '@/lib/api/client'
@@ -86,9 +87,15 @@ export function ArtworkActions({ artworkId, status, isAuthor: isAuthorProp, auth
         <div />
         <div className="flex items-center space-x-2">
           {statusState === 'draft' && isAuthor && (
-            <Button className="bg-green-600 text-white hover:bg-green-700" onClick={onPublish} disabled={publishing}>
+            <CTAButton 
+              onClick={onPublish} 
+              disabled={publishing}
+              size="sm"
+              variant="primary"
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+            >
               {publishing ? '发布中…' : '发布作品'}
-            </Button>
+            </CTAButton>
           )}
           {statusState === 'published' && isAuthor && (
             <Button variant="outline" onClick={onUnpublish} disabled={unpublishing}>

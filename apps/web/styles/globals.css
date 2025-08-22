@@ -15,6 +15,17 @@
     color: hsl(var(--foreground));
     overflow-x: hidden;
   }
+  /* 基础交互可见性，与模板保持一致 */
+  input, select, textarea {
+    outline-color: hsl(var(--ring) / 0.5);
+    background-color: hsl(var(--background));
+    border-color: hsl(var(--border));
+  }
+  button {
+    cursor: pointer;
+    outline-color: hsl(var(--ring) / 0.5);
+    border-color: hsl(var(--border));
+  }
 }
 
 /* Utilities */
@@ -26,8 +37,473 @@
     max-width: 100%;
     height: auto;
   }
+  /* 统一容器 */
+  .container {
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 80rem; /* max-w-7xl */
+    padding-left: 1rem; /* px-4 */
+    padding-right: 1rem;
+  }
+  @media (min-width: 768px) {
+    .container { padding-left: 2rem; padding-right: 2rem; } /* md:px-8 */
+  }
   .container-padding {
     padding-left: theme(spacing.6);
     padding-right: theme(spacing.6);
+  }
+
+  /* Page-level subtle grid background */
+  .page-bg {
+    background-image:
+      radial-gradient(600px 600px at 15% 10%, hsl(200 100% 85% / 0.08) 0%, transparent 60%),
+      radial-gradient(800px 800px at 85% 90%, hsl(160 100% 85% / 0.08) 0%, transparent 60%),
+      linear-gradient(to right, hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: auto, auto, 32px 32px, 32px 32px;
+    background-position: center;
+  }
+
+  /* Section gradient halo + soft mask for nicer transitions */
+  .section-gradient {
+    position: relative;
+    background-image:
+      radial-gradient(600px 600px at 10% 20%, hsl(200 100% 90% / 0.1) 0%, transparent 70%),
+      radial-gradient(700px 700px at 90% 80%, hsl(160 100% 90% / 0.08) 0%, transparent 70%);
+  }
+  .with-mask {
+    -webkit-mask-image: linear-gradient(180deg, transparent, black 12%, black 88%, transparent);
+            mask-image: linear-gradient(180deg, transparent, black 12%, black 88%, transparent);
+  }
+
+  /* 渐变式描边阴影样式 */
+  .gradient-border-shadow {
+    position: relative;
+    background: linear-gradient(135deg, hsl(var(--background)), hsl(var(--card)));
+    border-radius: inherit;
+  }
+  
+  .gradient-border-shadow::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, 
+      hsl(200 20% 85% / 0.15), 
+      hsl(160 20% 85% / 0.15)
+    );
+    border-radius: inherit;
+    z-index: -1;
+    animation: gradient-rotate 8s linear infinite;
+    filter: blur(6px);
+  }
+
+  .gradient-border-shadow::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, 
+      hsl(var(--background)), 
+      hsl(var(--card))
+    );
+    border-radius: inherit;
+    z-index: -1;
+  }
+
+  /* 卡片容器的渐变描边阴影 */
+  .card-gradient-shadow {
+    position: relative;
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+
+  .card-gradient-shadow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    background: linear-gradient(135deg, 
+      hsl(200 15% 90% / 0.2), 
+      hsl(160 15% 90% / 0.2)
+    );
+    border-radius: inherit;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .card-gradient-shadow:hover::before {
+    opacity: 1;
+  }
+
+  /* 主要容器的渐变描边阴影 */
+  .container-gradient-shadow {
+    position: relative;
+    background: hsl(var(--background));
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+
+  .container-gradient-shadow::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(135deg, 
+      hsl(200 15% 88% / 0.12), 
+      hsl(160 15% 88% / 0.12)
+    );
+    border-radius: inherit;
+    z-index: -1;
+    filter: blur(8px);
+  }
+
+  /* 动画效果 */
+  @keyframes gradient-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* 响应式渐变描边阴影 */
+  @media (prefers-reduced-motion: no-preference) {
+    .gradient-border-shadow::before {
+      animation: gradient-rotate 8s linear infinite;
+    }
+  }
+
+  /* 淡入淡出动画 */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(50px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes flipInX {
+    from {
+      opacity: 0;
+      transform: perspective(400px) rotateX(90deg);
+    }
+    40% {
+      transform: perspective(400px) rotateX(-20deg);
+    }
+    60% {
+      transform: perspective(400px) rotateX(10deg);
+    }
+    80% {
+      transform: perspective(400px) rotateX(-5deg);
+    }
+    to {
+      opacity: 1;
+      transform: perspective(400px) rotateX(0deg);
+    }
+  }
+
+  /* 动画类 */
+  .animate-fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-down {
+    animation: fadeInDown 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-left {
+    animation: fadeInLeft 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-right {
+    animation: fadeInRight 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-scale {
+    animation: fadeInScale 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-up {
+    animation: slideInUp 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-down {
+    animation: slideInDown 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-left {
+    animation: slideInLeft 0.6s ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.6s ease-out forwards;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.8s ease-out forwards;
+  }
+
+  .animate-flip-in-x {
+    animation: flipInX 0.8s ease-out forwards;
+  }
+
+  /* 延迟动画 */
+  .animate-delay-100 {
+    animation-delay: 0.1s;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 0.2s;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 0.3s;
+  }
+
+  .animate-delay-400 {
+    animation-delay: 0.4s;
+  }
+
+  .animate-delay-500 {
+    animation-delay: 0.5s;
+  }
+
+  .animate-delay-600 {
+    animation-delay: 0.6s;
+  }
+
+  .animate-delay-700 {
+    animation-delay: 0.7s;
+  }
+
+  .animate-delay-800 {
+    animation-delay: 0.8s;
+  }
+
+  /* 动画持续时间 */
+  .animate-duration-300 {
+    animation-duration: 0.3s;
+  }
+
+  .animate-duration-500 {
+    animation-duration: 0.5s;
+  }
+
+  .animate-duration-700 {
+    animation-duration: 0.7s;
+  }
+
+  .animate-duration-1000 {
+    animation-duration: 1s;
+  }
+
+  /* 初始状态 */
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-fade-in-down,
+  .animate-fade-in-left,
+  .animate-fade-in-right,
+  .animate-fade-in-scale,
+  .animate-slide-in-up,
+  .animate-slide-in-down,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-bounce-in,
+  .animate-flip-in-x {
+    opacity: 0;
+  }
+
+  /* 页面过渡动画 */
+  .page-transition-enter {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .page-transition-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+  }
+
+  .page-transition-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .page-transition-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease-in, transform 0.3s ease-in;
+  }
+
+  /* 卡片悬停动画 */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  /* 按钮动画 */
+  .btn-animate {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-animate:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn-animate:active {
+    transform: translateY(0);
+  }
+
+  /* 图片悬停动画 */
+  .image-hover {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .image-hover:hover {
+    transform: scale(1.05);
+  }
+
+  /* 文本渐显动画 */
+  .text-reveal {
+    overflow: hidden;
+  }
+
+  .text-reveal > * {
+    animation: slideInUp 0.6s ease-out forwards;
+  }
+
+  /* 动画容器样式 */
+  [data-animation-delay] {
+    animation-delay: calc(var(--animation-delay, 0) * 1ms);
+  }
+
+  [data-animation-duration] {
+    animation-duration: calc(var(--animation-duration, 600) * 1ms);
   }
 }

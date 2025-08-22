@@ -59,8 +59,8 @@ export default function CheckinButton() {
   return (
     <div className="flex items-center gap-2">
       {consecutiveDays > 0 && (
-        <Badge variant="secondary" className="text-xs">
-          连续{consecutiveDays}天
+        <Badge variant={consecutiveDays >= 7 ? "success" : consecutiveDays >= 3 ? "warning" : "info"} className="text-xs shadow-sm bg-gradient-to-r from-orange-400 to-red-500 text-white">
+          🔥 连续{consecutiveDays}天
         </Badge>
       )}
       <Button
@@ -69,9 +69,12 @@ export default function CheckinButton() {
         onClick={handleCheckin}
         disabled={checkedToday || isCheckingIn}
         aria-disabled={checkedToday || isCheckingIn}
-        className={checkedToday ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-default hover:bg-gray-100 pointer-events-none' : ''}
+        className={checkedToday 
+          ? 'bg-emerald-50 text-emerald-600 border-2 border-emerald-200 cursor-default hover:bg-emerald-50 pointer-events-none' 
+          : 'bg-gradient-to-r from-cyan-400 to-blue-500 text-white border-0 hover:from-cyan-500 hover:to-blue-600 shadow-md'
+        }
       >
-        {checkedToday ? '今日已签到' : isCheckingIn ? '签到中...' : '签到'}
+        {checkedToday ? '✅ 今日已签到' : isCheckingIn ? '⏳ 签到中...' : '📅 签到'}
       </Button>
     </div>
   )

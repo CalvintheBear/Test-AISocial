@@ -6,6 +6,7 @@ import { useLike } from '@/hooks/useLike'
 import { useFavorite } from '@/hooks/useFavorite'
 import { useState, useCallback, useEffect } from 'react'
 import { useTrendingArtworks } from '@/hooks/useArtworks'
+import { FadeInUp, AnimatedContainer } from '@/components/ui/animated-container'
 
 interface TrendingTabProps {
   timeWindow?: '24h' | '7d' | '30d'
@@ -53,38 +54,46 @@ export default function TrendingTab({ timeWindow = '24h' }: TrendingTabProps) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-        <div className="text-xl mb-2">加载失败</div>
-        <div>请稍后重试</div>
-      </div>
+      <FadeInUp delay={100}>
+        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+          <div className="text-xl mb-2">加载失败</div>
+          <div>请稍后重试</div>
+        </div>
+      </FadeInUp>
     )
   }
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <ArtworkGrid artworks={[]} loading showHotness />
-      </div>
+      <AnimatedContainer trigger="onMount" animation="fade-in-up" delay={100}>
+        <div className="container mx-auto px-4 py-8">
+          <ArtworkGrid artworks={[]} loading showHotness />
+        </div>
+      </AnimatedContainer>
     )
   }
 
   if (!artworks || artworks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-gray-500">
-        <div className="text-xl mb-2">暂无热门作品</div>
-        <div>尝试调整时间范围或稍后再来</div>
-      </div>
+      <FadeInUp delay={100}>
+        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+          <div className="text-xl mb-2">暂无热门作品</div>
+          <div>尝试调整时间范围或稍后再来</div>
+        </div>
+      </FadeInUp>
     )
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <ArtworkGrid 
-        artworks={artworks} 
-        onLike={onLike} 
-        onFavorite={onFavorite} 
-        showHotness
-      />
-    </div>
+    <AnimatedContainer trigger="onMount" animation="fade-in-up" delay={100}>
+      <div className="container mx-auto px-4 py-8">
+        <ArtworkGrid 
+          artworks={artworks} 
+          onLike={onLike} 
+          onFavorite={onFavorite} 
+          showHotness
+        />
+      </div>
+    </AnimatedContainer>
   )
 }

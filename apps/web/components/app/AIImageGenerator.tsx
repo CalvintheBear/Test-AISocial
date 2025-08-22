@@ -156,7 +156,13 @@ export function AIImageGenerator({ onGenerationComplete, className }: AIImageGen
                     }`}
                     onClick={() => setSelectedAspectRatio(ratio.value)}
                   >
-                    <div className="text-2xl mb-2">{ratio.icon}</div>
+                    <div className={`text-2xl mb-2 p-2 rounded-lg ${
+                      selectedAspectRatio === ratio.value 
+                        ? 'bg-gradient-to-br from-cyan-400/20 to-blue-500/20' 
+                        : 'bg-gray-100'
+                    }`}>
+                      <span className="opacity-80">{ratio.icon}</span>
+                    </div>
                     <div className="font-medium">{ratio.label}</div>
                   </div>
                 ))}
@@ -181,7 +187,7 @@ export function AIImageGenerator({ onGenerationComplete, className }: AIImageGen
                         <h4 className="font-medium">{format.label}</h4>
                         <p className="text-sm text-gray-600">{format.description}</p>
                       </div>
-                      <Badge variant={selectedOutputFormat === format.value ? "default" : "secondary"}>
+                      <Badge variant={selectedOutputFormat === format.value ? "default" : "secondary"} className={selectedOutputFormat === format.value ? "shadow-sm" : "bg-secondary text-secondary-foreground shadow-sm"}>
                         {format.value.toUpperCase()}
                       </Badge>
                     </div>

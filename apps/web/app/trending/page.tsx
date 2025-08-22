@@ -47,18 +47,18 @@ function TrendingPageContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Flame className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">加载失败</h2>
-          <p className="text-gray-600">无法加载热点内容，请稍后重试</p>
-        </div>
+          <div className="min-h-screen page-bg flex items-center justify-center">
+      <div className="text-center">
+        <Flame className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">加载失败</h2>
+        <p className="text-gray-600">无法加载热点内容，请稍后重试</p>
       </div>
+    </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* 页面标题 */}
         <div className="mb-8">
@@ -81,27 +81,11 @@ function TrendingPageContent() {
 
         {/* 加载状态 */}
         {isLoading && (
-          <ArtworkGrid artworks={[]} loading />
-        )}
-
-        {/* 空状态 */}
-        {!isLoading && (!trendingArtworks || trendingArtworks.length === 0) && (
-          <div className="text-center py-16">
-            <EmptyState 
-              category={category as 'viral' | 'hot' | 'rising' | 'all'} 
-              timeWindow={timeWindow} 
-            />
-            <button
-              onClick={() => {
-                setTimeWindow('24h');
-                setCategory('all');
-                router.push('/trending');
-              }}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mt-6"
-            >
-              <Clock className="w-4 h-4 mr-2" />
-              查看24小时内所有作品
-            </button>
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <Flame className="w-12 h-12 text-orange-500 mx-auto mb-4 animate-pulse" />
+              <p className="text-gray-600">加载中...</p>
+            </div>
           </div>
         )}
 
@@ -150,7 +134,7 @@ function TrendingPageContent() {
 export default function TrendingPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Flame className="w-12 h-12 text-orange-500 mx-auto mb-4 animate-pulse" />
           <p className="text-gray-600">加载中...</p>

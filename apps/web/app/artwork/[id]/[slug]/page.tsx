@@ -37,93 +37,64 @@ export default async function ArtworkPage({
     artwork = await getArtworkDetail(id)
   } catch (e) {
     // 友好处理：不抛出 404，返回可见错误状态
-    return (
+      return (
+    <div className="page-bg min-h-screen flex items-center justify-center">
       <div className="container mx-auto px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold mb-2">作品不存在或无访问权限</h1>
         <p className="text-gray-600 mb-6">可能已被删除、未发布或你没有权限查看。</p>
       </div>
-    )
+    </div>
+  )
   }
   // SSR 场景下已无法直接拿到前端 Clerk 的 token，这里保持按钮展示的最小权限：
   // 仅当后端返回的详情中作者与会话匹配才渲染（未来可改为客户端小部件）。
   let isAuthor = false
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Artwork Image */}
-        <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-          <Image
-            src={artwork.thumb_url || artwork.url}
-            alt={artwork.title}
-            fill
-            className="object-contain"
-            quality={95}
-            priority
-            unoptimized={(artwork.thumb_url || artwork.url).includes('tempfile.aiquickdraw.com') || (artwork.thumb_url || artwork.url).includes('r2.dev')}
-          />
-        </div>
-
-        {/* Artwork Details */}
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight mb-2">{artwork.title}</h1>
-            
-            {/* Author Info */}
-            <div className="flex items-center space-x-3 mb-4">
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* 作品图片 */}
+          <div className="mb-8">
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
               <Image
-                src={artwork.author.profile_pic || 'https://via.placeholder.com/40x40/cccccc/666666?text=用户'}
-                alt={artwork.author.name}
-                width={40}
-                height={40}
-                className="rounded-full"
-                unoptimized={(artwork.author.profile_pic || '').includes('via.placeholder.com')}
+                src={artwork.thumb_url || artwork.url}
+                alt={artwork.title}
+                fill
+                className="object-cover"
+                priority
               />
+            </div>
+          </div>
+
+          {/* 作品信息 */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold mb-2">{artwork.title}</h1>
+            <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+              <span>状态: {artwork.status === 'published' ? '已发布' : '草稿'}</span>
+              <span>创建时间: {new Date(artwork.created_at).toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                {artwork.author.profile_pic ? (
+                  <Image
+                    src={artwork.author.profile_pic}
+                    alt={artwork.author.name}
+                    width={40}
+                    height={40}
+                    className="rounded-full"
+                  />
+                ) : (
+                  <span className="text-gray-600 font-medium">
+                    {artwork.author.name?.charAt(0) || 'U'}
+                  </span>
+                )}
+              </div>
               <div>
-                <p className="font-semibold">{artwork.author.name || '未命名用户'}</p>
-                <p className="text-sm text-muted-foreground">
-                  创建于 {new Date(artwork.created_at).toLocaleDateString('zh-CN')}
-                </p>
+                <p className="font-medium">{artwork.author.name || '匿名用户'}</p>
+                <p className="text-sm text-gray-600">作者</p>
               </div>
             </div>
-
-            {/* AI Generation Info */}
-            {artwork.prompt && (
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold mb-2">AI 生成提示词</h3>
-                <div className="bg-muted/50 border rounded-lg p-4">
-                  <p className="text-muted-foreground leading-relaxed">{artwork.prompt}</p>
-                  {(artwork.kie_model || artwork.kie_aspect_ratio || artwork.kie_output_format) && (
-                    <div className="mt-3 pt-3 border-t">
-                      <div className="flex flex-wrap gap-2 text-sm">
-                        {artwork.kie_model && (
-                          <span className="bg-primary/10 text-primary px-2 py-1 rounded-md text-xs">
-                            模型: {artwork.kie_model}
-                          </span>
-                        )}
-                        {artwork.kie_aspect_ratio && (
-                          <span className="bg-secondary/10 text-secondary-foreground px-2 py-1 rounded-md text-xs">
-                            宽高比: {artwork.kie_aspect_ratio}
-                          </span>
-                        )}
-                        {artwork.kie_output_format && (
-                          <span className="bg-accent/10 text-accent-foreground px-2 py-1 rounded-md text-xs">
-                            格式: {artwork.kie_output_format.toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {artwork.status === 'draft' && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <p className="text-yellow-800 font-medium mb-1">草稿状态</p>
-                <p className="text-yellow-700 text-sm">此作品仍为草稿，其他用户无法查看。</p>
-              </div>
-            )}
           </div>
 
           {/* Action Bar */}

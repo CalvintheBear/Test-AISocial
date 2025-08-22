@@ -1,5 +1,6 @@
 import UserProfileClient from './UserProfileClient'
 import { API } from '@/lib/api/endpoints'
+import { AnimatedContainer } from '@/components/ui/animated-container'
 
 export const metadata = {
   title: '用户主页 - AI 社区',
@@ -34,8 +35,12 @@ export default async function UserPage({ params }: { params: { username: string 
   } catch {}
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <UserProfileClient username={username} initialProfile={initialProfile} initialArtworks={initialArtworks} />
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        <AnimatedContainer trigger="onMount" animation="fade-in-up" delay={100}>
+          <UserProfileClient username={username} initialProfile={initialProfile} initialArtworks={initialArtworks} />
+        </AnimatedContainer>
+      </div>
     </div>
   )
 }

@@ -7,8 +7,10 @@ export const metadata = {
 
 export default function DebugPage() {
   return (
-    <main className="min-h-screen bg-gray-50">
-      <HotnessDebugger />
+    <main className="min-h-screen page-bg">
+      <div className="with-mask section-gradient">
+        <HotnessDebugger />
+      </div>
     </main>
   )
 }

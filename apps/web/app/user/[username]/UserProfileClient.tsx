@@ -13,6 +13,7 @@ import { adaptArtworkList } from '@/lib/apiAdapter'
 import { useUserArtworks } from '@/hooks/useUserArtworks'
 import { useFavorites } from '@/hooks/useFavorites'
 import { Button } from '@/components/ui/button'
+import { CTAButton } from '@/components/ui/cta-button'
 import { useLike } from '@/hooks/useLike'
 import { useFavorite } from '@/hooks/useFavorite'
 import { useClerkEnabled } from '@/hooks/useClerkEnabled'
@@ -161,14 +162,16 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 	if (isClerkEnabled && isLoaded && !isSignedIn) {
 		return (
 			<div>
-				<div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg mb-8 px-8 py-12 text-white">
+				<div className="bg-gradient-to-r from-sky-600/90 to-emerald-600/90 rounded-lg mb-8 px-8 py-12 text-white">
 					<h1 className="text-3xl font-bold mb-2">创建并展示你的 AI 艺术主页</h1>
 					<p className="opacity-90 mb-6">登录后可发布作品、收藏/点赞、个性化你的主页。</p>
 					<div className="flex gap-3">
 						<SignInButton mode="modal">
 							<Button>登录 / 注册</Button>
 						</SignInButton>
-						<Link href="/feed"><Button variant="outline" className="bg-white/10 border-white/30 text-white">先逛逛</Button></Link>
+						<CTAButton href="/feed" size="sm" variant="secondary" className="bg-white/10 border-white/30 text-white hover:bg-white hover:text-gray-900">
+							先逛逛
+						</CTAButton>
 					</div>
 				</div>
 
@@ -200,7 +203,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 
 	return (
 		<div className="max-w-7xl mx-auto px-4 py-8">
-			<div className="bg-gradient-to-r from-primary to-purple-600 h-64 rounded-xl mb-8 flex items-center">
+			<div className="bg-gradient-to-r from-sky-600/90 to-emerald-600/90 h-64 rounded-xl mb-8 flex items-center">
 				<div className="flex items-center space-x-6 px-8">
 					<Image
 						src={profile?.profilePic || profile?.profile_pic || '/images/default-avatar.jpg'}
@@ -263,7 +266,7 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 						<div className="text-center py-16">
 							<h3 className="text-lg font-semibold mb-2">发布你的第一件作品</h3>
 							<p className="text-muted-foreground mb-4">在社区中展示你的灵感与创作</p>
-							<Link href="/artwork"><Button variant="default" size="sm">前往创作</Button></Link>
+							<CTAButton href="/artwork" size="sm" variant="primary">前往创作</CTAButton>
 						</div>
 					) : (
 						<ArtworkGrid artworks={artworks} loading={loading} onLike={handleLike} onFavorite={handleFavorite} />
@@ -277,8 +280,10 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 							<h3 className="text-lg font-semibold mb-2">还没有收藏</h3>
 							<p className="text-muted-foreground mb-4">去看看社区里正在流行的精彩作品</p>
 							<div className="flex items-center justify-center gap-3">
-								<Link href="/feed"><Button variant="default" size="sm">推荐 Feed</Button></Link>
-								<Link href="/trending"><Button variant="outline" size="sm">热点推荐</Button></Link>
+								<CTAButton href="/feed" size="sm" variant="primary">推荐 Feed</CTAButton>
+								<CTAButton href="/trending" size="sm" variant="secondary">
+									热点推荐
+								</CTAButton>
 							</div>
 						</div>
 					) : (
@@ -291,8 +296,10 @@ export default function UserProfileClient({ username, initialProfile, initialArt
 							<h3 className="text-lg font-semibold mb-2">还没有点赞</h3>
 							<p className="text-muted-foreground mb-4">发现并点赞你喜欢的作品</p>
 							<div className="flex items-center justify-center gap-3">
-								<Link href="/feed"><Button variant="default" size="sm">去发现</Button></Link>
-								<Link href="/trending"><Button variant="outline" size="sm">看看热门</Button></Link>
+								<CTAButton href="/feed" size="sm" variant="primary">去发现</CTAButton>
+								<CTAButton href="/trending" size="sm" variant="secondary">
+									看看热门
+								</CTAButton>
 							</div>
 						</div>
 					) : (

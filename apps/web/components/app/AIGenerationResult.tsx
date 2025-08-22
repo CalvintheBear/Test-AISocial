@@ -155,7 +155,7 @@ export function AIGenerationResult({
             <CheckCircle2 className="w-5 h-5 text-green-500" />
             AI 图像生成完成
           </h3>
-          <Badge variant="secondary" className="text-xs">
+          <Badge variant="secondary" className="text-xs bg-secondary text-secondary-foreground shadow-sm">
             {model} • {aspectRatio} • {outputFormat.toUpperCase()}
           </Badge>
         </div>
@@ -224,12 +224,12 @@ export function AIGenerationResult({
                 保存或发布
               </Button>
               {onRegenerate && (
-                <Button
-                  variant="outline"
-                  onClick={onRegenerate}
-                  className="flex-1"
-                  size="lg"
-                >
+                              <Button
+                variant="outline"
+                onClick={onRegenerate}
+                className="flex-1 border-2 hover:bg-accent/50"
+                size="lg"
+              >
                   <RefreshCw className="w-4 h-4 mr-2" />
                   重新生成
                 </Button>
@@ -242,7 +242,7 @@ export function AIGenerationResult({
                   variant="outline"
                   onClick={handleSaveDraft}
                   disabled={saving || !title.trim()}
-                  className="flex-1"
+                  className="flex-1 border-2 hover:bg-accent/50"
                   size="lg"
                 >
                   <Save className="w-4 h-4 mr-2" />
