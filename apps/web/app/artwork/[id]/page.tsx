@@ -6,13 +6,15 @@ export const metadata: Metadata = {
   description: '查看AI生成的艺术作品详情',
 }
 
-export default async function ArtworkRedirectPage({ 
-  params 
-}: { 
-  params: { id: string } 
+export const runtime = 'edge'
+
+export default async function ArtworkRedirectPage({
+  params
+}: {
+  params: { id: string }
 }) {
   const { id } = params
-  
+
   // Redirect to a placeholder page for now
   redirect(`/artwork/${id}/untitled`)
 }
